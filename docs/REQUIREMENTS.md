@@ -7,7 +7,7 @@
 > with minimal loss. Keep it current: when a decision is confirmed, move it from
 > "Open questions" to "Decisions log" with a date.
 
-**Status:** Core MVP decisions settled (product, architecture, stack). Next: MVP feature & UX detail (Round 4).
+**Status:** MVP fully specified (see §7). Ready for implementation planning; further requirements (Phase-2 publishing, acceptance criteria) are optional next steps.
 **Last updated:** 2026-07-12
 
 ---
@@ -103,6 +103,13 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 | D9 | 2026-07-12 | **Stack = TypeScript + Next.js (React) + CodeMirror 6 editor** | Round 3. Largest ecosystem → most reliable first-try agent builds; SSR available for shared pages. |
 | D10 | 2026-07-12 | **Backend/Auth/DB = Supabase** (Postgres + Auth [magic link, Google, email/password] + storage, RLS) | Round 3. Least custom auth code; free tier fits minimal-cost goal (caveat: free projects pause ~7 days idle). |
 | D11 | 2026-07-12 | **Hosting = free-tier serverless** (Vercel default for Next.js; Cloudflare/Netlify options) | Round 3. Near-zero cost; serverless room for SSR + Phase-2 APIs. |
+| D12 | 2026-07-12 | **Anonymous editing + preview; sign-in only to save/share** | Round 4. Client-side render makes anonymous use free; drafts held in localStorage, migrated on sign-up. |
+| D13 | 2026-07-12 | **Layout: split-pane on desktop, source/preview toggle on mobile** | Round 4. |
+| D14 | 2026-07-12 | **Shared permalink = read-only SSR render + "Remix to edit"; unlisted by default** | Round 4. Remix copies the poem into the viewer's own new fiddle. |
+| D15 | 2026-07-12 | **Canonical stored source = raw `.poem` text; render on demand** (cache HTML for share pages only) | Round 4. Poems stay current with the renderer; no stale HTML as source of truth. |
+| D16 | 2026-07-12 | **Preview = full styled fidelity** (bundle Poetic's real CSS + page template) | Round 5. True WYSIWYG of the published page; exclude only site-chrome irrelevant to a lone poem. |
+| D17 | 2026-07-12 | **Media/song-handler embeds rendered best-effort in preview** (full players on the shared page) | Round 5. |
+| D18 | 2026-07-12 | **Signed-in users keep multiple saved poems + a simple "my poems" dashboard** | Round 5. |
 
 ---
 
@@ -110,15 +117,15 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 
 ### Round 3 — tech stack & hosting (SETTLED — see D9–D11)
 
-### Round 4 — MVP feature & UX detail (to ask next)
-1. **MVP feature list** — confirm concrete in/out scope for v1 (e.g. autosave,
-   try-before-signup / anonymous drafts, bundled example poems, syntax help).
-2. **Editor/preview UX** — split-pane vs toggle; live-as-you-type vs debounced;
-   depth of `.poem` syntax highlighting; inline error reporting.
-3. **Share semantics** — what a shared permalink shows (read-only rendered poem?
-   "fork to edit"?); public vs unlisted; ownership/visibility model.
-4. **Poem source of truth** — store raw `.poem` text and re-render, and/or store
-   derived YAML/HTML? Anonymous drafts (localStorage) before sign-up?
+### Round 4 — MVP feature & UX detail (SETTLED — see D12–D15)
+
+### Round 5 — remaining MVP scope (SETTLED — see D16–D18)
+
+### Next (not yet started)
+- **Implementation planning** — break the MVP (§7) into build milestones; the
+  poetic-side renderer extraction (a framework change) is the critical dependency.
+- **Optional further requirements** — Phase-2 publishing detail; per-feature
+  acceptance criteria / user stories; branding, domain, legal/privacy.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
@@ -142,3 +149,66 @@ Promoted into `CLAUDE.md` from this registry (2026-07-12):
   `poetic` (single source of truth); `.poem` changes belong upstream.
 - **Development approach**: cost-conscious model/agent selection; minimal-cost
   architecture.
+
+---
+
+## 7. MVP specification (draft)
+
+*Synthesis of decisions D1–D15. Items marked **[my call]** are expert defaults —
+override if you disagree. Items marked **[TBD R5]** await Round 5.*
+
+**Elevator:** A web page where anyone can write a `.poem` and instantly see its
+rendered HTML. Signed-in users can save poems and share them via unlisted links;
+viewers can "remix" a shared poem into their own new fiddle. Aimed at
+non-technical poets. No GitHub/Blogger publishing (later phase).
+
+**Roles**
+- *Anonymous visitor* — full editor + live preview; drafts kept in browser
+  localStorage. Prompted to sign in to save/share.
+- *Registered user* — the above, plus save, list, and share their poems.
+
+**Core flows**
+1. Edit `.poem` → debounced live preview (~200 ms) **[my call]**.
+2. Save (requires sign-in) → persists raw `.poem`; the localStorage draft migrates
+   into the account on first sign-in **[my call]**.
+3. Share → generate an unlisted permalink to a read-only SSR render.
+4. Remix → copy a shared poem into the viewer's own new editable fiddle.
+
+**Editor [my call unless noted]**
+- CodeMirror 6 with a `.poem` language mode. v1: structural highlighting
+  (`{sections}`, emphasis, variables, `/.ai{…}` spans, comments, `#hashtags`); a
+  full Lezer grammar can follow later.
+- Non-blocking parse-error indicator; on parse failure keep the last good preview.
+- Preview fidelity: **full styled fidelity** — bundle Poetic's real CSS + page
+  template so the preview matches the published page; exclude site-chrome
+  irrelevant to a lone poem (D16).
+- First-run and anonymous sessions load a friendly example `.poem` by default,
+  with a link to a `.poem` syntax cheatsheet.
+- Save is manual for signed-in users, with an "unsaved changes" indicator;
+  autosave is a later enhancement.
+
+**Rendering**
+- Shared browser-safe renderer imported from `poetic` (single source of truth),
+  used client-side (preview) and server-side (SSR share page + OG meta).
+- Media/song-handler embeds: rendered best-effort in the live preview; full
+  players on the shared page (D17).
+
+**Data model (draft) [my call]**
+- Auth/users via Supabase Auth.
+- `poems`: `id`, `owner_id`, `title` (derived from `.poem` header), `source_text`
+  (raw `.poem`), `visibility` (default `unlisted`), `share_id` (opaque),
+  `created_at`, `updated_at`. RLS: owner full CRUD; unlisted read via `share_id`.
+- Multiple saved poems per user, surfaced in a simple "my poems" list/dashboard
+  (D18).
+- Cache rendered HTML for share pages only (perf); never as the source of truth.
+
+**Explicitly out of scope for MVP**
+- GitHub Pages / Blogger publishing; connecting a user's GitHub.
+- Multi-poem collections and site-level config (favicon, subtitle, index/all-poems).
+- Real-time collaboration; public gallery/discovery.
+
+**Non-functional principles**
+- Mobile-first responsive; accessible (semantic HTML, keyboard, screen-reader
+  friendly) — poets may rely on assistive tech.
+- Minimal running cost (free tiers, in-browser compute); fast, snappy preview.
+- Privacy: unlisted-by-default; no unnecessary data collection.
