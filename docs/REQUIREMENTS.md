@@ -7,7 +7,9 @@
 > with minimal loss. Keep it current: when a decision is confirmed, move it from
 > "Open questions" to "Decisions log" with a date.
 
-**Status:** MVP (§7) + Phase-2a Fiddle-hosted publishing (§8.1) specified. Next: Phase-2b (GitHub) detail or tie-off (your call).
+**Status:** MVP (§7) + MVP acceptance criteria (§9) + Phase-2a Fiddle-hosted
+publishing (§8.1) specified. Next: Phase-2b (GitHub) detail, implementation
+planning, or tie-off (your call).
 **Last updated:** 2026-07-13
 
 ---
@@ -138,7 +140,8 @@ mechanism; Blogger scope.
 ### Later / parked
 - **Implementation planning** — break the MVP (§7) into build milestones; the
   poetic-side renderer extraction (a framework change) is the critical dependency.
-- Per-feature acceptance criteria / user stories; branding, domain, legal/privacy.
+- MVP acceptance criteria — **done, see §9**. Phase-2 acceptance criteria still
+  parked. Also still parked: user stories; branding, domain, legal/privacy.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
@@ -317,3 +320,147 @@ so hosted output matches Poetic exactly and equals the future GitHub-Pages outpu
 
 **Out of scope for 2a:** per-user subdomains and custom domains (Phase 3);
 connect-your-own-GitHub (2b); Blogger (Phase 3); multiple sites (Phase 3).
+
+---
+
+## 9. MVP acceptance criteria
+
+*Testable acceptance criteria derived from the MVP specification (§7,
+decisions D1–D18). Each criterion is written as Given/When/Then and tagged
+with the decision(s) it verifies, for traceability back to §4. Intended for
+scoping implementation tickets and QA sign-off — it complements, and does not
+replace, the narrative spec in §7.*
+
+### 9.1 Editor & live preview
+
+- **AC1** [D5, D9] — Given the editor page is open, when the user types or
+  pastes `.poem` text, then a live HTML preview updates automatically without
+  a page reload, rendered entirely in the browser (no server round-trip).
+- **AC2** — Given the user is actively typing, when fewer than ~200 ms have
+  elapsed since the last keystroke, then the preview does not yet re-render
+  (debounced); it updates once typing pauses.
+- **AC3** [D6] — Given a `.poem` document, when it is rendered, then the
+  output is produced by the renderer imported from the `poetic` repo (no
+  Fiddle-local copy of the parser/renderer).
+- **AC4** — Given the current `.poem` text contains a syntax error, when the
+  preview would re-render, then the editor shows a non-blocking error
+  indicator and the preview keeps showing the last successfully rendered
+  output (it does not blank out or crash).
+- **AC5** — Given a first-time visit or a fresh anonymous session with no
+  saved draft, when the editor loads, then it is pre-populated with a
+  friendly example `.poem`, and a link to a `.poem` syntax cheatsheet is
+  visible.
+- **AC6** [D9] — Given the editor, when `.poem` structural elements are
+  present (`{sections}`, `*emphasis*`/`**strong**`, variables, `/.ai{…}`
+  spans, comments, `#hashtags`), then they are visually distinguished via
+  syntax highlighting.
+
+### 9.2 Anonymous use & drafts
+
+- **AC7** [D12] — Given a visitor who is not signed in, when they use the
+  editor and preview, then both function fully with no sign-in prompt
+  required to edit or preview.
+- **AC8** [D12] — Given an anonymous visitor's in-progress `.poem`, when they
+  reload the page or close and reopen the tab in the same browser, then their
+  draft is restored from localStorage.
+- **AC9** [D12] — Given an anonymous visitor with a localStorage draft, when
+  they sign in for the first time, then the draft is migrated into their
+  account (not lost, not silently discarded).
+- **AC10** — Given an anonymous visitor attempts to Save or Share, when the
+  action requires an account, then they are prompted to sign in before the
+  action completes.
+
+### 9.3 Authentication
+
+- **AC11** [D8] — Given a visitor at the sign-in prompt, when they choose to
+  authenticate, then magic-link email and at least one social provider
+  (Google) are offered, alongside an email/password option.
+- **AC12** [D8, D10] — Given a user has successfully authenticated, when they
+  return to the editor, then they are recognised as signed in (session
+  persists across reloads) via Supabase Auth.
+
+### 9.4 Save
+
+- **AC13** [D1, D18] — Given a signed-in user with unsaved editor changes,
+  when they choose Save, then the raw `.poem` source text is persisted to the
+  database under their account.
+- **AC14** — Given a signed-in user with changes since the last save, when
+  those changes are pending, then an "unsaved changes" indicator is visible;
+  it clears once Save completes.
+- **AC15** [D18] — Given a signed-in user with more than one saved poem, when
+  they open their "my poems" list, then all of their saved poems are shown
+  (not just the most recent).
+- **AC16** [D15] — Given a saved poem, when it is reopened for editing, then
+  the raw `.poem` text is loaded and re-rendered on demand (there is no
+  separately-editable stored HTML).
+
+### 9.5 Share (permalink)
+
+- **AC17** [D14, D18] — Given a signed-in user with a saved poem, when they
+  choose Share, then an unlisted permalink is generated and the poem's
+  visibility defaults to `unlisted` (not publicly listed anywhere).
+- **AC18** [D14] — Given a valid share permalink, when anyone opens it,
+  signed in or not, then they see a read-only, server-rendered (SSR) view of
+  the poem, with no editor controls.
+- **AC19** [D15] — Given a shared poem is edited and re-saved by its owner,
+  when the permalink is subsequently opened, then it reflects the current
+  source — the share page is not a frozen snapshot, modulo any short-lived
+  render cache.
+
+### 9.6 Remix
+
+- **AC20** [D14] — Given a viewer on a shared permalink page, signed in or
+  anonymous, when they choose "Remix", then a new, independent copy of the
+  poem opens in the editor; once saved it is owned by the viewer and the
+  original owner's poem is unaffected.
+- **AC21** — Given an anonymous viewer remixes a shared poem, when they have
+  not yet signed in, then the remix behaves as any other anonymous draft
+  (AC7–AC10 apply): held in localStorage until they sign in and save.
+
+### 9.7 "My poems" dashboard
+
+- **AC22** [D18] — Given a signed-in user with zero saved poems, when they
+  open the dashboard, then it shows an empty state that guides them back to
+  the editor, not an error.
+- **AC23** [D18] — Given a signed-in user's dashboard, when a poem's title is
+  displayed, then it is derived from the `.poem` header (not a
+  separately-entered title field).
+
+### 9.8 Rendering fidelity & media
+
+- **AC24** [D16] — Given the live preview, when a poem renders, then it uses
+  Poetic's actual CSS and page template (not a simplified Fiddle-only style),
+  excluding only site-level chrome that doesn't apply to a single poem (e.g.
+  site nav, index links).
+- **AC25** [D17] — Given a poem containing a media/song-handler embed (MEGA,
+  Suno, Audiomack), when previewed in the editor, then a best-effort
+  representation is shown; when viewed on a shared permalink page, the full
+  player is shown.
+
+### 9.9 Non-functional
+
+- **AC26** [D13] — Given the app on a mobile-width viewport, when the editor
+  is open, then source and preview are presented as a toggle rather than a
+  fixed split pane; desktop uses split-pane.
+- **AC27** — Given any core page (editor, dashboard, share view), when
+  navigated via keyboard alone or inspected with a screen reader, then all
+  primary controls are reachable and labelled — no keyboard traps, no
+  unlabelled controls.
+- **AC28** [D3, D11] — Given normal MVP usage patterns, when the app is
+  hosted, then no paid infrastructure is required to run it (free-tier
+  hosting + DB is sufficient), consistent with the minimal-cost goal.
+- **AC29** — Given a new poem, when its visibility is not explicitly changed
+  by the user, then it defaults to `unlisted`, never publicly listed — there
+  is no publishing surface in the MVP at all (see 9.10).
+
+### 9.10 Non-goals (verify absent)
+
+*Confirms the explicitly-out-of-scope items from §7 have no MVP-facing
+surface — a negative checklist for QA sign-off.*
+
+- **AC30** — No UI exists for GitHub Pages / Blogger publishing, or for
+  connecting a user's GitHub account.
+- **AC31** — No UI exists for multi-poem collections or site-level config
+  (favicon, subtitle, index/all-poems aggregate pages).
+- **AC32** — No real-time multi-user collaboration (concurrent co-editing) or
+  public gallery/discovery surface exists.
