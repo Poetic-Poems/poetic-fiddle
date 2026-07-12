@@ -9,11 +9,54 @@ web application that talks to the poetic framework's output/format.
 
 ## Status
 
-The web app itself is not yet scaffolded. This repo currently carries only
-its governance and agent-working layer (branch/commit policy, tech-debt
-process, CI backstops). Build/lint/test tooling — `package.json`, an ESLint
-config, app build/test CI, and CodeQL's `javascript-typescript` scan — will
-be added once the app's stack is chosen.
+The app's stack is chosen (see "Architecture & stack" below) but not yet
+scaffolded. This repo currently carries its governance and agent-working layer
+(branch/commit policy, tech-debt process, CI backstops) plus a living
+requirements registry (`docs/REQUIREMENTS.md`). Build/lint/test tooling —
+`package.json`, an ESLint config, app build/test CI, and CodeQL's
+`javascript-typescript` scan — will be added when the app is scaffolded.
+
+Requirements gathering is ongoing; `docs/REQUIREMENTS.md` is the authoritative,
+living registry of decisions, rationale, and open questions.
+
+## Architecture & stack
+
+Poetic Fiddle is a web `.poem` editor with a real-time HTML preview. Confirmed
+choices (rationale and full decision log in `docs/REQUIREMENTS.md`):
+
+- **Language:** TypeScript.
+- **Framework:** Next.js (React), deployed to free-tier serverless hosting
+  (Vercel by default; Cloudflare/Netlify are options).
+- **Editor:** CodeMirror 6 with a custom `.poem` language mode.
+- **Backend / Auth / DB:** Supabase — Postgres, Auth (magic link, Google,
+  email/password), and storage, with row-level security.
+- **Rendering:** the `.poem` → HTML render runs **in the browser** for the live
+  preview; the same renderer can run server-side to SSR a shared poem's public
+  page.
+
+MVP scope: a single-poem editor + live preview + accounts + database-backed
+save/share (permalinks), aimed at non-technical poets. Publishing to GitHub
+Pages / Blogger is a later phase.
+
+## Relationship to the Poetic framework
+
+Poetic Fiddle *consumes* the Poetic framework's `.poem` format and renderer, but
+is not a poem-collection repo — it does not use `sync-framework.sh` or track a
+`.poetic-version`.
+
+- **Single source of truth.** Fiddle renders poems with a browser-safe renderer
+  **exported by the `poetic` repo**, not a copy. Do not fork or re-implement the
+  `.poem` parser/renderer in this repo — changes to `.poem` syntax or rendering
+  belong upstream in `poetic` and reach Fiddle through that shared module. (The
+  packaging/versioning mechanism for that module is still to be decided.)
+
+## Development approach
+
+Be cost-conscious: prefer the cheapest model or agent likely to complete a task
+correctly on the first attempt, and delegate well-scoped work to lower-cost
+subagents where appropriate. Favour a minimal-cost architecture — static/edge
+hosting, in-browser compute, free managed tiers — and add paid infrastructure
+only when a capability genuinely requires it.
 
 ## Branch workflow
 
@@ -99,6 +142,7 @@ via `scripts/get-tech-debt-record.pl` and dispatching it to a subagent.
 | File | Contents |
 |------|----------|
 | `README.md` | Project overview |
+| `docs/REQUIREMENTS.md` | Requirements registry / decision log (living) |
 | `SECURITY.md` | Vulnerability reporting, CodeQL scanning |
 | `TECH-DEBT.md` | Deferred work register |
 | `CHANGELOG.md` | Notable changes, Keep a Changelog format |
