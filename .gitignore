@@ -77,6 +77,16 @@ web_modules/
 # Next.js build output
 .next
 out
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# macOS Finder metadata
+.DS_Store
+
+# TLS/SSH key material
+*.pem
 
 # Nuxt.js build / generate output
 .nuxt
