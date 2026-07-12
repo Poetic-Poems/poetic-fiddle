@@ -10,8 +10,9 @@
 **Status:** MVP (§7) + MVP acceptance criteria (§9) + Phase-2a Fiddle-hosted
 publishing (§8.1) + Phase-2a acceptance criteria (§10) + Phase-2b
 connect-your-own-GitHub (§8.2) + Phase-2b acceptance criteria (§11) +
-cross-cutting non-functional requirements (§12) specified.
-Next: implementation planning, user stories, or tie-off (your call).
+cross-cutting non-functional requirements (§12) + branding (§13) + domain
+(§14) + legal/privacy (§15) specified.
+Next: user stories or implementation planning (your call).
 **Last updated:** 2026-07-13
 
 ---
@@ -111,7 +112,7 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 | D11 | 2026-07-12 | **Hosting = free-tier serverless** (Vercel default for Next.js; Cloudflare/Netlify options) | Round 3. Near-zero cost; serverless room for SSR + Phase-2 APIs. |
 | D12 | 2026-07-12 | **Anonymous editing + preview; sign-in only to save/share** | Round 4. Client-side render makes anonymous use free; drafts held in localStorage, migrated on sign-up. |
 | D13 | 2026-07-12 | **Layout: split-pane on desktop, source/preview toggle on mobile** | Round 4. |
-| D14 | 2026-07-12 | **Shared permalink = read-only SSR render + "Remix to edit"; unlisted by default** | Round 4. Remix copies the poem into the viewer's own new fiddle. |
+| D14 | 2026-07-12 | **Shared permalink = read-only SSR render + "Remix to edit"; unlisted by default** | Round 4. Remix copies the poem into the viewer's own new fiddle. (Remix later made opt-in, off by default — see D38.) |
 | D15 | 2026-07-12 | **Canonical stored source = raw `.poem` text; render on demand** (cache HTML for share pages only) | Round 4. Poems stay current with the renderer; no stale HTML as source of truth. |
 | D16 | 2026-07-12 | **Preview = full styled fidelity** (bundle Poetic's real CSS + page template) | Round 5. True WYSIWYG of the published page; exclude only site-chrome irrelevant to a lone poem. |
 | D17 | 2026-07-12 | **Media/song-handler embeds rendered best-effort in preview** (full players on the shared page) | Round 5. |
@@ -128,6 +129,17 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 | D28 | 2026-07-13 | **Fiddle scaffolds a real poetic-consumer repo** (`.poem` + `.poetic-config.yaml`), built by Poetic's own Actions + Pages — not pushed pre-built HTML | Phase-2 R3. Fiddle is an authoring front-end; keeps `.poem` as single source of truth (cf. D6/D15); no duplicated build. |
 | D29 | 2026-07-13 | **Repo naming = a project repo, default `poems`** → Pages at `https://<user>.github.io/<repo>/`; renameable | Phase-2 R3. Won't collide with an existing user site; safe default for non-technical poets. |
 | D30 | 2026-07-13 | **2a and 2b are either/or per site, switchable** (one active publish target at a time; connecting GitHub migrates the site there, reversibly) | Phase-2 R3. No double-maintenance; leans on the no-lock-in design (raw `.poem` retained regardless). |
+| D31 | 2026-07-13 | **Branding = sibling sub-brand of Poetic** — shares Poetic's purple `#534AB7`; palette adds a warm amber accent `~#C88A3A` (violin wood) | Branding R1. Fiddle visibly belongs to the Poetic family (framework ↔ "Fiddle" ↔ song lyrics). See §13. |
+| D32 | 2026-07-13 | **Logo = the Poetic nib re-posed as a violin** — flipped upright to stand as the body (lightly waisted), with a stylised neck + pegbox; the nib's vent hole + slit are preserved as cut-outs; single purple; authored in-house in Inkscape, not commissioned | Branding R1. Close derivation from the nib. Stylised (no detailed scroll). Canonical asset `public/poetic-fiddle-logo.svg`. Needs a lighter-on-dark variant. |
+| D33 | 2026-07-13 | **Name "Poetic Fiddle"; voice = warm & literary** (serif/humanist wordmark; hides technical machinery) | Branding R1. Matches non-technical poets (D2) + written-art framing. |
+| D34 | 2026-07-13 | **Domain = dedicated `poeticfiddle.com`** (own domain, not a subdomain) | Domain R1. `.com` cheapest/stable + default recall; `.ink`/`.nz`/`.art` considered. Permalink-permanent once shared; auth mail needs SPF/DKIM/DMARC. See §14. |
+| D35 | 2026-07-13 | **Operator / data controller = W W Initiatives Limited** (NZ); NZ Privacy Act 2020 base, GDPR/UK-GDPR-ready; code open-sourced under Poetic-Poems (separate axis) | Legal R1. A named legal operator is required by privacy law; open code and a legal operator both hold. See §15. |
+| D36 | 2026-07-13 | **Legal docs = Terms of Service + Privacy Policy + Acceptable-Use Policy**; governing law NZ | Legal R1 ([my call] on venue). |
+| D37 | 2026-07-13 | **Content rights = poets retain copyright; Fiddle takes a limited operational licence only** (store/render/display/cache/back-up/serve; ends on deletion) | Legal R1. No ownership claim; no promotional use without separate consent. |
+| D38 | 2026-07-13 | **Remix disabled by default** — a global per-poet switch (off) + a per-poem override | Legal R1. Artists are protective; **amends D14, AC20–AC21**. Data model: user `remix_default` (false) + poem nullable `allow_remix`. |
+| D39 | 2026-07-13 | **Minimum account age = 16** | Legal R1. Single threshold satisfies GDPR's strictest child-consent age without per-country logic. |
+| D40 | 2026-07-13 | **Moderation = short Acceptable-Use Policy + email takedown, actioned manually** | Legal R1. Right-sized for a small non-commercial op; removal propagates to all surfaces (AC92). |
+| D41 | 2026-07-13 | **Privacy posture = data minimisation, no third-party analytics, essential/auth cookies only (no consent banner), sub-processor disclosure, deletion+export, NZ notifiable-breach compliance** | Legal R1. Consolidates AC90–AC92, AC103 with [my call] defaults. |
 
 ---
 
@@ -152,8 +164,9 @@ i18n, and offline posture — consolidated across all phases.
 - **Implementation planning** — break the MVP (§7) into build milestones; the
   poetic-side renderer extraction (a framework change) is the critical dependency.
 - MVP acceptance criteria — **done, see §9**. Phase-2a acceptance criteria —
-  **done, see §10**. Phase-2b acceptance criteria — **done, see §11**. Still
-  parked: user stories; branding, domain, legal/privacy.
+  **done, see §10**. Phase-2b acceptance criteria — **done, see §11**. Branding
+  — **done, see §13**. Domain — **done, see §14**. Legal/privacy — **done, see
+  §15**. Still parked: user stories.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
@@ -489,13 +502,16 @@ replace, the narrative spec in §7.*
 
 ### 9.6 Remix
 
-- **AC20** [D14] — Given a viewer on a shared permalink page, signed in or
-  anonymous, when they choose "Remix", then a new, independent copy of the
-  poem opens in the editor; once saved it is owned by the viewer and the
-  original owner's poem is unaffected.
-- **AC21** — Given an anonymous viewer remixes a shared poem, when they have
-  not yet signed in, then the remix behaves as any other anonymous draft
-  (AC7–AC10 apply): held in localStorage until they sign in and save.
+- **AC20** [D14, D38] — Given a viewer on a shared permalink page **whose owner
+  has enabled remixing** (globally or per-poem), signed in or anonymous, when
+  they choose "Remix", then a new, independent copy of the poem opens in the
+  editor; once saved it is owned by the viewer and the original owner's poem is
+  unaffected. When remixing is not enabled (the default), no Remix action is
+  offered (see AC113–AC114).
+- **AC21** [D38] — Given an anonymous viewer remixes a shared poem **for which
+  remixing is enabled**, when they have not yet signed in, then the remix
+  behaves as any other anonymous draft (AC7–AC10 apply): held in localStorage
+  until they sign in and save.
 
 ### 9.7 "My poems" dashboard
 
@@ -891,3 +907,199 @@ headline security requirement.
   (AC97); poem *content* internationalisation (AC96) is in scope, UI l10n is not.
 - **AC103** — No third-party analytics/tracking or non-disclosed data collection
   (AC91).
+
+---
+
+## 13. Branding
+
+*Synthesis of D31–D33. **[my call]** = expert default, override if you disagree.
+An initial violin mark has been sketched from Poetic's nib as a working
+prototype; final artwork is refined in Inkscape when the app is scaffolded.*
+
+**Identity & relationship to Poetic (D31).** Poetic Fiddle is a **sibling
+sub-brand** of the Poetic framework, not an independent identity. It shares
+Poetic's primary purple **`#534AB7`** and derives its logo directly from
+Poetic's fountain-pen-nib mark, so Fiddle visibly belongs to the Poetic family.
+The mark deliberately carries three linked readings: the **Poetic framework**
+(the nib), the **"Fiddle"** in the name (a violin), and **song lyrics** as a
+form of poem (the fiddle/violin).
+
+**Logo mark (D32).** A **stylised violin** derived from Poetic's nib mark
+(`poetic/public/poetic-logo.svg`): the nib is **flipped upright to stand as the
+violin body** (lightly reshaped to give it a waist) and topped with a **stylised
+neck + pegbox** (no detailed scroll). The nib's **vent hole and slit are
+preserved as cut-outs** (visible on coloured/dark surfaces), keeping the lineage
+to Poetic explicit. The whole mark is a **single purple**. Authored **in-house in
+Inkscape** from the nib source (**ImageMagick** for rasterising favicon/PNG
+fallbacks); not commissioned and not machine-generated. Canonical asset:
+**`public/poetic-fiddle-logo.svg`**. A **lighter-on-dark variant** is still
+needed for dark surfaces (AC106).
+
+**Palette (D31/D33).** Primary **`#534AB7`** (Poetic purple) + a warm **amber
+accent `~#C88A3A`** (violin wood) that warms the cool purple and reads as
+hand-crafted. The mid purple is low-contrast on dark backgrounds, so the asset
+set **must include a lighter-on-dark variant** of the mark, and Fiddle's own
+chrome must still meet the AA contrast baseline (AC76) in both light and dark.
+
+**Name & voice (D33).** Public brand name is **"Poetic Fiddle"**. Voice is
+**warm and literary** — encouraging and human, a little lyrical, never
+technical-sounding — matching the non-technical-poet audience (D2) and the
+written-art framing. Wordmark direction: **serif/humanist**. UI copy hides the
+technical machinery and speaks to poets, not developers.
+
+**Assets to produce (at scaffolding) [my call]:** primary mark (SVG, light +
+dark variants); favicon (SVG + 32/16 px PNG fallbacks, cf. the nib's favicon
+note); wordmark/lockup; and the app's own `.poetic-config` favicon used on
+hosted `/@handle` sites.
+
+### 13.1 Acceptance criteria (branding)
+
+- **AC104** [D31] — Given any Fiddle surface, when brand colours are applied,
+  then the primary colour is Poetic's `#534AB7` and the identity reads as part
+  of the Poetic family (shared mark lineage), not an unrelated brand.
+- **AC105** [D32] — Given the logo, when it is inspected, then it is a
+  violin/fiddle formed from **Poetic's nib mark rotated into a violin body**
+  (not stock/clip-art), preserving the nib's vent hole and slit as cut-outs.
+- **AC106** [D33] — Given the mark on a dark background, when displayed, then a
+  light-on-dark variant is used so it meets the AA contrast baseline (AC76).
+- **AC107** [D33, my call] — Given user-facing copy, when written, then it uses
+  the warm/literary voice and avoids exposing technical machinery to the poet
+  (cf. D2).
+
+---
+
+## 14. Domain
+
+*Synthesis of D34.*
+
+**Primary domain (D34).** Poetic Fiddle is served from a **dedicated domain,
+`poeticfiddle.com`**, chosen because it is the cheapest/most stable at renewal
+and because non-technical visitors default to typing `.com` (protecting
+word-of-mouth recall). Alternatives considered and rejected for now: **`.ink`**
+(the aesthetic favourite — a pen-nib nod — but typically pricier at renewal),
+**`.nz`**, **`.art`**. The name `poeticfiddle` was unregistered on every
+candidate TLD at planning time; registrability is confirmed at the registrar
+before purchase.
+
+**Consequences to design for:**
+- **Permalink permanence.** Share links (D14) and every `/@handle` site (D23)
+  embed this domain; once poems are shared the domain is **effectively
+  permanent**. A later domain change requires a permanent redirect from the old
+  domain to avoid breaking public links.
+- **Auth-email deliverability.** Magic-link/password auth (D8/D10) sends email;
+  the sending domain needs **SPF/DKIM/DMARC** configured (or auth mail is routed
+  through the provider's authenticated sending domain).
+- **Single-brand surface.** The `/@handle` model (D23) means poets' public sites
+  live as **paths under the Fiddle domain** (`poeticfiddle.com/@handle`);
+  per-user subdomains / custom domains remain Phase 3 (AC48).
+
+### 14.1 Acceptance criteria (domain)
+
+- **AC108** [D34, D23, AC89] — Given the app and all `/@handle` sites, when their
+  canonical URLs are formed, then they resolve under the single primary domain
+  `poeticfiddle.com` over HTTPS.
+- **AC109** [D8, D10] — Given auth email, when it is sent, then it originates
+  from an authenticated sending domain (SPF/DKIM/DMARC aligned) so magic links
+  are deliverable.
+
+---
+
+## 15. Legal & privacy
+
+*Synthesis of D35–D41, consolidating the privacy criteria already in §12
+(AC90–AC92, AC103). **[my call]** = expert default, override if you disagree.
+**Not legal advice** — confirm the operator/controller framing and the document
+wording with a professional before launch.*
+
+**Operator / data controller (D35).** The running service is operated by **W W
+Initiatives Limited** (a New Zealand company; "Datum Process" is a trading name
+of the same company), which is the **data controller / "agency"**. The
+compliance baseline is the **NZ Privacy Act 2020**, with documents written to
+also satisfy **GDPR / UK-GDPR** because poets may be anywhere. This is distinct
+from the **code licence**: the source is **open-sourced under the Poetic-Poems
+org** — open code and a named legal operator are independent axes and both hold.
+
+**Legal documents (D36).** Three published, linked documents: **Terms of
+Service**, **Privacy Policy**, and an **Acceptable-Use Policy**. Governing law
+and venue: **New Zealand** [my call].
+
+**Content ownership & licence (D37).** Poets **retain full copyright** in their
+poems. By using Fiddle they grant only a **limited operational licence** — to
+store, render, display, cache, back up and (where the poet publishes or shares)
+serve their `.poem` content — for the sole purpose of running the service; the
+licence ends when the content is deleted (cf. AC92). Fiddle claims **no
+ownership** and does not use poems for promotion without separate consent.
+
+**Remix permission (D38 — amends D14, AC20–AC21).** Remixing is **disabled by
+default**. Each poet has a **global remix switch (default off)** plus a
+**per-poem override**, because artists are often protective of their work. A
+shared poem is remixable only when its owner has enabled remixing (globally or
+on that poem); otherwise the share page offers read-only viewing with no Remix
+action. Data-model addition [my call]: a user-level **`remix_default`** (default
+`false`) and a per-poem nullable **`allow_remix`** override on `poems`.
+
+**Minimum age (D39).** Accounts require users to be **16 or older** — a single
+threshold that satisfies GDPR's strictest child-consent age without per-country
+logic.
+
+**Content moderation / takedown (D40).** A short **Acceptable-Use Policy** (no
+unlawful, infringing or abusive content) plus a **published takedown
+email** actioned manually — right-sized for a small, non-commercial operation.
+Removal takes content off **every** surface (dashboard, share link, published
+site), consistent with AC92.
+
+**Privacy posture (D41 — consolidates AC90–AC92, AC103 with [my call]
+defaults):**
+- **Data minimisation (AC91):** collect only account identity (email), poem
+  source, and site config; **no third-party analytics/tracking** (AC103).
+- **Cookies [my call]:** only **essential/authentication** cookies (the Supabase
+  Auth session) — no advertising/analytics cookies — so **no consent banner** is
+  required under ePrivacy's essential-cookie exemption.
+- **Sub-processors [my call]** (disclosed in the Privacy Policy): **Supabase**
+  (Postgres/Auth/storage), the **hosting provider** (Vercel/Cloudflare/Netlify),
+  the **transactional-email provider**, and **Google** (as an optional sign-in
+  provider). The Supabase project **region** is chosen deliberately for
+  data-residency and disclosed.
+- **User rights (AC92):** signed-in users can delete individual poems, delete
+  their whole account, and export their raw `.poem` source; deletion propagates
+  to all surfaces.
+- **Default privacy (AC90):** poems default to the most private applicable
+  state; nothing becomes public without an explicit publish action.
+- **Breach handling [my call]:** comply with the **NZ Privacy Act 2020
+  notifiable-privacy-breach scheme** (notify the Privacy Commissioner and
+  affected individuals where a breach is likely to cause serious harm).
+- **Security** is already specified in §12.4 (AC85–AC89): safe rendering of
+  untrusted poems, row-level security, secrets never shipped to the client,
+  HTTPS.
+
+### 15.1 Acceptance criteria (legal & privacy)
+
+- **AC110** [D35] — Given the Privacy Policy and ToS, when the operator is
+  identified, then they name **W W Initiatives Limited** (NZ) as the controller,
+  with the NZ Privacy Act 2020 as the stated baseline and GDPR/UK-GDPR
+  accommodated.
+- **AC111** [D36] — Given the app, when a user looks for legal terms, then a
+  Terms of Service, a Privacy Policy, and an Acceptable-Use Policy are published
+  and linked.
+- **AC112** [D37] — Given a poet's content, when the ToS describes rights, then
+  the poet retains copyright and grants only a limited operational licence that
+  ends on deletion; Fiddle claims no ownership.
+- **AC113** [D38] — Given a shared poem whose owner has **not** enabled remixing
+  (global switch off and no per-poem override), when it is viewed, then the share
+  page shows **no Remix action**; when remixing is enabled, Remix produces an
+  independent copy (cf. AC20).
+- **AC114** [D38] — Given a poet's account, when they set the global remix switch
+  or a per-poem override, then that setting governs whether each poem may be
+  remixed, **defaulting to off**.
+- **AC115** [D39] — Given account sign-up, when age is gated, then the service
+  states a **minimum age of 16** and does not knowingly create accounts for
+  under-16s.
+- **AC116** [D40] — Given infringing or abusive content, when a valid takedown
+  request is received at the published address, then the content can be removed
+  from **every** surface (dashboard, share link, site).
+- **AC117** [D41, AC103] — Given normal operation, when the app runs, then it
+  sets only essential/auth cookies, uses no third-party analytics, and discloses
+  its sub-processors in the Privacy Policy.
+- **AC118** [D41] — Given a notifiable privacy breach, when one occurs, then it
+  is handled per the NZ Privacy Act 2020 scheme (Privacy Commissioner + affected-
+  individual notification where serious harm is likely).
