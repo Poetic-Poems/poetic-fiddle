@@ -11,8 +11,9 @@
 publishing (§8.1) + Phase-2a acceptance criteria (§10) + Phase-2b
 connect-your-own-GitHub (§8.2) + Phase-2b acceptance criteria (§11) +
 cross-cutting non-functional requirements (§12) + branding (§13) + domain
-(§14) + legal/privacy (§15) specified.
-Next: user stories or implementation planning (your call).
+(§14) + legal/privacy (§15) + user stories & personas (§16) specified.
+Next: implementation planning (your call) — the requirements registry is
+otherwise feature-complete.
 **Last updated:** 2026-07-13
 
 ---
@@ -166,7 +167,7 @@ i18n, and offline posture — consolidated across all phases.
 - MVP acceptance criteria — **done, see §9**. Phase-2a acceptance criteria —
   **done, see §10**. Phase-2b acceptance criteria — **done, see §11**. Branding
   — **done, see §13**. Domain — **done, see §14**. Legal/privacy — **done, see
-  §15**. Still parked: user stories.
+  §15**. User stories & personas — **done, see §16**.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
@@ -1103,3 +1104,126 @@ defaults):**
 - **AC118** [D41] — Given a notifiable privacy breach, when one occurs, then it
   is handled per the NZ Privacy Act 2020 scheme (Privacy Commissioner + affected-
   individual notification where serious harm is likely).
+
+---
+
+## 16. User stories & personas
+
+*A narrative lens over §4–§15, not a new decision round: personas ground the
+"non-technical poets" primary audience (D2) in concrete people, and the user
+stories re-tell the already-settled scope (§7, §8.1, §8.2) as first-person
+goals. Every story is tagged with the persona(s) it belongs to and the
+acceptance criteria (§9–§12) that make it testable — no new scope or criteria
+are introduced here.*
+
+### 16.1 Personas
+
+**P1 — Anonymous visitor ("just trying it out").**
+Anyone who lands on Fiddle with no account — via a search result, a shared
+permalink, or word of mouth. No technical comfort assumed. Goal: see what
+Fiddle does with zero commitment, and write or paste a poem to watch it
+render. Converts to **P2** the moment they sign in to save or share.
+
+**P2 — Non-technical poet (primary persona, D2).**
+A hobbyist or semi-serious poet or songwriter who writes for themselves,
+friends, family, or a small following — no coding background, may never have
+used GitHub, Markdown, or YAML. Wants the editor to feel like a word
+processor, not a developer tool. Goals: write comfortably, keep work safe
+(save), show a poem to someone (share), and — later — have "my own little
+page" for their poems without learning GitHub (Phase 2a). Protective of their
+work by default (unlisted shares, remix off — D38).
+
+**P3 — Advanced / technically-comfortable poet (Phase 2b).**
+A poet who is also comfortable with GitHub — perhaps already runs a personal
+site, or wants full ownership and portability of their published output.
+Comfortable installing a GitHub App and understanding "this creates a repo in
+my account." Not a separate account tier: the same person may start as **P2**
+and grow into **P3** behaviour simply by connecting GitHub, and can switch
+back at will (D30).
+
+**P4 — Reader / viewer (non-account).**
+The recipient of a shared permalink, or a visitor to a poet's published
+site — a friend, family member, or audience member. Almost never signs up; no
+editing surface is shown to them. Goals: read the poem comfortably (including
+on mobile and with assistive tech), and optionally remix it into their own
+fiddle if the poet has allowed that (D38).
+
+### 16.2 User stories
+
+**MVP**
+
+- **US1** [P1 · AC1, AC5, AC7] — As an anonymous visitor, I want to open
+  Fiddle and immediately see an example poem rendering live, so that I
+  understand what it does before I write anything myself.
+- **US2** [P1 · AC8] — As an anonymous visitor, I want my in-progress poem to
+  still be there if I accidentally close the tab, so that I don't lose work I
+  haven't saved anywhere yet.
+- **US3** [P2 · AC11, AC12] — As a non-technical poet, I want to sign in with
+  a magic link or Google instead of inventing a password, so that creating an
+  account isn't a chore.
+- **US4** [P1→P2 · AC9] — As a visitor who's been drafting anonymously, I
+  want my draft to carry over automatically when I finally sign in, so that
+  trying Fiddle before committing doesn't cost me the poem I already wrote.
+- **US5** [P2 · AC13, AC14] — As a signed-in poet, I want a clear Save action
+  and an "unsaved changes" indicator, so that I always know whether my latest
+  edits are safe.
+- **US6** [P2 · AC15, AC22, AC23] — As a signed-in poet with several poems, I
+  want a simple list of everything I've saved, so that I can find and reopen
+  any of them.
+- **US7** [P2 · AC17, AC18] — As a signed-in poet, I want to send someone a
+  link to one poem without making it public to the world, so that I can share
+  selectively (a family group chat, not a search engine).
+- **US8** [P4 · AC18, AC24] — As a reader following a shared link, I want to
+  see the poem exactly as the poet intended — proper styling, no editor
+  chrome — so that reading it feels like reading a finished piece, not a
+  work-in-progress.
+- **US9** [P4 · AC20, AC21, AC113] — As a reader who loves a shared poem, I
+  want to remix it into my own fiddle when the poet has allowed that, so that
+  I can riff on it without asking them to send me the source text by another
+  channel.
+- **US10** [P2 · AC4] — As a poet who isn't a programmer, I want a typo in my
+  `.poem` syntax to show a gentle warning rather than break the preview, so
+  that one mistake doesn't feel like I've broken the app.
+
+**Phase 2a — Fiddle-hosted publishing**
+
+- **US11** [P2 · AC33, AC34] — As a non-technical poet ready to go public, I
+  want to pick a simple web address for my poems, so that I can tell people
+  "read my poems at poeticfiddle.com/@myname" without touching a hosting
+  provider.
+- **US12** [P2 · AC36, AC37] — As a publishing poet, I want a single toggle
+  per poem to put it on my public site or take it down, so that publishing
+  feels as easy as flipping a switch, not running a deploy.
+- **US13** [P2 · AC44, AC45] — As a publishing poet, I want to set my site's
+  title, subtitle, author name, and favicon from a form, so that I never have
+  to write or understand a config file.
+- **US14** [P2 · AC40] — As a publishing poet, I want poems I haven't
+  published to stay completely invisible on my public site, so that drafts
+  and private shares never leak to my audience by accident.
+
+**Phase 2b — connect-your-own-GitHub**
+
+- **US15** [P3 · AC52, AC53] — As a technically-comfortable poet, I want to
+  connect my own GitHub account with narrow, specific permissions, so that I
+  get full ownership of my published site without handing Fiddle broad access
+  to my account.
+- **US16** [P3 · AC55, AC57] — As a self-hosting poet, I want Fiddle to set
+  up a real, working poetic repo for me with sensible defaults, so that I get
+  a working GitHub Pages site without hand-building one myself.
+- **US17** [P3 · AC62, AC63] — As a poet who's connected GitHub, I want the
+  option to switch back to Fiddle-hosted publishing if owning a repo turns
+  out to be more than I wanted, so that trying the advanced path isn't a
+  one-way door.
+- **US18** [P3 · AC54] — As a poet who's connected GitHub, I want to revoke
+  Fiddle's access at any time and keep my repo exactly as it is, so that
+  disconnecting doesn't threaten the site I've already built.
+
+**Cross-cutting**
+
+- **US19** [P2, P3, P4 · AC74–AC79] — As a poet or reader using assistive
+  technology, I want every core page to be fully operable by keyboard and
+  screen reader, so that Fiddle doesn't quietly exclude me.
+- **US20** [P2 · AC85, AC87, AC90] — As a poet sharing my work, I want
+  confidence that other people's poems can't inject anything malicious into a
+  page I'm viewing, and that my own drafts stay private by default, so that I
+  can trust the platform with things I've written.
