@@ -8,8 +8,9 @@
 > "Open questions" to "Decisions log" with a date.
 
 **Status:** MVP (§7) + MVP acceptance criteria (§9) + Phase-2a Fiddle-hosted
-publishing (§8.1) + Phase-2a acceptance criteria (§10) specified. Next:
-Phase-2b (GitHub) detail, implementation planning, or tie-off (your call).
+publishing (§8.1) + Phase-2a acceptance criteria (§10) + Phase-2b
+connect-your-own-GitHub (§8.2) + Phase-2b acceptance criteria (§11) specified.
+Next: implementation planning, or tie-off (your call).
 **Last updated:** 2026-07-13
 
 ---
@@ -122,6 +123,10 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 | D24 | 2026-07-13 | **Per-poem "publish to site" toggle** decides site contents | Phase-2 R2. Preserves draft privacy; drives the poem visibility model (draft/unlisted/published). |
 | D25 | 2026-07-13 | **Fiddle-hosted site mirrors Poetic** (index + all-poems + per-poem pages) | Phase-2 R2. Full fidelity; identical to the future GitHub path. Expands renderer extraction to include the aggregates. |
 | D26 | 2026-07-13 | **Managed config UI exposes a friendly subset** (title, subtitle, author, favicon) | Phase-2 R2. Full `.poetic-config` parity deferred. |
+| D27 | 2026-07-13 | **Phase-2b GitHub auth = a GitHub App** (fine-grained per-repo permissions, higher rate limits, individually revocable) | Phase-2 R3. Better security than a broad OAuth token or user-pasted PAT for writing to users' repos. |
+| D28 | 2026-07-13 | **Fiddle scaffolds a real poetic-consumer repo** (`.poem` + `.poetic-config.yaml`), built by Poetic's own Actions + Pages — not pushed pre-built HTML | Phase-2 R3. Fiddle is an authoring front-end; keeps `.poem` as single source of truth (cf. D6/D15); no duplicated build. |
+| D29 | 2026-07-13 | **Repo naming = a project repo, default `poems`** → Pages at `https://<user>.github.io/<repo>/`; renameable | Phase-2 R3. Won't collide with an existing user site; safe default for non-technical poets. |
+| D30 | 2026-07-13 | **2a and 2b are either/or per site, switchable** (one active publish target at a time; connecting GitHub migrates the site there, reversibly) | Phase-2 R3. No double-maintenance; leans on the no-lock-in design (raw `.poem` retained regardless). |
 
 ---
 
@@ -141,9 +146,8 @@ mechanism; Blogger scope.
 - **Implementation planning** — break the MVP (§7) into build milestones; the
   poetic-side renderer extraction (a framework change) is the critical dependency.
 - MVP acceptance criteria — **done, see §9**. Phase-2a acceptance criteria —
-  **done, see §10**. Phase-2b acceptance criteria still parked, pending Phase-2b
-  detail (round 3, §8). Also still parked: user stories; branding, domain,
-  legal/privacy.
+  **done, see §10**. Phase-2b acceptance criteria — **done, see §11**. Still
+  parked: user stories; branding, domain, legal/privacy.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
@@ -279,15 +283,16 @@ Fiddle-hosted first; one site per user; dynamic SSR from the DB; Blogger → Pha
 
 ### Phase 2, round 2 — Fiddle-hosted detail (SETTLED — see D23–D26; spec in §8.1)
 
-### Phase 2, round 3 — connect-your-own-GitHub (2b) (not yet asked)
-GitHub App vs OAuth; create a real poetic repo vs push built output; config sync;
-repo naming; users with an existing repo. High-level approach already recommended
-in §8 (GitHub App + real poetic repo).
+### Phase 2, round 3 — connect-your-own-GitHub (2b) (SETTLED — see D27–D30; spec in §8.2)
+GitHub App auth; scaffold a real poetic repo (not built HTML); project repo named
+`poems`; 2a/2b either/or and switchable. Acceptance criteria in §11.
 
 ### Parked Phase-2 details (for later rounds)
 - Visibility model unification: private draft / unlisted link / published-to-site.
-- Phase 2b (GitHub): App permission scopes; repo naming; users who already have a repo.
+- Phase 2b (GitHub): adopting a user's **pre-existing** repo; exact GitHub-App
+  repo-creation API path; two-way sync (both deferred — see §8.2).
 - Blogger connection/token storage; template mapping (Phase 3).
+- Framework-version management for connected repos (Phase 3).
 
 ### 8.1 Phase 2a specification (Fiddle-hosted publishing) — draft
 
@@ -322,6 +327,72 @@ so hosted output matches Poetic exactly and equals the future GitHub-Pages outpu
 
 **Out of scope for 2a:** per-user subdomains and custom domains (Phase 3);
 connect-your-own-GitHub (2b); Blogger (Phase 3); multiple sites (Phase 3).
+
+### 8.2 Phase 2b specification (connect-your-own-GitHub) — draft
+
+*Synthesis of D27–D30 (plus D4 "offer both" and D6/D15 single-source-of-truth).
+**[my call]** = expert default, override if you disagree.*
+
+**What it delivers:** an advanced user connects their own GitHub account, and
+Fiddle provisions and maintains a **genuine poetic-consumer repo** in it that
+builds and deploys via **Poetic's own GitHub Actions + Pages**. Fiddle is the
+authoring front-end; the raw `.poem` source stays canonical. This is the
+"connect-your-own-GitHub" half of D4's "offer both".
+
+**Auth (D27):** connection is via **Fiddle's GitHub App**, installed/authorised by
+the user — not a broad OAuth token or a pasted PAT. Fiddle requests only the
+fine-grained permissions it needs:
+- *Repository contents* (read/write) — write `.poem` files + `.poetic-config.yaml`.
+- *Pages* — enable/configure GitHub Pages.
+- *Workflows* — ensure Poetic's Actions workflow is present.
+- *Repository creation* (account-level) — create the repo on first publish.
+- *Metadata* (read, mandatory).
+
+Disconnecting/uninstalling the App stops all syncing and leaves the repo intact
+(no lock-in).
+
+**Repo model (D28, D29):** on first publish Fiddle creates a project repo (default
+name **`poems`**, renameable) from the poetic template, writes the user's
+**published** `.poem` files + a generated `.poetic-config.yaml`, and relies on
+Poetic's in-repo Actions to build + deploy. Public site URL =
+`https://<user>.github.io/<repo>/`. If the default name collides with an existing
+repo, Fiddle prompts rather than overwriting **[my call]**. Adopting a
+*pre-existing* poetic repo the user already has is deferred (a later enhancement)
+**[my call]** — the "ask per publish" flow was not chosen.
+
+**Sync direction [my call]:** **one-way, Fiddle → GitHub.** Fiddle is the authoring
+surface and source of truth; changes made directly on GitHub are not read back
+(two-way sync deferred). Only **published** poems are written to the public repo;
+`draft`/`unlisted` poems are never pushed — preserving the 2a visibility model.
+
+**Config sync (D28, cf. D26):** the managed site-config UI (title, subtitle,
+author, favicon) generates the repo's `.poetic-config.yaml`; unexposed fields get
+sensible defaults. The user never hand-authors config.
+
+**2a ↔ 2b relationship (D30):** a user's site has **one active publish target at a
+time**. Connecting GitHub migrates the site to GitHub (the Fiddle-hosted `/@handle`
+site is not simultaneously served); the user can switch back to Fiddle-hosted at
+will, because the raw `.poem` source is retained either way.
+
+**Framework version [my call]:** the provisioned repo is pinned to a specific
+Poetic framework version at creation. Ongoing version bumps (moving a connected
+repo to a newer Poetic) are a Phase-3 managed-lifecycle concern, not automatic
+in 2b.
+
+**Data-model additions (draft) [my call]:**
+- `github_connections` (per user): App installation id, GitHub account/login,
+  connection status, timestamps.
+- `sites` gains `publish_target` (`fiddle|github`) and GitHub linkage
+  (`repo_owner`, `repo_name`, `pages_url`, `last_synced_at`).
+
+**Open implementation question [flag]:** the exact GitHub API path for a GitHub
+App to *create a new repo* in a user's account (installation permissions +
+user-to-server token nuances) needs verification at build time; record in
+`TECH-DEBT.md` when scaffolding.
+
+**Out of scope for 2b:** adopting a user's pre-existing repo; two-way sync;
+pushing pre-built HTML; Blogger (Phase 3); framework-version management UI
+(Phase 3); custom domains (Phase 3).
 
 ---
 
@@ -552,3 +623,106 @@ surface — a negative checklist for QA sign-off.*
 - **AC50** — No UI exists for Blogger publishing.
 - **AC51** — No UI exists for creating or managing more than one site per
   user.
+
+---
+
+## 11. Phase 2b acceptance criteria
+
+*Testable acceptance criteria derived from the Phase-2b specification (§8.2,
+decisions D27–D30). Numbering continues from §10 in the single acceptance-criteria
+namespace across the registry. Each criterion is Given/When/Then and tagged with
+the decision(s) it verifies, for traceability back to §4.*
+
+### 11.1 Connection & authentication
+
+- **AC52** [D27, D4] — Given a signed-in Fiddle user who wants to publish to
+  their own GitHub, when they start the connection flow, then they authenticate
+  by installing/authorising Fiddle's **GitHub App** — not by pasting a personal
+  access token or granting a broad OAuth scope.
+- **AC53** [D27] — Given the GitHub App is installed, when Fiddle is granted
+  access, then it holds only the fine-grained permissions it needs (repository
+  contents, Pages, workflows, and repository creation) and no broader account
+  access.
+- **AC54** [D27] — Given a user who has connected GitHub, when they later
+  revoke/uninstall the GitHub App, then Fiddle stops syncing, reports the
+  connection as disconnected, and retains no write access — while the repo itself
+  is left intact (no lock-in).
+
+### 11.2 Repo creation & structure
+
+- **AC55** [D28] — Given a connected user publishing to GitHub for the first
+  time, when Fiddle provisions their repo, then it creates a genuine
+  poetic-consumer repo containing their published `.poem` files and a generated
+  `.poetic-config.yaml` — not pre-built HTML.
+- **AC56** [D28] — Given the provisioned repo, when its site is built, then the
+  build and Pages deploy are performed by **Poetic's own GitHub Actions workflow**
+  in the repo (Fiddle does not build or push rendered HTML itself).
+- **AC57** [D29] — Given repo creation with defaults, when the repo is named,
+  then it defaults to a project repo named `poems` and the site is served at
+  `https://<user>.github.io/<repo>/`; the user may choose a different repo name.
+- **AC58** [D29] — Given the target repo name already exists in the user's
+  account, when Fiddle would create it, then the collision is detected and the
+  user is prompted for another name — Fiddle does not silently overwrite an
+  existing repo.
+
+### 11.3 Publishing & sync
+
+- **AC59** [D28, D15] — Given a user publishes or updates poems on their
+  GitHub-connected site, when Fiddle syncs, then it commits the raw `.poem` source
+  (the canonical source of truth) to the repo.
+- **AC60** [D24] — Given the per-poem "publish to site" model carried from 2a,
+  when a poem is `published` on a GitHub-connected site, then it is written to the
+  repo; when it is `draft` or `unlisted`, then it is **not** written to the public
+  repo (visibility privacy is preserved).
+- **AC61** [D28] — Given Fiddle is the authoring surface, when poems are edited,
+  then sync is one-way (Fiddle → GitHub); changes made directly on GitHub are not
+  guaranteed to be read back into Fiddle (two-way sync is out of scope for 2b).
+
+### 11.4 Publish-target switching (2a ↔ 2b)
+
+- **AC62** [D30] — Given a user with a Fiddle-hosted (2a) site, when they connect
+  GitHub and publish there, then the site has a single active publish target
+  (GitHub) and the Fiddle-hosted `/@handle` site is not simultaneously served.
+- **AC63** [D30] — Given a user who has switched to GitHub publishing, when they
+  choose to switch back to Fiddle-hosted, then they can (the switch is reversible;
+  no lock-in), because Fiddle retains the raw `.poem` source either way.
+- **AC64** [D30] — Given a switch of publish target, when it takes effect, then
+  exactly one target serves the public site at a time (either `/@handle` or the
+  GitHub Pages URL, never both).
+
+### 11.5 Configuration sync
+
+- **AC65** [D26, D28] — Given the managed site-config UI (title, subtitle,
+  author, favicon), when a user publishes to GitHub, then those values are written
+  into the repo's `.poetic-config.yaml` (the user does not hand-author it), with
+  sensible defaults for fields the UI does not expose.
+
+### 11.6 Non-functional
+
+- **AC66** [D6, D15] — Given a user's GitHub-published site, when it renders, then
+  it is produced by Poetic's own framework in the repo (the same single source of
+  truth), so its output matches what Fiddle-hosted (2a) would produce from the
+  same `.poem` source.
+- **AC67** [D3, D11] — Given 2b operation, when Fiddle provisions and syncs
+  repos, then it requires no paid infrastructure beyond the existing free-tier
+  stack — the build and hosting cost is borne by the user's own GitHub account
+  (Actions + Pages).
+- **AC68** [D28] — Given a newly provisioned repo, when it is created, then it is
+  pinned to a specific Poetic framework version; ongoing framework-version updates
+  are a later phase (Phase 3), not automatic in 2b.
+
+### 11.7 Non-goals (verify absent)
+
+*Confirms the explicitly-out-of-scope items from §8.2 have no Phase-2b-facing
+surface — a negative checklist for QA sign-off.*
+
+- **AC69** — No GitHub write access is obtained via a broad OAuth token or a
+  user-pasted PAT (App-only).
+- **AC70** — No pushing of pre-built HTML to a Pages branch (Poetic's Actions
+  build in-repo).
+- **AC71** — No two-way sync from GitHub back into Fiddle.
+- **AC72** — No flow to adopt/connect a user's pre-existing external repo (a
+  later enhancement).
+- **AC73** — No simultaneous dual publishing to both `/@handle` and GitHub (single
+  active target, per D30); no Blogger publishing and no framework-version
+  management UI (both Phase 3).
