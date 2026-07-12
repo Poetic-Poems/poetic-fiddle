@@ -7,8 +7,8 @@
 > with minimal loss. Keep it current: when a decision is confirmed, move it from
 > "Open questions" to "Decisions log" with a date.
 
-**Status:** MVP fully specified (see §7). Ready for implementation planning; further requirements (Phase-2 publishing, acceptance criteria) are optional next steps.
-**Last updated:** 2026-07-12
+**Status:** MVP specified (§7). Phase-2 direction set (Fiddle-hosted first); gathering Fiddle-hosted detail (§8).
+**Last updated:** 2026-07-13
 
 ---
 
@@ -79,12 +79,14 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 ## 3. Refined phasing (working model)
 
 - **Phase 1 — MVP:** `.poem` editor + live in-browser preview + user accounts +
-  DB-backed save/share (shareable permalinks). No GitHub/Blogger publishing.
-- **Phase 2 — Publishing:** deliver a poet's site. "Offer both" models: Fiddle-
-  hosted publishing (primary, for non-technical poets) and connect-your-own-
-  GitHub via OAuth (for advanced users). Blogger later.
-- **Phase 3 — Fuller managed lifecycle:** configuration management, collections,
-  auto-sync of framework version, richer site management.
+  DB-backed save/share (shareable permalinks). No publishing.
+- **Phase 2a — Fiddle-hosted publishing:** one site per user (collection + site
+  config), served by **dynamic SSR from the DB**. No user GitHub needed. *(built first)*
+- **Phase 2b — Connect-your-own-GitHub:** Fiddle creates/maintains a real poetic-
+  consumer repo in the user's account (via a GitHub App) that builds through
+  Poetic's own Actions + Pages.
+- **Phase 3 — Fuller managed lifecycle:** Blogger publishing, multiple sites,
+  custom domains, framework-version management, richer configuration.
 
 ---
 
@@ -110,6 +112,10 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 | D16 | 2026-07-12 | **Preview = full styled fidelity** (bundle Poetic's real CSS + page template) | Round 5. True WYSIWYG of the published page; exclude only site-chrome irrelevant to a lone poem. |
 | D17 | 2026-07-12 | **Media/song-handler embeds rendered best-effort in preview** (full players on the shared page) | Round 5. |
 | D18 | 2026-07-12 | **Signed-in users keep multiple saved poems + a simple "my poems" dashboard** | Round 5. |
+| D19 | 2026-07-13 | **Phase 2 builds Fiddle-hosted publishing first**, then connect-your-own-GitHub | Phase-2 R1. Serves the non-technical primary audience with no external OAuth. |
+| D20 | 2026-07-13 | **Publishable unit = one site per user** (their collection + site config) | Phase-2 R1. Multiple sites deferred to Phase 3. |
+| D21 | 2026-07-13 | **Fiddle-hosted sites served by dynamic SSR from the DB** (cached) | Phase-2 R1. Cheapest to build/operate; reuses the renderer; instant publish. |
+| D22 | 2026-07-13 | **Blogger publishing deferred to Phase 3** | Phase-2 R1. Additive; Poetic already supports it. |
 
 ---
 
@@ -121,11 +127,14 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 
 ### Round 5 — remaining MVP scope (SETTLED — see D16–D18)
 
-### Next (not yet started)
+### Phase-2 publishing requirements — round 1 (ASKED) — see §8
+Sequencing; publishable unit (site = collection + config); Fiddle-hosted
+mechanism; Blogger scope.
+
+### Later / parked
 - **Implementation planning** — break the MVP (§7) into build milestones; the
   poetic-side renderer extraction (a framework change) is the critical dependency.
-- **Optional further requirements** — Phase-2 publishing detail; per-feature
-  acceptance criteria / user stories; branding, domain, legal/privacy.
+- Per-feature acceptance criteria / user stories; branding, domain, legal/privacy.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
@@ -212,3 +221,62 @@ non-technical poets. No GitHub/Blogger publishing (later phase).
   friendly) — poets may rely on assistive tech.
 - Minimal running cost (free tiers, in-browser compute); fast, snappy preview.
 - Privacy: unlisted-by-default; no unnecessary data collection.
+
+---
+
+## 8. Phase 2 — publishing (requirements gathering in progress)
+
+**Goal:** let a user turn their saved poems into a published *site* — "as much or
+as little" managed as they want. Per D4, "offer both": Fiddle-hosted publishing
+(primary, for non-technical poets) and connect-your-own-GitHub (advanced), plus
+optional Blogger.
+
+**Key dependency / realization:** publishing a site requires the **collection**
+concept deferred from the MVP — a *site* = a set of the user's poems + **site-level
+config** (title, subtitle, author, favicon, song_handlers, footer; cf.
+`.poetic-config.yaml`). Phase 2 therefore brings collections + site config into
+scope.
+
+**Continuity from the MVP:** because raw `.poem` is the stored source of truth
+(D15), a Fiddle-hosted site and a user-owned GitHub repo are just two renderers of
+the same source — so migrating a user from Fiddle-hosted to their own GitHub later
+is straightforward (no lock-in).
+
+### Publishing models under consideration
+
+**A. Fiddle-hosted (no user GitHub):**
+- A1 — **Dynamic SSR from the DB** via the Next.js app (reuse the renderer; cache
+  aggressively). Cheapest to build/operate. *[recommended]*
+- A2 — Static export to a CDN/bucket (Cloudflare Pages/R2, Netlify). Adds a
+  build/deploy step per publish.
+- A3 — Fiddle-owned GitHub org + Pages (repo-per-user). Mirrors Poetic exactly but
+  heavy operational surface (many repos, secrets, abuse handling).
+
+**B. Connect-your-own-GitHub (advanced):**
+- Cleanest approach: Fiddle creates a **real poetic-consumer repo** from the
+  poetic template in the user's account, writes their `.poem` files +
+  `.poetic-config.yaml`, and lets **poetic's own GitHub Actions** build + deploy
+  Pages. Fiddle is an authoring front-end syncing to a genuine poetic repo — it
+  does not reimplement the build. *[recommended over pushing built output]*
+- Auth: use a **GitHub App** (fine-grained per-repo permissions, better security &
+  rate limits) rather than a classic OAuth token. *[recommended]*
+
+**Blogger (optional):** Poetic already supports Blogger (OAuth + API). Fiddle-
+managed Blogger = user connects Google/Blogger, picks a blog, Fiddle publishes.
+Additive; can be deferred.
+
+### Phase 2, round 1 (SETTLED — see D19–D22)
+Fiddle-hosted first; one site per user; dynamic SSR from the DB; Blogger → Phase 3.
+
+### Phase 2, round 2 — Fiddle-hosted detail (ASKED, awaiting answers)
+1. **Site addressing** — path (`/@handle`) vs per-user subdomain vs custom domain.
+2. **Which poems appear** — per-poem "publish to site" toggle vs all saved poems.
+3. **Site structure** — mirror Poetic (index + all-poems + per-poem pages) vs a
+   simpler single-page collection.
+4. **Managed config UI** — how much of `.poetic-config.yaml` to expose to
+   non-technical users (friendly subset vs full parity).
+
+### Parked Phase-2 details (for later rounds)
+- Visibility model unification: private draft / unlisted link / published-to-site.
+- Phase 2b (GitHub): App permission scopes; repo naming; users who already have a repo.
+- Blogger connection/token storage; template mapping (Phase 3).
