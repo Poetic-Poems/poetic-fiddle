@@ -9,8 +9,9 @@
 
 **Status:** MVP (§7) + MVP acceptance criteria (§9) + Phase-2a Fiddle-hosted
 publishing (§8.1) + Phase-2a acceptance criteria (§10) + Phase-2b
-connect-your-own-GitHub (§8.2) + Phase-2b acceptance criteria (§11) specified.
-Next: implementation planning, or tie-off (your call).
+connect-your-own-GitHub (§8.2) + Phase-2b acceptance criteria (§11) +
+cross-cutting non-functional requirements (§12) specified.
+Next: implementation planning, user stories, or tie-off (your call).
 **Last updated:** 2026-07-13
 
 ---
@@ -55,9 +56,9 @@ Relevant facts for designing Fiddle:
 - **Publishing targets:** GitHub Pages (Actions workflow on push to `main`);
   Blogger (optional, OAuth secrets as Actions secrets).
 - **`.poem` syntax highlights:** title / optional author / date header;
-  `{Section}` blocks; markdown-ish `*emphasis*` / `**strong**`; `/.ai{…}` spans;
-  `====` separators; variables (`={author}=…`, `${disclaimer}`, `.shared.poem`);
-  `#hashtags`; embedded media (MEGA/Suno/Audiomack). Grammar in
+  `{Section}` blocks; markdown-ish `*emphasis*` / `**strong**`; `/.classname{…}`
+  spans; `====` separators; variables (`={author}=…`, `${disclaimer}`,
+  `.shared.poem`); `#hashtags`; embedded media (MEGA/Suno/Audiomack). Grammar in
   `poem-syntax.ebnf`; prose spec in `docs/POEM-SYNTAX.md`.
 
 ### Renderer portability finding (2026-07-12)
@@ -142,6 +143,11 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 Sequencing; publishable unit (site = collection + config); Fiddle-hosted
 mechanism; Blogger scope.
 
+### Non-functional requirements — cross-cutting (SETTLED — see §12)
+Accessibility, performance, browser/device support, security (incl. safe
+rendering of untrusted poem content), privacy, reliability/availability,
+i18n, and offline posture — consolidated across all phases.
+
 ### Later / parked
 - **Implementation planning** — break the MVP (§7) into build milestones; the
   poetic-side renderer extraction (a framework change) is the critical dependency.
@@ -155,7 +161,8 @@ mechanism; Blogger scope.
 - Data model & persistence details; DB schema; RLS policies.
 - Phase-2 publishing mechanics (Fiddle-hosted site structure; GitHub OAuth scopes;
   Blogger).
-- Accessibility, i18n, offline/PWA; performance, security, privacy posture.
+- Non-functional requirements (accessibility, i18n, offline/PWA, performance,
+  security, privacy posture) — **done, see §12**.
 
 ---
 
@@ -198,8 +205,8 @@ non-technical poets. No GitHub/Blogger publishing (later phase).
 
 **Editor [my call unless noted]**
 - CodeMirror 6 with a `.poem` language mode. v1: structural highlighting
-  (`{sections}`, emphasis, variables, `/.ai{…}` spans, comments, `#hashtags`); a
-  full Lezer grammar can follow later.
+  (`{sections}`, emphasis, variables, `/.classname{…}` spans, comments,
+  `#hashtags`); a full Lezer grammar can follow later.
 - Non-blocking parse-error indicator; on parse failure keep the last good preview.
 - Preview fidelity: **full styled fidelity** — bundle Poetic's real CSS + page
   template so the preview matches the published page; exclude site-chrome
@@ -424,9 +431,9 @@ replace, the narrative spec in §7.*
   friendly example `.poem`, and a link to a `.poem` syntax cheatsheet is
   visible.
 - **AC6** [D9] — Given the editor, when `.poem` structural elements are
-  present (`{sections}`, `*emphasis*`/`**strong**`, variables, `/.ai{…}`
-  spans, comments, `#hashtags`), then they are visually distinguished via
-  syntax highlighting.
+  present (`{sections}`, `*emphasis*`/`**strong**`, variables,
+  `/.classname{…}` spans, comments, `#hashtags`), then they are visually
+  distinguished via syntax highlighting.
 
 ### 9.2 Anonymous use & drafts
 
@@ -726,3 +733,161 @@ surface — a negative checklist for QA sign-off.*
 - **AC73** — No simultaneous dual publishing to both `/@handle` and GitHub (single
   active target, per D30); no Blogger publishing and no framework-version
   management UI (both Phase 3).
+
+---
+
+## 12. Non-functional requirements (cross-cutting)
+
+*Consolidates the "Non-functional principles" sketched in §7 and the NFR-flavoured
+criteria scattered through §9–§11 (AC26–AC28, AC46–AC47, AC66–AC67) into one
+cross-cutting registry, and settles the parked "accessibility, i18n, offline/PWA,
+performance, security, privacy" round from §5. These apply across **all phases**
+(MVP, 2a, 2b) unless a phase is named. Acceptance criteria continue the single AC
+namespace (AC74+); each is Given/When/Then where testable, tagged with the
+decision(s) it traces to (§4) or **[my call]** for an expert default — override if
+you disagree.*
+
+### 12.1 Accessibility
+
+Non-technical poets may rely on assistive technology; accessibility is a
+first-class requirement, not a polish item.
+
+- **AC74** [D2] — Given any user-facing page (editor, dashboard, share view,
+  published site), when it is assessed against **WCAG 2.1 AA**, then that is the
+  conformance baseline the page is built and tested to.
+- **AC75** — Extends AC27: given keyboard-only navigation across the editor,
+  preview, dialogs, and forms, when the user tabs through, then focus order is
+  logical, focus is always visible, and there are no keyboard traps.
+- **AC76** — Given text and interactive controls (including Fiddle's own chrome
+  around Poetic's bundled preview CSS), when colour contrast is measured, then it
+  meets AA (≥ 4.5:1 for body text, ≥ 3:1 for large text and UI components).
+- **AC77** — Given a core page, when the browser is zoomed to 200% or text is
+  resized, then content and function are preserved with no loss, and the page body
+  reflows without horizontal scrolling down to a 320px-wide viewport.
+- **AC78** — Given a user with `prefers-reduced-motion` set, when the app renders,
+  then no essential information is conveyed by motion and non-essential animation
+  is suppressed.
+- **AC79** [D9] — Given the CodeMirror editor, when accessed with a keyboard and a
+  screen reader, then it is labelled, operable, and does not trap focus (an
+  accessible-editor configuration is required, not the raw default).
+
+### 12.2 Performance & responsiveness
+
+The core promise is an *instant* fiddle; performance is part of the product, not
+an afterthought.
+
+- **AC80** [D5] — Given a typical poem, when the user pauses typing past the
+  ~200 ms debounce (AC2), then the in-browser preview re-renders within a small,
+  interactive budget so editing feels real-time, with no network round-trip for
+  the render.
+- **AC81** — Given a mid-range mobile device on a typical connection, when the
+  editor page loads, then it becomes interactive quickly (target: a couple of
+  seconds), and heavy renderer assets load without blocking first paint.
+- **AC82** [D21, D15] — Given SSR share pages (AC18) and Phase-2a site pages
+  (AC41), when requested, then they serve quickly via caching: an unchanged page
+  may be served from cache, and the cache is invalidated on the owner's next edit
+  (AC19/AC43) — cheap to operate without serving stale content as truth.
+
+### 12.3 Browser & device support
+
+- **AC83** [D13] — Given current evergreen browsers (latest two major versions of
+  Chrome, Edge, Firefox, Safari) on desktop and mobile, when the app is used, then
+  it is supported, with a mobile-first responsive layout (split-pane on desktop,
+  source/preview toggle on mobile, AC26).
+- **AC84** — Given a supported browser, when a required capability is missing, then
+  there is a graceful fallback; the editor/preview require JavaScript (documented),
+  but SSR share and published-site pages remain viewable without client-side JS.
+
+### 12.4 Security
+
+Fiddle renders **untrusted** poem content to HTML on surfaces viewed by other
+people (SSR share pages AC18, Phase-2a public sites AC41); safe rendering is the
+headline security requirement.
+
+- **AC85** [my call] — Given a poem authored by one user, when it is rendered on a
+  surface viewed by others (share page, public site), then it **cannot inject
+  active content** (scripts, inline event handlers, arbitrary iframes) that
+  executes in the viewer's session — the shared renderer's escaping is verified,
+  and output is sanitised and/or constrained by a strict Content-Security-Policy.
+  *(The shared poetic renderer's escaping guarantees must be confirmed at build
+  time; record any gap in `TECH-DEBT.md` when scaffolding — cf. §8.2's flag
+  pattern.)*
+- **AC86** [D17, my call] — Given a media/song-handler embed (MEGA/Suno/Audiomack),
+  when it is rendered, then it is limited to a provider **allow-list** and isolated
+  (e.g. sandboxed iframes) so an embed cannot script or navigate the host page.
+- **AC87** [D10] — Given the database, when access is attempted, then Supabase
+  **row-level security** enforces that a user can read/write only their own poems,
+  unlisted poems are reachable only via their opaque `share_id`, and drafts are
+  never exposed to others (AC40).
+- **AC88** [D27] — Given server-side secrets (Supabase service keys, the Phase-2b
+  GitHub App private key, any OAuth secrets), when the app runs, then they are
+  never shipped to the client; the GitHub App holds only least-privilege
+  fine-grained permissions (AC53) and remains individually revocable (AC54).
+- **AC89** — Given any request, when it is served, then it is over HTTPS, and
+  authentication sessions/tokens are handled by Supabase Auth (AC12) and not
+  exposed to other origins.
+
+### 12.5 Privacy & data protection
+
+- **AC90** [D14] — Given a newly created or shared poem, when the user has not
+  explicitly changed its visibility, then it defaults to the most private
+  applicable state (unlisted; draft where drafts exist), and nothing a user writes
+  becomes public without an explicit publish action (Phase 2+) — reinforcing AC29.
+- **AC91** [my call] — Given normal operation, when data is collected, then Fiddle
+  collects only what it needs (account identity, poem source, site config) and adds
+  no tracking/analytics beyond what is disclosed (data minimisation).
+- **AC92** [my call] — Given a signed-in user, when they choose to, then they can
+  delete individual poems and their whole account and export their raw `.poem`
+  source; deleting a poem removes it from every surface (dashboard, share link,
+  published site).
+
+### 12.6 Reliability & availability
+
+- **AC93** [D10] — Given the Supabase free tier, when a project is idle ~7 days and
+  is paused (a known caveat), then no user data is lost across the pause; a
+  keep-alive/upgrade path is a later operational concern, acceptable for MVP.
+- **AC94** [D12] — Given failure conditions, when they occur, then the app degrades
+  gracefully: a parse error keeps the last good preview (AC4); an anonymous draft
+  survives reload via localStorage (AC8); a failed save surfaces an error and does
+  not silently discard edits.
+- **AC95** [D15] — Given a successful Save, when the session later ends, then the
+  raw `.poem` source is durably persisted (AC13) and retrievable from the dashboard
+  (AC15) — a Save never quietly loses work.
+
+### 12.7 Internationalisation & localisation
+
+- **AC96** [my call] — Given a poem written in any language or script, when it is
+  edited and rendered, then full Unicode/UTF-8 content is handled and displayed
+  correctly (poem content is not assumed to be English or Latin-script).
+- **AC97** [my call] — Given the product roadmap, when the UI is built, then it
+  ships English-only (UI localisation deferred) but is authored without hard-coded
+  assumptions that would preclude later localisation.
+
+### 12.8 Offline / PWA
+
+- **AC98** [D12, D5] — Given an anonymous visitor, when they edit and preview, then
+  no account and no network round-trip for rendering is required (D5), and the
+  in-progress draft persists locally (AC8). A full offline/installable-PWA
+  experience is deferred; this posture is stated, not built.
+
+### 12.9 Maintainability & operability
+
+- **AC99** [D6] — Given the codebase, when it is maintained, then the governance in
+  `CLAUDE.md` holds (as-built docs, `CHANGELOG.md` for notable changes,
+  `TECH-DEBT.md` for deferred work), and the `.poem` renderer is imported from
+  `poetic`, not forked (AC3) — so `.poem` behaviour has a single source.
+- **AC100** [my call, D3] — Given MVP scale, when operability is considered, then
+  observability is minimal (platform-provided logs/metrics suffice); richer
+  monitoring is added only when a capability requires it, consistent with the
+  minimal-cost goal.
+
+### 12.10 Non-goals (verify absent)
+
+*Confirms the NFR-adjacent deferrals above are genuinely out of scope for now.*
+
+- **AC101** — No offline/installable-PWA behaviour beyond localStorage draft
+  persistence (AC98).
+- **AC102** — No UI localisation / non-English UI strings in the initial build
+  (AC97); poem *content* internationalisation (AC96) is in scope, UI l10n is not.
+- **AC103** — No third-party analytics/tracking or non-disclosed data collection
+  (AC91).
