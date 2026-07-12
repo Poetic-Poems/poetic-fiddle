@@ -21,7 +21,7 @@ keep you informed as we work on a fix.
 ## Automated scanning
 
 [CodeQL](https://codeql.github.com/) (`.github/workflows/codeql.yml`) analyzes
-this repo's GitHub Actions workflows on every pull request and push to
-`main`, plus a weekly schedule. A JavaScript (or TypeScript) scan will be
-added once the app's source lands. Results appear under the repository's
-**Security** &rarr; **Code scanning** tab.
+this repo's GitHub Actions workflows and the Next.js app's JavaScript/
+TypeScript source on every pull request and push to `main`, plus a weekly
+schedule. Results appear under the repository's **Security** &rarr; **Code
+scanning** tab.

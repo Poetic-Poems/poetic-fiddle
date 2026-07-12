@@ -1,0 +1,13 @@
+.next/
+out/
+build/
+coverage/
+package-lock.json
+
+# Editor/agent tooling config, not app source.
+.claude/
+*.code-workspace
+
+# Markdown formatting/whitespace is governed by scripts/remove-trailing-spaces.sh
+# (see .editorconfig) — trailing two-space hard breaks must be preserved.
+*.md

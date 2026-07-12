@@ -5,4 +5,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-  # Add an "npm" ecosystem entry once package.json exists.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

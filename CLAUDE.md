@@ -9,15 +9,16 @@ web application that talks to the poetic framework's output/format.
 
 ## Status
 
-The app's stack is chosen (see "Architecture & stack" below) but not yet
-scaffolded. This repo currently carries its governance and agent-working layer
-(branch/commit policy, tech-debt process, CI backstops) plus a living
-requirements registry (`docs/REQUIREMENTS.md`). Build/lint/test tooling —
-`package.json`, an ESLint config, app build/test CI, and CodeQL's
-`javascript-typescript` scan — will be added when the app is scaffolded.
+The app is scaffolded: a Next.js (App Router) + TypeScript app lives under
+`src/`, with ESLint, Prettier, Vitest, and the brand shell (logo, palette,
+light/dark) in place. `.github/workflows/build.yml` (lint, typecheck, format
+check, test, build) and CodeQL's `javascript-typescript` scan
+(`.github/workflows/codeql.yml`) run on every pull request and push to
+`main`. The editor, live preview, auth, and data layers are not yet built —
+see `docs/IMPLEMENTATION-PLAN.md` for the milestone sequence.
 
-Requirements gathering is ongoing; `docs/REQUIREMENTS.md` is the authoritative,
-living registry of decisions, rationale, and open questions.
+Requirements gathering is complete; `docs/REQUIREMENTS.md` is the
+authoritative, living registry of decisions, rationale, and open questions.
 
 ## Architecture & stack
 
@@ -152,6 +153,7 @@ via `scripts/get-tech-debt-record.pl` and dispatching it to a subagent.
 |------|----------|
 | `README.md` | Project overview |
 | `docs/REQUIREMENTS.md` | Requirements registry / decision log (living) |
+| `docs/IMPLEMENTATION-PLAN.md` | Milestone sequencing / build plan (living) |
 | `SECURITY.md` | Vulnerability reporting, CodeQL scanning |
 | `TECH-DEBT.md` | Deferred work register |
 | `CHANGELOG.md` | Notable changes, Keep a Changelog format |

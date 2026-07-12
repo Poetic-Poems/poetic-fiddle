@@ -5,9 +5,8 @@ name: "CodeQL"
 # weekly schedule so newly-disclosed query rules get applied even when
 # nothing in the repo has changed.
 #
-# Only `actions` (this repo's own workflow YAML) is scanned for now, since
-# there is no application source yet. Add `javascript-typescript` to the
-# matrix once app source lands (see CLAUDE.md's Status section).
+# Scans `actions` (this repo's own workflow YAML) and `javascript-typescript`
+# (the Next.js app under `src/`).
 
 on:
   push:
@@ -34,6 +33,8 @@ jobs:
       matrix:
         include:
           - language: actions
+            build-mode: none
+          - language: javascript-typescript
             build-mode: none
 
     steps:

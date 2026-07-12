@@ -14,9 +14,12 @@
 **Status:** Drafted 2026-07-13. Requirements are feature-complete; nothing here
 adds scope. **M0 (the poetic-side renderer-extraction spike) is delivered** —
 merged upstream in poetic PR #31 (squash commit `b204140`); see poetic's
-`docs/RENDERER-BROWSER.md` and `src/browser/render.js`. The Fiddle app itself is
-not yet scaffolded, so the gating next step is the **M1** app scaffold, which in
-turn unblocks **M2** (the editor — the first place M0 is consumed).
+`docs/RENDERER-BROWSER.md` and `src/browser/render.js`. **M1 (the Fiddle app
+scaffold) is delivered** — Next.js (App Router) + TypeScript under `src/`,
+ESLint/Prettier, Vitest, CI (`build.yml`, CodeQL `javascript-typescript`), and
+the brand shell (logo, palette, light/dark). The gating next step is now
+**M2** (the editor — the first place M0's renderer is consumed), which needs
+the §6.1 packaging decision settled first.
 
 ---
 
@@ -197,7 +200,22 @@ Delivers the MVP spec (§7) and its acceptance criteria (AC1–AC32), under the
 cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 
 ### M1 — App scaffold & CI backstops
-*Depends on: nothing. Runs parallel to M0.*
+
+> **✅ Delivered 2026-07-13.** Next.js 16 (App Router) + TypeScript scaffolded
+> via `create-next-app` under `src/`; Tailwind CSS v4 for styling; ESLint
+> (`eslint-config-next` + `eslint-config-prettier`) and Prettier, both matching
+> `.editorconfig`; Vitest + React Testing Library with a smoke test per
+> component. `.github/workflows/build.yml` runs lint/typecheck/format-check/
+> test/build on every PR and push to `main`; CodeQL's `javascript-typescript`
+> scan is added to `codeql.yml`'s matrix; `dependabot.yml` now watches the
+> `npm` ecosystem. Brand shell: `BrandHeader` (logo + "Poetic Fiddle" wordmark
+> in Fraunces) in the root layout, palette (`#534AB7`/`#C88A3A`) as CSS custom
+> properties feeding Tailwind's theme, full light/dark support via
+> `prefers-color-scheme` — the single monochrome-purple logo reads fine on
+> both backgrounds, so no separate light-on-dark variant was needed for this.
+> Routing is just `/` (a placeholder landing page); no `/editor` route yet.
+
+*Depends on: nothing. Ran parallel to M0.*
 - Scaffold Next.js (App Router) + TypeScript (D9); `package.json`, ESLint config
   (the tooling `CLAUDE.md` notes is "added when the app is scaffolded"), Prettier
   to match `.editorconfig`.
@@ -343,6 +361,16 @@ cover the **preview CSS** asset (§3.1(4)) and pin to a poetic version (AC68
 pattern). **[my call]** lean towards (a) a small public package scoped to the
 renderer if poetic can publish one, else (b) a tag-pinned git dependency.
 
+**Update 2026-07-13:** poetic PR #33 resolved poetic's own tech-debt item
+TD26071301 by exposing `./browser` and `./browser/poetic.css` via poetic's
+`package.json` `exports` map — the renderer and its preview CSS are now
+addressable as subpath imports (`poetic/browser`, `poetic/browser/poetic.css`).
+poetic's `package.json` is still `private: true`, so this is **not** an
+npm-registry publish; it only prepares the package for consumption. The actual
+mechanism Fiddle uses to pull that package in (option (b), a tag-pinned git
+dependency, remains the leading candidate) is still open — resolve it before
+M2 starts.
+
 ### 6.2 Database schema & RLS design *(gates M5)*
 A proper design pass is owed (registry parked it). Consolidated **draft** from
 the registry's data-model sketches (§7, §8.1, §8.2, §15) — to be firmed up:
@@ -384,15 +412,19 @@ poetic's build.
 
 1. ~~**Kick off M0 upstream** in `poetic`~~ — **done** (poetic PR #31, commit
    `b204140`): `renderPoem`/`renderPoemPage` extracted, the three fs couplings
-   broken, and the §3.3 flags resolved (see §3). Fiddle's remaining M0 threads
-   are the §6.1 packaging decision and the boundary sanitiser (lands in M2/M6).
-2. **Start M1** (Next.js + TS scaffold + CI + CodeQL js-ts + brand shell) — it
-   needs nothing from the renderer and unblocks M2 now that M0 has landed.
-3. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
+   broken, and the §3.3 flags resolved (see §3). poetic PR #33 also resolved
+   the §6.1 packaging groundwork (TD26071301 — `exports` map for
+   `poetic/browser`); Fiddle's remaining M0 threads are the §6.1 **consumption
+   mechanism** decision and the boundary sanitiser (lands in M2/M6).
+2. ~~**Start M1**~~ — **done**: Next.js + TS scaffold, CI (`build.yml` +
+   CodeQL js-ts), and the brand shell are in place (see §4).
+3. **Settle the §6.1 packaging decision** (how Fiddle actually pulls in
+   `poetic/browser` — a tag-pinned git dependency is the leading candidate),
+   then **start M2** (the editor + live preview), which needs it.
+4. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
 
-With M0 delivered, **M1 is the immediate focus**; M2 (the editor) can begin as
-soon as M1 lands and the §6.1 packaging decision is made. The rest sequences
-behind them per §2.
+With M0 and M1 delivered, **the §6.1 packaging decision is the immediate
+blocker for M2** (the editor). The rest sequences behind them per §2.
 
 ---
 
