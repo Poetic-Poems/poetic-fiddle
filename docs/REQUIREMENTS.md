@@ -8,8 +8,8 @@
 > "Open questions" to "Decisions log" with a date.
 
 **Status:** MVP (§7) + MVP acceptance criteria (§9) + Phase-2a Fiddle-hosted
-publishing (§8.1) specified. Next: Phase-2b (GitHub) detail, implementation
-planning, or tie-off (your call).
+publishing (§8.1) + Phase-2a acceptance criteria (§10) specified. Next:
+Phase-2b (GitHub) detail, implementation planning, or tie-off (your call).
 **Last updated:** 2026-07-13
 
 ---
@@ -140,8 +140,10 @@ mechanism; Blogger scope.
 ### Later / parked
 - **Implementation planning** — break the MVP (§7) into build milestones; the
   poetic-side renderer extraction (a framework change) is the critical dependency.
-- MVP acceptance criteria — **done, see §9**. Phase-2 acceptance criteria still
-  parked. Also still parked: user stories; branding, domain, legal/privacy.
+- MVP acceptance criteria — **done, see §9**. Phase-2a acceptance criteria —
+  **done, see §10**. Phase-2b acceptance criteria still parked, pending Phase-2b
+  detail (round 3, §8). Also still parked: user stories; branding, domain,
+  legal/privacy.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
@@ -464,3 +466,89 @@ surface — a negative checklist for QA sign-off.*
   (favicon, subtitle, index/all-poems aggregate pages).
 - **AC32** — No real-time multi-user collaboration (concurrent co-editing) or
   public gallery/discovery surface exists.
+
+---
+
+## 10. Phase 2a acceptance criteria
+
+*Testable acceptance criteria derived from the Phase-2a specification (§8.1,
+decisions D19–D26). Numbering continues from §9 in a single acceptance-criteria
+namespace across the registry. Each criterion is written as Given/When/Then and
+tagged with the decision(s) it verifies, for traceability back to §4.*
+
+### 10.1 Site creation & handle
+
+- **AC33** [D20, D23] — Given a signed-in user who has not yet published, when
+  they choose to publish for the first time, then they are prompted to choose
+  a unique, URL-safe handle, and their site becomes reachable at `/@handle`.
+- **AC34** [D23] — Given a user attempts to choose a handle that is already
+  taken, when they submit it, then they are told it is unavailable and
+  prompted to choose another (no two users can hold the same handle).
+- **AC35** [D20] — Given a signed-in user, when they have published, then
+  they have exactly one site (Phase 2a supports one site per user; not
+  multiple).
+
+### 10.2 Poem visibility & publishing
+
+- **AC36** [D24] — Given a signed-in user's saved poem, when they toggle
+  "publish to site" on, then the poem's status becomes `published` and it
+  appears on their public site at `/@handle/<slug>`.
+- **AC37** [D24] — Given a published poem, when the owner toggles "publish to
+  site" off, then the poem's status reverts to a non-published state and it no
+  longer appears on the site.
+- **AC38** [D24] — Given the unified visibility model, when a poem's status is
+  inspected, then it is exactly one of `draft`, `unlisted`, or `published` (no
+  poem is in more than one state simultaneously).
+- **AC39** [D23] — Given a poem is published, when its site URL is generated,
+  then the slug is derived from the poem's title and is unique within the
+  owner's site (collisions are disambiguated).
+- **AC40** [D24] — Given a poem with status `draft` or `unlisted`, when
+  anyone other than the owner views the owner's public site, then that poem
+  does not appear on it (draft/unlisted privacy is preserved).
+
+### 10.3 Site pages & rendering fidelity
+
+- **AC41** [D21, D25] — Given a user's published site, when it is requested,
+  then it is served by dynamic SSR from the database (no static build/deploy
+  step) and includes at minimum an index page, an all-poems aggregate page,
+  and one page per published poem — mirroring real Poetic output.
+- **AC42** [D25] — Given a site's index and all-poems pages, when rendered,
+  then they are produced using the same shared poetic-renderer extraction used
+  elsewhere in Fiddle (no Fiddle-local reimplementation of the aggregate
+  templates).
+- **AC43** [D15, D21] — Given a published site page, when requested repeatedly
+  without intervening edits, then a cached render may be served, but it must
+  reflect the latest published content after an edit — consistent with the
+  MVP's "no stale HTML as source of truth" principle.
+
+### 10.4 Site configuration
+
+- **AC44** [D26] — Given a user managing their site, when they open site
+  settings, then they can edit `title`, `subtitle`, `author`, and `favicon`
+  via a friendly UI (not a raw YAML/config file).
+- **AC45** [D26] — Given site-config fields the managed UI does not expose,
+  when the site is rendered, then sensible defaults are applied automatically
+  (the user is never required to hand-author `.poetic-config.yaml`).
+
+### 10.5 Non-functional
+
+- **AC46** [D19, D21] — Given normal Phase-2a usage, when a user publishes and
+  views their site, then no user-side GitHub account or OAuth connection is
+  required at any point.
+- **AC47** [D3, D11, D21] — Given Phase-2a hosting, when the app serves
+  published sites, then no paid infrastructure is required beyond what Phase 1
+  already uses (dynamic SSR plus caching on the existing free-tier stack),
+  consistent with the minimal-cost goal.
+
+### 10.6 Non-goals (verify absent)
+
+*Confirms the explicitly-out-of-scope items from §8.1 have no Phase-2a-facing
+surface — a negative checklist for QA sign-off.*
+
+- **AC48** — No UI exists for per-user subdomains or custom domains; every
+  Phase-2a site is reachable only at `/@handle` under the Fiddle domain.
+- **AC49** — No UI exists for connecting a user's own GitHub account or repo
+  (Phase 2b is not present).
+- **AC50** — No UI exists for Blogger publishing.
+- **AC51** — No UI exists for creating or managing more than one site per
+  user.
