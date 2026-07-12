@@ -7,7 +7,7 @@
 > with minimal loss. Keep it current: when a decision is confirmed, move it from
 > "Open questions" to "Decisions log" with a date.
 
-**Status:** MVP specified (§7). Phase-2 direction set (Fiddle-hosted first); gathering Fiddle-hosted detail (§8).
+**Status:** MVP (§7) + Phase-2a Fiddle-hosted publishing (§8.1) specified. Next: Phase-2b (GitHub) detail or tie-off (your call).
 **Last updated:** 2026-07-13
 
 ---
@@ -116,6 +116,10 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 | D20 | 2026-07-13 | **Publishable unit = one site per user** (their collection + site config) | Phase-2 R1. Multiple sites deferred to Phase 3. |
 | D21 | 2026-07-13 | **Fiddle-hosted sites served by dynamic SSR from the DB** (cached) | Phase-2 R1. Cheapest to build/operate; reuses the renderer; instant publish. |
 | D22 | 2026-07-13 | **Blogger publishing deferred to Phase 3** | Phase-2 R1. Additive; Poetic already supports it. |
+| D23 | 2026-07-13 | **Site address = path `/@handle`** under the Fiddle domain (subdomains/custom domains later) | Phase-2 R2. Simplest; ships fastest. |
+| D24 | 2026-07-13 | **Per-poem "publish to site" toggle** decides site contents | Phase-2 R2. Preserves draft privacy; drives the poem visibility model (draft/unlisted/published). |
+| D25 | 2026-07-13 | **Fiddle-hosted site mirrors Poetic** (index + all-poems + per-poem pages) | Phase-2 R2. Full fidelity; identical to the future GitHub path. Expands renderer extraction to include the aggregates. |
+| D26 | 2026-07-13 | **Managed config UI exposes a friendly subset** (title, subtitle, author, favicon) | Phase-2 R2. Full `.poetic-config` parity deferred. |
 
 ---
 
@@ -268,15 +272,48 @@ Additive; can be deferred.
 ### Phase 2, round 1 (SETTLED — see D19–D22)
 Fiddle-hosted first; one site per user; dynamic SSR from the DB; Blogger → Phase 3.
 
-### Phase 2, round 2 — Fiddle-hosted detail (ASKED, awaiting answers)
-1. **Site addressing** — path (`/@handle`) vs per-user subdomain vs custom domain.
-2. **Which poems appear** — per-poem "publish to site" toggle vs all saved poems.
-3. **Site structure** — mirror Poetic (index + all-poems + per-poem pages) vs a
-   simpler single-page collection.
-4. **Managed config UI** — how much of `.poetic-config.yaml` to expose to
-   non-technical users (friendly subset vs full parity).
+### Phase 2, round 2 — Fiddle-hosted detail (SETTLED — see D23–D26; spec in §8.1)
+
+### Phase 2, round 3 — connect-your-own-GitHub (2b) (not yet asked)
+GitHub App vs OAuth; create a real poetic repo vs push built output; config sync;
+repo naming; users with an existing repo. High-level approach already recommended
+in §8 (GitHub App + real poetic repo).
 
 ### Parked Phase-2 details (for later rounds)
 - Visibility model unification: private draft / unlisted link / published-to-site.
 - Phase 2b (GitHub): App permission scopes; repo naming; users who already have a repo.
 - Blogger connection/token storage; template mapping (Phase 3).
+
+### 8.1 Phase 2a specification (Fiddle-hosted publishing) — draft
+
+*Synthesis of D19–D26. **[my call]** = expert default, override if you disagree.*
+
+**What it delivers:** each user can publish **one site** at `…/@handle`, served by
+**dynamic SSR from the DB** (cached), mirroring real Poetic output (index +
+all-poems + per-poem pages). No GitHub required.
+
+**Handle & URLs [my call]:** user picks a unique, URL-safe `handle` on first
+publish → site at `/@handle`; each published poem at `/@handle/<poem-slug>` (slug
+derived from the title, unique within the site).
+
+**Poem visibility model (unifies MVP share + site) [my call]:**
+- `draft` — private to owner (dashboard only).
+- `unlisted` — reachable via share link (`share_id`); not on the site. (MVP share.)
+- `published` — appears on the user's public site, with its own site URL.
+Each poem has one status; the "publish to site" toggle sets `published`.
+
+**Site config (managed UI — friendly subset, D26):** `title`, `subtitle`,
+`author`, `favicon`, with sensible defaults for the rest of `.poetic-config.yaml`.
+Advanced/full config is a later escape hatch.
+
+**Rendering scope (impact of D25):** the shared poetic renderer extraction must
+also produce the **index** and **all-poems** aggregates (not just a single poem),
+so hosted output matches Poetic exactly and equals the future GitHub-Pages output.
+
+**Data-model additions (draft) [my call]:**
+- `sites` (one per user): `owner_id`, `handle` (unique), `title`, `subtitle`,
+  `author`, `favicon`, timestamps.
+- `poems` gains `status` (`draft|unlisted|published`) and `slug` (unique per site).
+
+**Out of scope for 2a:** per-user subdomains and custom domains (Phase 3);
+connect-your-own-GitHub (2b); Blogger (Phase 3); multiple sites (Phase 3).
