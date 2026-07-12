@@ -12,8 +12,9 @@ publishing (§8.1) + Phase-2a acceptance criteria (§10) + Phase-2b
 connect-your-own-GitHub (§8.2) + Phase-2b acceptance criteria (§11) +
 cross-cutting non-functional requirements (§12) + branding (§13) + domain
 (§14) + legal/privacy (§15) + user stories & personas (§16) specified.
-Next: implementation planning (your call) — the requirements registry is
-otherwise feature-complete.
+The requirements registry is feature-complete; implementation planning has
+begun in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) (milestones,
+critical path, open build decisions).
 **Last updated:** 2026-07-13
 
 ---
@@ -162,8 +163,12 @@ rendering of untrusted poem content), privacy, reliability/availability,
 i18n, and offline posture — consolidated across all phases.
 
 ### Later / parked
-- **Implementation planning** — break the MVP (§7) into build milestones; the
-  poetic-side renderer extraction (a framework change) is the critical dependency.
+- **Implementation planning** — **started, see
+  [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)**: the MVP is broken into
+  milestones (M0–M9), with the poetic-side renderer extraction (a framework
+  change) as the critical-path first step (M0). The packaging/versioning and
+  DB-schema/RLS "later rounds" below are carried forward there as open build
+  decisions.
 - MVP acceptance criteria — **done, see §9**. Phase-2a acceptance criteria —
   **done, see §10**. Phase-2b acceptance criteria — **done, see §11**. Branding
   — **done, see §13**. Domain — **done, see §14**. Legal/privacy — **done, see
