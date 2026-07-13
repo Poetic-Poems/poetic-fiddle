@@ -315,7 +315,8 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - Account/poem/export deletion propagating to all surfaces (AC92).
 - Branding assets: logo **light + dark** variants (AC106), favicon set, wordmark;
   warm/literary voice in UI copy (AC107).
-- Domain `poeticfiddle.com` over HTTPS (D34, AC108); **auth-email DNS**
+- Domain `poeticfiddle.com` over HTTPS (D34, AC108) — **registered**, DNS
+  pointing to hosting + cert issuance still to do (§6.3); **auth-email DNS**
   (SPF/DKIM/DMARC) so magic links deliver (AC109).
 - **ACs:** AC92, AC104–AC118.
 
@@ -414,6 +415,13 @@ the registry's data-model sketches (§7, §8.1, §8.2, §15) — to be firmed up
 ### 6.3 Hosting / environment
 Vercel project (D11); Supabase project + **region chosen for data-residency and
 disclosed** (D41); env-var/secret management (service keys server-only, AC88).
+`poeticfiddle.com` is registered (Cloudflare Registrar + DNS, 2026-07-13; see
+REQUIREMENTS.md §14) but not yet wired to hosting — once the Vercel project
+exists: add the domain in Vercel Project Settings → Domains, then create the
+DNS records Vercel specifies (apex `A`/`ALIAS` + `www` `CNAME`) in Cloudflare's
+DNS tab with the record's proxy status set to **DNS only** (grey cloud, not
+orange) so Vercel can issue and terminate its own TLS certificate. Redirect
+`www` → apex, matching the `/@handle` path model (D23).
 
 ### 6.4 Auth email deliverability *(gates M9, informs M4)*
 Sending domain for magic-link/password mail needs SPF/DKIM/DMARC (AC109).
