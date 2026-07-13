@@ -40,6 +40,28 @@ requests for its ID. Then:
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
 
+## TD26071302 poetic dependency pinned to a commit SHA, not a release tag
+
+`docs/IMPLEMENTATION-PLAN.md` §6.1 settled on a **tag**-pinned git dependency
+on `poetic` (e.g. `github:Poetic-Poems/poetic#v6.0.0`). At the time M2 needed
+it, the latest tag, `v6.0.0`, predates poetic's `./browser` export map (added
+in poetic PR #33) and its aggregate renderers (PR #34) — it is 13 commits
+behind poetic's `main` and its `package.json` has no `exports` field at all.
+No poetic tag yet exposes `poetic/browser`.
+
+`package.json` pins instead to the poetic `main` HEAD commit as of this
+writing (`115b15393065bfcf4c12d53fce097115219f4773`). poetic's own
+`docs/RENDERER-BROWSER.md` documents a commit SHA as an equally valid pin
+("a commit SHA works the same way if pinning between releases"), and
+`package-lock.json` still freezes the resolved commit — so this satisfies
+the same pinned-version intent as a tag (cf. AC68's pattern), just not the
+literal tag syntax §6.1 shows.
+
+Fix: once poetic cuts a release that includes the `./browser` export (bump
+`package.json`'s `version` and merge to `main` — poetic's `release.yml` then
+auto-tags), switch this repo's `poetic` dependency to that tag (e.g.
+`github:Poetic-Poems/poetic#v6.1.0`) and remove this entry.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -57,3 +79,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | ID | Title | Status | Resolved | Ref |
 |----|-------|--------|----------|-----|
 | TD26071301 | poetic git dependency needs types shim + transpilePackages | resolved | 2026-07-13 | https://github.com/Poetic-Poems/poetic-fiddle/pull/14 |
+| TD26071302 | poetic dependency pinned to a commit SHA, not a release tag | open | | |
