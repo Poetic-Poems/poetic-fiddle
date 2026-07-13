@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../../.claude"
+		},
+		{
+			"path": "../agent-ops"
 		}
 	],
 	"settings": {}

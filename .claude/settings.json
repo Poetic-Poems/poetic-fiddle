@@ -22,10 +22,13 @@
       "Bash(perl scripts/next-tech-debt-id.pl)",
       "Read(//home/wallen/**)",
       "Read(//tmp/**)",
-      "Read(//dev/**)"
+      "Read(//dev/**)",
+      "Bash(gh pr *)",
+      "Bash(gh run *)"
     ],
     "additionalDirectories": [
-      "/tmp"
+      "/tmp",
+      "/home/wallen/Code/agent-ops"
     ]
   }
 }
