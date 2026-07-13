@@ -25,7 +25,8 @@
       "Read(//dev/**)"
     ],
     "additionalDirectories": [
-      "/tmp"
+      "/tmp",
+      "/home/wallen/Code/agent-ops"
     ]
   }
 }
