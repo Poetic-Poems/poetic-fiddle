@@ -14,3 +14,5 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Initial Next.js app scaffold: a landing page with the Poetic Fiddle brand
   shell (logo, wordmark, purple/amber palette), supporting light and dark
   themes.
+- The app is live at [www.poeticfiddle.com](https://www.poeticfiddle.com/),
+  deployed via Vercel.

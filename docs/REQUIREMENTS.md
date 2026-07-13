@@ -988,9 +988,10 @@ candidate TLD at planning time; registrability is confirmed at the registrar
 before purchase.
 
 **Status.** Registered 2026-07-13 via **Cloudflare Registrar** (Cloudflare is
-also the DNS host for the zone). Not yet pointed at hosting — DNS records and
-TLS provisioning happen once the Vercel project exists (IMPLEMENTATION-PLAN.md
-§6.3).
+also the DNS host for the zone) and live on Vercel hosting since 2026-07-13.
+**Canonical host is `www.poeticfiddle.com`**: Vercel's own domain setup
+redirects the apex (`poeticfiddle.com`) to `www` (308), so that's the form
+kept for canonical URLs, share links, and examples throughout this document.
 
 **Consequences to design for:**
 - **Permalink permanence.** Share links (D14) and every `/@handle` site (D23)
@@ -1001,14 +1002,14 @@ TLS provisioning happen once the Vercel project exists (IMPLEMENTATION-PLAN.md
   the sending domain needs **SPF/DKIM/DMARC** configured (or auth mail is routed
   through the provider's authenticated sending domain).
 - **Single-brand surface.** The `/@handle` model (D23) means poets' public sites
-  live as **paths under the Fiddle domain** (`poeticfiddle.com/@handle`);
+  live as **paths under the Fiddle domain** (`www.poeticfiddle.com/@handle`);
   per-user subdomains / custom domains remain Phase 3 (AC48).
 
 ### 14.1 Acceptance criteria (domain)
 
 - **AC108** [D34, D23, AC89] — Given the app and all `/@handle` sites, when their
   canonical URLs are formed, then they resolve under the single primary domain
-  `poeticfiddle.com` over HTTPS.
+  `www.poeticfiddle.com` over HTTPS (the apex redirects to `www`).
 - **AC109** [D8, D10] — Given auth email, when it is sent, then it originates
   from an authenticated sending domain (SPF/DKIM/DMARC aligned) so magic links
   are deliverable.
@@ -1199,7 +1200,7 @@ fiddle if the poet has allowed that (D38).
 
 - **US11** [P2 · AC33, AC34] — As a non-technical poet ready to go public, I
   want to pick a simple web address for my poems, so that I can tell people
-  "read my poems at poeticfiddle.com/@myname" without touching a hosting
+  "read my poems at www.poeticfiddle.com/@myname" without touching a hosting
   provider.
 - **US12** [P2 · AC36, AC37] — As a publishing poet, I want a single toggle
   per poem to put it on my public site or take it down, so that publishing
