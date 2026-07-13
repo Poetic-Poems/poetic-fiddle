@@ -987,6 +987,11 @@ word-of-mouth recall). Alternatives considered and rejected for now: **`.ink`**
 candidate TLD at planning time; registrability is confirmed at the registrar
 before purchase.
 
+**Status.** Registered 2026-07-13 via **Cloudflare Registrar** (Cloudflare is
+also the DNS host for the zone). Not yet pointed at hosting — DNS records and
+TLS provisioning happen once the Vercel project exists (IMPLEMENTATION-PLAN.md
+§6.3).
+
 **Consequences to design for:**
 - **Permalink permanence.** Share links (D14) and every `/@handle` site (D23)
   embed this domain; once poems are shared the domain is **effectively
