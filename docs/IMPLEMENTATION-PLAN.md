@@ -17,9 +17,10 @@ merged upstream in poetic PR #31 (squash commit `b204140`); see poetic's
 `docs/RENDERER-BROWSER.md` and `src/browser/render.js`. **M1 (the Fiddle app
 scaffold) is delivered** — Next.js (App Router) + TypeScript under `src/`,
 ESLint/Prettier, Vitest, CI (`build.yml`, CodeQL `javascript-typescript`), and
-the brand shell (logo, palette, light/dark). The gating next step is now
-**M2** (the editor — the first place M0's renderer is consumed), which needs
-the §6.1 packaging decision settled first.
+the brand shell (logo, palette, light/dark). The §6.1 packaging decision is
+now settled (a tag-pinned git dependency on `poetic`), so **M2** (the editor —
+the first place M0's renderer is consumed) is unblocked and is the gating next
+step.
 
 ---
 
@@ -352,24 +353,47 @@ the MVP renderer and data model.
 These are the registry's parked "later rounds" plus what surfaced from reading
 the render code. Each needs a decision before the milestone that consumes it.
 
-### 6.1 Renderer packaging & versioning *(gates M0 → M2)*
-How Fiddle imports the browser-safe renderer from `poetic`. **[flag]** Options:
-(a) a published npm package from `poetic` (cleanest consumption; but poetic is
-`private: true` today); (b) a git dependency / git submodule pinned to a tag;
-(c) a Fiddle build step that vendors a pinned, precompiled bundle. Must also
-cover the **preview CSS** asset (§3.1(4)) and pin to a poetic version (AC68
-pattern). **[my call]** lean towards (a) a small public package scoped to the
-renderer if poetic can publish one, else (b) a tag-pinned git dependency.
+### 6.1 Renderer packaging & versioning *(gates M0 → M2)* — ✅ **DECIDED 2026-07-13**
 
-**Update 2026-07-13:** poetic PR #33 resolved poetic's own tech-debt item
-TD26071301 by exposing `./browser` and `./browser/poetic.css` via poetic's
-`package.json` `exports` map — the renderer and its preview CSS are now
-addressable as subpath imports (`poetic/browser`, `poetic/browser/poetic.css`).
-poetic's `package.json` is still `private: true`, so this is **not** an
-npm-registry publish; it only prepares the package for consumption. The actual
-mechanism Fiddle uses to pull that package in (option (b), a tag-pinned git
-dependency, remains the leading candidate) is still open — resolve it before
-M2 starts.
+**Decision: (b) a tag-pinned git dependency.** Fiddle's `package.json` depends
+on `poetic` directly from GitHub, pinned to an exact release tag, e.g.:
+
+```jsonc
+"dependencies": {
+  "poetic": "github:Poetic-Poems/poetic#v6.0.0"
+}
+```
+
+`package-lock.json` freezes the resolved commit, satisfying the AC68
+pinned-version pattern; bumping to a newer poetic release is a deliberate,
+reviewable `package.json` edit. `import { renderPoem, renderPoemPage } from
+'poetic/browser'` and `import 'poetic/browser/poetic.css'` resolve through
+poetic's `exports` map (below) — the same mechanism covers the **preview CSS**
+asset (§3.1(4)), so no separate vendoring decision was needed there.
+
+**Why (b) over the alternatives:** poetic is a public repo with a clean semver
+tag history, so a git dependency needs no deploy keys/PATs and works today.
+(a) a published npm package is the cleaner long-term shape but requires
+flipping `private: true` (or standing up a separate scoped package) plus a
+publish workflow — process overhead not justified for a single consumer yet.
+(c) a submodule or vendored/precompiled bundle reintroduces manual-sync drift
+risk against the single-source-of-truth goal (D6). Re-evaluate towards (a) if
+a second consumer of the renderer appears, or the git-dependency friction
+below becomes a recurring cost.
+
+**What made this decidable now:** poetic PR #33 resolved poetic's own
+tech-debt item TD26071301 by exposing `./browser` and `./browser/poetic.css`
+via poetic's `package.json` `exports` map, and poetic PR #34 added the
+browser-safe aggregate renderers (index/all-poems), completing the browser
+surface. poetic's `package.json` remains `private: true` (no npm-registry
+publish) — irrelevant to a git dependency, which installs straight from the
+tagged commit.
+
+**Known friction, tracked as Fiddle `TECH-DEBT.md` TD26071301** (a different
+repo's register from poetic's own TD26071301 above — same ID format, distinct
+namespace): poetic ships no TypeScript declarations for `./browser`, and its
+CommonJS (`require`) source needs `transpilePackages: ['poetic']` in Fiddle's
+`next.config`. Neither blocks M2; both should land with the first import.
 
 ### 6.2 Database schema & RLS design *(gates M5)*
 A proper design pass is owed (registry parked it). Consolidated **draft** from
@@ -418,13 +442,13 @@ poetic's build.
    mechanism** decision and the boundary sanitiser (lands in M2/M6).
 2. ~~**Start M1**~~ — **done**: Next.js + TS scaffold, CI (`build.yml` +
    CodeQL js-ts), and the brand shell are in place (see §4).
-3. **Settle the §6.1 packaging decision** (how Fiddle actually pulls in
-   `poetic/browser` — a tag-pinned git dependency is the leading candidate),
-   then **start M2** (the editor + live preview), which needs it.
+3. ~~**Settle the §6.1 packaging decision**~~ — **done**: a tag-pinned git
+   dependency on `poetic` (see §6.1). **Start M2** (the editor + live
+   preview), which needs it.
 4. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
 
-With M0 and M1 delivered, **the §6.1 packaging decision is the immediate
-blocker for M2** (the editor). The rest sequences behind them per §2.
+With M0, M1, and the §6.1 decision done, **M2 is unblocked and is the
+immediate next milestone**. The rest sequences behind it per §2.
 
 ---
 
