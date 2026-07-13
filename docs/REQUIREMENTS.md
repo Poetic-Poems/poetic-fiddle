@@ -1071,7 +1071,8 @@ defaults):**
   (Postgres/Auth/storage), the **hosting provider** (Vercel/Cloudflare/Netlify),
   the **transactional-email provider**, and **Google** (as an optional sign-in
   provider). The Supabase project **region** is chosen deliberately for
-  data-residency and disclosed.
+  data-residency and disclosed: **`ap-southeast-1` (Southeast Asia, Singapore)**
+  (see IMPLEMENTATION-PLAN.md §6.3).
 - **User rights (AC92):** signed-in users can delete individual poems, delete
   their whole account, and export their raw `.poem` source; deletion propagates
   to all surfaces.

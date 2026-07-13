@@ -415,8 +415,13 @@ the registry's data-model sketches (§7, §8.1, §8.2, §15) — to be firmed up
 ### 6.3 Hosting / environment
 Vercel project (D11) — **created, `www.poeticfiddle.com` live** since
 2026-07-13 (Root Directory = repo root; Next.js auto-detected). Supabase
-project + **region chosen for data-residency and disclosed** (D41); env-var/
-secret management (service keys server-only, AC88).
+project **"Poetic Fiddle"** — **created** 2026-07-13
+([ixerygypaevxzmiknokg.supabase.co](https://ixerygypaevxzmiknokg.supabase.co)),
+region **`ap-southeast-1` (Southeast Asia, Singapore)** — data-residency choice
+disclosed per D41 (see REQUIREMENTS.md §15); not yet consumed by the app
+(client wiring, env vars, and the schema/RLS pass land with M4/§6.2). Env-var/
+secret management (service keys server-only, AC88) still to be wired into
+Vercel once M4 starts.
 
 `poeticfiddle.com` (Cloudflare Registrar + DNS, registered 2026-07-13; see
 REQUIREMENTS.md §14) is wired to Vercel: Vercel's own domain setup redirects
