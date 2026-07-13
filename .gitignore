@@ -1,3 +1,6 @@
+# Agents
+.claude/settings.json
+
 # Logs
 logs
 *.log
