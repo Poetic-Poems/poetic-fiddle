@@ -72,4 +72,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 
 | ID | Title | Status | Resolved | Ref |
 |----|-------|--------|----------|-----|
-| TD26071301 | poetic git dependency needs types shim + transpilePackages | open | | |
+| TD26071301 | poetic git dependency needs types shim + transpilePackages | in-progress | | |
