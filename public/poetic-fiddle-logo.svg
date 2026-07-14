@@ -56,11 +56,11 @@
      inkscape:pageopacity="0"
      inkscape:pagecheckerboard="1"
      inkscape:deskcolor="#505050"
-     inkscape:zoom="9.1704545"
-     inkscape:cx="36.039653"
+     inkscape:zoom="8"
+     inkscape:cx="36"
      inkscape:cy="44"
      inkscape:window-width="1920"
-     inkscape:window-height="1009"
+     inkscape:window-height="1000"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
@@ -108,37 +108,38 @@
   </defs>
   <!-- Violin body: the Poetic nib, flipped upright (lightly waisted) -->
   <path
-     id="path2"
-     mask="url(#nib-mask)"
-     d="M 40,72 36,68 22,44.199219 28,34 22,25 28,16 h 24 l 6,9 -6,9 6,10.199219 L 44,68 Z"
-     transform="matrix(1,0,0,-1,-4,103.5)"
-     style="fill:#534ab7;fill-opacity:1" />
+     d="M 32 0 L 40 0 L 38 3 L 34 3 Z"
+     id="pegbox"
+     style="fill:#534ab7;fill-opacity:1;stroke:none"
+  />
   <rect
-     style="fill:#534ab7;fill-opacity:1;stroke:none;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.862745"
-     id="rect3"
-     width="1.25"
      height="32"
+     id="neck_left"
+     style="fill:#534ab7;fill-opacity:1;stroke:none;"
+     width="1.25"
      x="34"
-     y="1.9999987" />
+     y="2"
+  />
   <rect
-     style="fill:#534ab7;fill-opacity:1;stroke:none;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.862745"
-     id="rect4"
-     width="1.25"
      height="32"
+     id="neck_right"
+     style="fill:#534ab7;fill-opacity:1;stroke:none;"
+     width="1.25"
      x="36.75"
-     y="1.9999987" />
+     y="2"
+  />
   <path
-     id="path4"
-     style="fill:#534ab7;fill-opacity:1;stroke:none;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.862745"
-     inkscape:transform-center-x="1.5692503e-06"
-     inkscape:transform-center-y="1"
-     d="M 34.199138 -15.318735 L 35.967026 -12.256663 L 35.967026 -13.434383 L 36.782974 -13.434383 L 36.782974 -12.256663 L 38.550862 -15.318735 L 34.199138 -15.318735 z "
-     transform="matrix(1.838352,0,0,1.5920595,-30.870054,24.388337)" />
+     d="M 40,72 36,68 22,44 28,34 22,25 28,16 h 24 l 6,9 -6,9 6,10 L 44,68 Z"
+     id="corpus"
+     mask="url(#nib-mask)"
+     style="fill:#534ab7;fill-opacity:1"
+     transform="matrix(1,0,0,-1,-4,103.5)"
+  />
   <metadata
      id="metadata6">
     <rdf:RDF>
       <cc:Work
-         rdf:about="">
+         rdf:about="https://www.poeticfiddle.com">
         <dc:title>Poetic Fiddle</dc:title>
       </cc:Work>
     </rdf:RDF>
