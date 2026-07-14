@@ -459,7 +459,9 @@ region **`ap-southeast-1` (Southeast Asia, Singapore)** — data-residency choic
 disclosed per D41 (see REQUIREMENTS.md §15); not yet consumed by the app
 (client wiring, env vars, and the schema/RLS pass land with M4/§6.2). Env-var/
 secret management (service keys server-only, AC88) still to be wired into
-Vercel once M4 starts.
+Vercel once M4 starts. The variable contract the app codes against is captured
+in `.env.example` (copy to `.env.local` for local dev; set the same variables
+in Vercel for deploys) — see README.md "Environment & secrets".
 
 `poeticfiddle.com` (Cloudflare Registrar + DNS, registered 2026-07-13; see
 REQUIREMENTS.md §14) is wired to Vercel: Vercel's own domain setup redirects
