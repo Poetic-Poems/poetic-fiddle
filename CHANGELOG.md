@@ -16,3 +16,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   themes.
 - The app is live at [www.poeticfiddle.com](https://www.poeticfiddle.com/),
   deployed via Vercel.
+- `.poem` editor with a live preview: CodeMirror 6 with structural syntax
+  highlighting, a friendly example poem pre-populated on first visit, and a
+  debounced (~200ms) in-browser preview rendered via poetic's browser-safe
+  renderer inside a sandboxed, DOMPurify-sanitised iframe.

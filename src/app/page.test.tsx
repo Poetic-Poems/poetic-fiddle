@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import Home from "./page";
 
 describe("Home", () => {
-  it("renders the landing heading", () => {
+  it("renders the editor heading and a syntax reference link", async () => {
     render(<Home />);
     expect(
-      screen.getByRole("heading", { name: /a friendly home for your poems/i }),
+      await screen.findByRole("heading", { name: /write your poem/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: /syntax reference/i }),
     ).toBeInTheDocument();
   });
 });

@@ -50,6 +50,9 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
+# Generated from the pinned poetic dependency (scripts/sync-poetic-css.mjs)
+src/lib/poetic-css.generated.ts
+
 # Optional npm cache directory
 .npm
 
