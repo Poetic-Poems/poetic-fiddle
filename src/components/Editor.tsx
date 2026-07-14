@@ -11,12 +11,15 @@ const DEBOUNCE_MS = 200;
 
 const EXTENSIONS = [poemLanguage, poemSyntaxHighlighting];
 
-function tryRenderPoem(text: string): { html: string; error: string | null } {
+export function tryRenderPoem(
+  text: string,
+  previousHtml: string = "",
+): { html: string; error: string | null } {
   try {
     return { html: renderPoem(text), error: null };
   } catch (err) {
     return {
-      html: "",
+      html: previousHtml,
       error: err instanceof Error ? err.message : String(err),
     };
   }
@@ -60,7 +63,7 @@ export default function Editor({ poeticCss }: EditorProps) {
     setSource(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setRendered(tryRenderPoem(value));
+      setRendered((previous) => tryRenderPoem(value, previous.html));
     }, DEBOUNCE_MS);
   }, []);
 
