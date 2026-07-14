@@ -14,8 +14,9 @@ The app is scaffolded: a Next.js (App Router) + TypeScript app lives under
 light/dark) in place. `.github/workflows/build.yml` (lint, typecheck, format
 check, test, build) and CodeQL's `javascript-typescript` scan
 (`.github/workflows/codeql.yml`) run on every pull request and push to
-`main`. The editor, live preview, auth, and data layers are not yet built —
-see `docs/IMPLEMENTATION-PLAN.md` for the milestone sequence.
+`main`. The editor, live preview, and anonymous drafts (autosaved to
+`localStorage`) are built; auth and data layers are not yet — see
+`docs/IMPLEMENTATION-PLAN.md` for the milestone sequence.
 
 Requirements gathering is complete; `docs/REQUIREMENTS.md` is the
 authoritative, living registry of decisions, rationale, and open questions.

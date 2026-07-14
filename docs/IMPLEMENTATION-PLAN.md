@@ -20,8 +20,11 @@ ESLint/Prettier, Vitest, CI (`build.yml`, CodeQL `javascript-typescript`), and
 the brand shell (logo, palette, light/dark). **M2 (the editor + live preview)
 is delivered** — CodeMirror 6 with a `.poem` StreamLanguage mode, a debounced
 in-browser preview via the §6.1 tag-pinned `poetic` dependency, and
-DOMPurify-sanitised rendering inside a sandboxed iframe. M3 (anonymous
-drafts) is the gating next step.
+DOMPurify-sanitised rendering inside a sandboxed iframe. **M3 (anonymous
+drafts) is delivered** — the draft autosaves to `localStorage` on every
+keystroke and restores on load, with no sign-in prompt during ordinary
+editing; Save and Share are stubbed with a sign-in prompt shown only when
+attempted. M4 (auth) is the gating next step.
 
 ---
 
@@ -263,6 +266,19 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - **ACs:** AC1–AC6, AC24, AC25, AC80.
 
 ### M3 — Anonymous drafts
+
+> **✅ Delivered 2026-07-14.** `src/lib/draft-storage.ts` wraps a versioned
+> `localStorage` key (`loadDraft`/`saveDraft`/`clearDraft`), tolerant of
+> storage being unavailable (private browsing, quota — AC98). `Editor.tsx`
+> initialises from a stored draft (falling back to the example poem) and
+> autosaves on every keystroke, with no sign-in prompt anywhere in the edit/
+> preview path (AC7, AC8). `loadDraft`/`clearDraft` are the migration hook
+> (AC9): M4's sign-in handler calls `loadDraft()` to adopt the draft into the
+> newly authenticated session and `clearDraft()` once it's saved to the
+> account. Save and Share toolbar buttons open a `SignInPrompt` dialog —
+> sign-in itself isn't wired up until M4, so this stands in for that flow —
+> shown only on Save/Share, never during editing (AC10).
+
 *Depends on: M2.*
 - Full anonymous edit/preview with no sign-in prompt (AC7).
 - Draft persisted to `localStorage`, restored on reload/reopen (AC8).
@@ -481,10 +497,11 @@ poetic's build.
 3. ~~**Settle the §6.1 packaging decision**~~ — **done**: a tag-pinned git
    dependency on `poetic` (see §6.1).
 4. ~~**Start M2**~~ — **done**: the editor + live preview (see §4).
-5. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
+5. ~~**Start M3**~~ — **done**: anonymous drafts (see §4).
+6. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
 
-With M0, M1, and M2 done, **M3 (anonymous drafts) is the immediate next
-milestone**. The rest sequences behind it per §2.
+With M0–M3 done, **M4 (authentication) is the immediate next milestone**. The
+rest sequences behind it per §2.
 
 ---
 
