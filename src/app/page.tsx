@@ -1,13 +1,18 @@
+import { poeticCss } from "@/lib/poetic-css.generated";
+import { EditorClient } from "@/components/EditorClient";
+
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-      <h1 className="max-w-xl font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
-        A friendly home for your poems
-      </h1>
-      <p className="max-w-md text-lg">
-        We&apos;re tuning the strings &mdash; a simple, welcoming editor for
-        poets who&apos;d rather write than wrestle with tools. Check back soon.
-      </p>
+    <main className="flex flex-1 flex-col gap-4">
+      <div className="px-6 pt-6">
+        <h1 className="font-serif text-2xl font-semibold tracking-tight">
+          Write your poem
+        </h1>
+        <p className="text-sm text-foreground/70">
+          Edit on the left, watch the preview update on the right.
+        </p>
+      </div>
+      <EditorClient poeticCss={poeticCss} />
     </main>
   );
 }

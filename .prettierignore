@@ -11,3 +11,6 @@ package-lock.json
 # Markdown formatting/whitespace is governed by scripts/remove-trailing-spaces.sh
 # (see .editorconfig) — trailing two-space hard breaks must be preserved.
 *.md
+
+# Generated from the pinned poetic dependency (scripts/sync-poetic-css.mjs).
+src/lib/poetic-css.generated.ts

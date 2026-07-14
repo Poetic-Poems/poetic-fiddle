@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated from the pinned poetic dependency (scripts/sync-poetic-css.mjs).
+    "src/lib/poetic-css.generated.ts",
   ]),
 ]);
 
