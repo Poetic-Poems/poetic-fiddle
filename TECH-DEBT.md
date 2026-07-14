@@ -95,5 +95,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 |----|-------|--------|----------|-----|
 | TD26071301 | poetic git dependency needs types shim + transpilePackages | resolved | 2026-07-13 | https://github.com/Poetic-Poems/poetic-fiddle/pull/14 |
 | TD26071401 | Analysis show/hide toggle is inert under DOMPurify sanitisation | open | | |
-| TD26071501 | Auth needs manual Supabase/Vercel dashboard configuration | resolved | 2026-07-15 | PR_URL_PLACEHOLDER |
+| TD26071501 | Auth needs manual Supabase/Vercel dashboard configuration | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/24 |
 | TD26071502 | Privacy policy needed for Google OAuth brand verification | open | | |
