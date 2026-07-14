@@ -27,3 +27,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sign-in, with the session persisting across reloads. Signing in for the
   first time adopts any anonymous `localStorage` draft into the session and
   clears it.
+
+### Security
+
+- Bumped `postcss` (a transitive dependency, pulled in both via
+  `tailwindcss`/`vitest` and, separately, bundled inside `next`) to 8.5.19
+  via an `overrides` entry, resolving a medium-severity XSS via unescaped
+  `</style>` in CSS Stringify Output
+  ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)).
