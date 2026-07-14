@@ -17,10 +17,11 @@ merged upstream in poetic PR #31 (squash commit `b204140`); see poetic's
 `docs/RENDERER-BROWSER.md` and `src/browser/render.js`. **M1 (the Fiddle app
 scaffold) is delivered** — Next.js (App Router) + TypeScript under `src/`,
 ESLint/Prettier, Vitest, CI (`build.yml`, CodeQL `javascript-typescript`), and
-the brand shell (logo, palette, light/dark). The §6.1 packaging decision is
-now settled (a tag-pinned git dependency on `poetic`), so **M2** (the editor —
-the first place M0's renderer is consumed) is unblocked and is the gating next
-step.
+the brand shell (logo, palette, light/dark). **M2 (the editor + live preview)
+is delivered** — CodeMirror 6 with a `.poem` StreamLanguage mode, a debounced
+in-browser preview via the §6.1 tag-pinned `poetic` dependency, and
+DOMPurify-sanitised rendering inside a sandboxed iframe. M3 (anonymous
+drafts) is the gating next step.
 
 ---
 
@@ -227,6 +228,27 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - **ACs:** foundational (enables AC28, AC83).
 
 ### M2 — Editor + live preview
+
+> **✅ Delivered 2026-07-14.** CodeMirror 6 (`@uiw/react-codemirror`) with a
+> v1 `.poem` `StreamLanguage` mode (`src/lib/poem-syntax.ts`): structural
+> highlighting for sections, version labels, emphasis, variables, spans,
+> comments, hashtags. A ~200ms debounced in-browser preview
+> (`src/components/Editor.tsx`) calls `renderPoem` from the §6.1 tag-pinned
+> `poetic` dependency (`github:Poetic-Poems/poetic#v6.0.1` — poetic cut a
+> release exposing `poetic/browser` before this milestone landed, so no
+> interim main-HEAD-SHA pin was needed after all); a parse error surfaces a
+> non-blocking message and the last good preview stays visible.
+> `src/components/PoemPreview.tsx` renders the DOMPurify-sanitised output
+> inside a sandboxed `<iframe>` bundling poetic's own CSS (copied into a
+> generated module by `scripts/sync-poetic-css.mjs`, run via `postinstall`),
+> so app-shell and poem styles never collide. A friendly example `.poem`
+> pre-populates the editor on first load, linking to poetic's
+> `POEM-SYNTAX.md` at the pinned tag. Media-embed markup renders as a plain
+> link (poetic's Suno/Audiomack/Mega handlers without `poetic.js` loaded);
+> full sandboxed embeds and the Analysis section's show/hide toggle (its
+> `onclick` handlers are stripped by DOMPurify — see `TECH-DEBT.md`
+> TD26071401) remain M8 work.
+
 *Depends on: M0 (renderer), M1 (scaffold).*
 - CodeMirror 6 with a v1 `.poem` mode: structural highlighting for `{sections}`,
   `*emphasis*`/`**strong**`, variables, `/.classname{…}` spans, comments,
@@ -457,12 +479,12 @@ poetic's build.
 2. ~~**Start M1**~~ — **done**: Next.js + TS scaffold, CI (`build.yml` +
    CodeQL js-ts), and the brand shell are in place (see §4).
 3. ~~**Settle the §6.1 packaging decision**~~ — **done**: a tag-pinned git
-   dependency on `poetic` (see §6.1). **Start M2** (the editor + live
-   preview), which needs it.
-4. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
+   dependency on `poetic` (see §6.1).
+4. ~~**Start M2**~~ — **done**: the editor + live preview (see §4).
+5. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
 
-With M0, M1, and the §6.1 decision done, **M2 is unblocked and is the
-immediate next milestone**. The rest sequences behind it per §2.
+With M0, M1, and M2 done, **M3 (anonymous drafts) is the immediate next
+milestone**. The rest sequences behind it per §2.
 
 ---
 
