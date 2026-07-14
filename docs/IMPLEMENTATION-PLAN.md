@@ -478,11 +478,13 @@ project **"Poetic Fiddle"** — **created** 2026-07-13
 ([ixerygypaevxzmiknokg.supabase.co](https://ixerygypaevxzmiknokg.supabase.co)),
 region **`ap-southeast-1` (Southeast Asia, Singapore)** — data-residency choice
 disclosed per D41 (see REQUIREMENTS.md §15). Client wiring landed with M4
-(`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`, see
-`.env.example`); the schema/RLS pass (§6.2) is still to come, gating M5.
-Setting those env vars in Vercel and enabling the Google Auth provider in the
-Supabase dashboard remain outstanding manual steps — `TECH-DEBT.md`
-TD26071501.
+(`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`); the variable
+contract the app codes against is captured in `.env.example` (copy to
+`.env.local` for local dev; set the same variables in Vercel for deploys) —
+see README.md "Environment & secrets". The schema/RLS pass (§6.2) is still to
+come, gating M5. Setting those env vars in Vercel and enabling the Google
+Auth provider in the Supabase dashboard remain outstanding manual steps —
+`TECH-DEBT.md` TD26071501.
 
 `poeticfiddle.com` (Cloudflare Registrar + DNS, registered 2026-07-13; see
 REQUIREMENTS.md §14) is wired to Vercel: Vercel's own domain setup redirects
