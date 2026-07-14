@@ -43,6 +43,28 @@ template change) or a light client-side rehydration step in Fiddle that
 re-wires the toggle after sanitisation instead of relying on the sanitised
 inline handlers.
 
+## TD26071501 Auth needs manual Supabase/Vercel dashboard configuration
+
+M4 (`docs/IMPLEMENTATION-PLAN.md` §4) wires up Supabase Auth in code (magic
+link, Google OAuth, email/password via `src/lib/supabase-client.ts`,
+`src/lib/use-session.ts`, `src/components/SignInPrompt.tsx`), but two steps
+outside version control still need a human with dashboard access:
+
+1. **Google provider.** The Supabase project's Auth → Providers → Google
+   needs a Google Cloud OAuth client (client ID/secret) configured and the
+   provider enabled. Until then, "Continue with Google" reaches Supabase but
+   fails there. Magic-link email works today via Supabase's built-in SMTP
+   (§6.4's dedicated sending-domain question is a separate, non-blocking
+   deliverability refinement).
+2. **Vercel environment variables.** `NEXT_PUBLIC_SUPABASE_URL` and
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see `.env.example`) need to be set in the
+   Vercel project (Production + Preview) — sign-in fails client-side without
+   them. The anon key isn't itself a secret (it's designed for client
+   exposure, gated by RLS) but doesn't belong in git.
+
+Fix: whoever holds Supabase/Vercel dashboard access completes both, then
+verifies each auth method end-to-end against the deployed app.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -79,3 +101,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 |----|-------|--------|----------|-----|
 | TD26071301 | poetic git dependency needs types shim + transpilePackages | resolved | 2026-07-13 | https://github.com/Poetic-Poems/poetic-fiddle/pull/14 |
 | TD26071401 | Analysis show/hide toggle is inert under DOMPurify sanitisation | open | | |
+| TD26071501 | Auth needs manual Supabase/Vercel dashboard configuration | open | | |

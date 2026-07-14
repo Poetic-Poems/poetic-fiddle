@@ -24,7 +24,10 @@ DOMPurify-sanitised rendering inside a sandboxed iframe. **M3 (anonymous
 drafts) is delivered** — the draft autosaves to `localStorage` on every
 keystroke and restores on load, with no sign-in prompt during ordinary
 editing; Save and Share are stubbed with a sign-in prompt shown only when
-attempted. M4 (auth) is the gating next step.
+attempted. **M4 (authentication) is delivered** — Supabase Auth (magic link,
+Google, email/password) via `@supabase/supabase-js`, with the M3 draft
+migrating into the session on first sign-in. Running the §6.2 schema/RLS
+design pass for M5 is the immediate next step.
 
 ---
 
@@ -288,6 +291,24 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - **ACs:** AC7–AC10, AC98.
 
 ### M4 — Authentication
+
+> **✅ Delivered 2026-07-15.** `@supabase/supabase-js` browser client
+> (`src/lib/supabase-client.ts`, from `NEXT_PUBLIC_SUPABASE_URL`/
+> `NEXT_PUBLIC_SUPABASE_ANON_KEY`); a `useSession` hook
+> (`src/lib/use-session.ts`) subscribes to `onAuthStateChange` so the session
+> persists across reloads (AC12). `SignInPrompt` offers magic-link email
+> (primary), "Continue with Google", and a password fallback with a
+> sign-in/sign-up toggle (D8, AC11). `Editor` adopts the M3 `localStorage`
+> draft into the session on first sign-in via the existing `loadDraft`/
+> `clearDraft` hook point (AC9), and gates the Save/Share sign-in prompt on
+> session state; a signed-in user's email and a sign-out control appear in
+> the toolbar. No `@supabase/ssr`/middleware yet — every auth surface today
+> is client-only, so the plain browser client (localStorage-backed session)
+> is sufficient; server-side session reading is deferred to whichever of
+> M5/M6 first adds a server route that needs it. Two manual dashboard steps
+> (enabling the Google provider in Supabase, setting the env vars in Vercel)
+> remain outstanding — tracked as `TECH-DEBT.md` TD26071501.
+
 *Depends on: M1 (Supabase project provisioned).*
 - Supabase Auth: magic-link email **and** Google **and** email/password (D8,
   AC11); session persists across reloads (AC12).
@@ -456,10 +477,12 @@ Vercel project (D11) — **created, `www.poeticfiddle.com` live** since
 project **"Poetic Fiddle"** — **created** 2026-07-13
 ([ixerygypaevxzmiknokg.supabase.co](https://ixerygypaevxzmiknokg.supabase.co)),
 region **`ap-southeast-1` (Southeast Asia, Singapore)** — data-residency choice
-disclosed per D41 (see REQUIREMENTS.md §15); not yet consumed by the app
-(client wiring, env vars, and the schema/RLS pass land with M4/§6.2). Env-var/
-secret management (service keys server-only, AC88) still to be wired into
-Vercel once M4 starts.
+disclosed per D41 (see REQUIREMENTS.md §15). Client wiring landed with M4
+(`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`, see
+`.env.example`); the schema/RLS pass (§6.2) is still to come, gating M5.
+Setting those env vars in Vercel and enabling the Google Auth provider in the
+Supabase dashboard remain outstanding manual steps — `TECH-DEBT.md`
+TD26071501.
 
 `poeticfiddle.com` (Cloudflare Registrar + DNS, registered 2026-07-13; see
 REQUIREMENTS.md §14) is wired to Vercel: Vercel's own domain setup redirects
@@ -498,10 +521,11 @@ poetic's build.
    dependency on `poetic` (see §6.1).
 4. ~~**Start M2**~~ — **done**: the editor + live preview (see §4).
 5. ~~**Start M3**~~ — **done**: anonymous drafts (see §4).
-6. **Run the §6.2 schema/RLS design pass** so M5 is ready when auth (M4) is.
+6. ~~**Start M4**~~ — **done**: Supabase authentication (see §4).
+7. **Run the §6.2 schema/RLS design pass** so M5 is ready to start.
 
-With M0–M3 done, **M4 (authentication) is the immediate next milestone**. The
-rest sequences behind it per §2.
+With M0–M4 done, **the §6.2 schema/RLS design pass is the immediate next
+step**, gating M5. The rest sequences behind it per §2.
 
 ---
 

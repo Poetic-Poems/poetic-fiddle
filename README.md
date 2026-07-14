@@ -3,7 +3,9 @@ A user-friendly interface to the Poetic poem-authoring framework.
 
 ## Development
 
-Requires Node.js >=20.9. Install dependencies with `npm install`, then:
+Requires Node.js >=20.9. Copy `.env.example` to `.env.local` and fill in the
+Supabase project's anon key (Project Settings → API in the Supabase
+dashboard). Install dependencies with `npm install`, then:
 
 | Command | Purpose |
 |---------|---------|

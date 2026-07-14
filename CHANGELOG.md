@@ -23,3 +23,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Anonymous drafts: the in-progress poem autosaves to the browser's
   `localStorage` and is restored on reload, with no sign-in required to edit
   or preview. Save and Share buttons prompt for sign-in only when clicked.
+- Authentication via Supabase: magic-link email, Google, and email/password
+  sign-in, with the session persisting across reloads. Signing in for the
+  first time adopts any anonymous `localStorage` draft into the session and
+  clears it.
