@@ -1,11 +1,26 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "./page";
-import { saveDraft } from "@/lib/draft-storage";
+import { loadDraft, saveDraft } from "@/lib/draft-storage";
+
+const authMock = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  onAuthStateChange: vi.fn(),
+  signOut: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase-client", () => ({
+  supabase: { auth: authMock },
+}));
 
 describe("Home", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.clearAllMocks();
+    authMock.getSession.mockResolvedValue({ data: { session: null } });
+    authMock.onAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
   });
 
   it("renders the editor heading and a syntax reference link", async () => {
@@ -44,5 +59,33 @@ describe("Home", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /share/i }));
     expect(await screen.findByText(/^sign in to share$/i)).toBeInTheDocument();
+  });
+
+  it("adopts the anonymous draft on first sign-in and clears it from localStorage (AC9)", async () => {
+    saveDraft("={title}=My Draft\n\n{Verse 1}\nHello, poet.\n");
+    render(<Home />);
+    await screen.findByRole("link", { name: /syntax reference/i });
+
+    const onAuthStateChange = authMock.onAuthStateChange.mock.calls[0][0];
+    act(() => {
+      onAuthStateChange("SIGNED_IN", { user: { email: "poet@example.com" } });
+    });
+
+    expect(await screen.findByText("poet@example.com")).toBeInTheDocument();
+    expect(loadDraft()).toBeNull();
+  });
+
+  it("no longer prompts to sign in once signed in (AC9)", async () => {
+    render(<Home />);
+    await screen.findByRole("link", { name: /syntax reference/i });
+
+    const onAuthStateChange = authMock.onAuthStateChange.mock.calls[0][0];
+    act(() => {
+      onAuthStateChange("SIGNED_IN", { user: { email: "poet@example.com" } });
+    });
+    await screen.findByText("poet@example.com");
+
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    expect(screen.queryByText(/^sign in to save$/i)).not.toBeInTheDocument();
   });
 });

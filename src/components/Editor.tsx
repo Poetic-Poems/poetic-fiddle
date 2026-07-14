@@ -7,7 +7,9 @@ import { poemLanguage, poemSyntaxHighlighting } from "@/lib/poem-syntax";
 import { PoemPreview } from "@/components/PoemPreview";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
-import { loadDraft, saveDraft } from "@/lib/draft-storage";
+import { loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
+import { supabase } from "@/lib/supabase-client";
+import { useSession } from "@/lib/use-session";
 
 const DEBOUNCE_MS = 200;
 
@@ -57,12 +59,30 @@ export default function Editor({ poeticCss }: EditorProps) {
     undefined,
   );
   const prefersDark = usePrefersDark();
+  const session = useSession();
+  const [migratedUserId, setMigratedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+  // AC9: on first sign-in, the anonymous localStorage draft (if any) becomes
+  // this session's poem instead of being silently left behind. Adjusted
+  // during render (React's "resetting state when a prop changes" pattern)
+  // rather than in an effect, guarded per-user so a later token refresh
+  // (a new session object for the same user) doesn't re-run it; loadDraft()
+  // returning null after the first run makes repeat sign-ins a no-op anyway.
+  if (session && session.user.id !== migratedUserId) {
+    setMigratedUserId(session.user.id);
+    const draft = loadDraft();
+    if (draft !== null) {
+      setSource(draft);
+      setRendered(tryRenderPoem(draft));
+      clearDraft();
+    }
+  }
 
   const handleChange = useCallback((value: string) => {
     setSource(value);
@@ -75,17 +95,35 @@ export default function Editor({ poeticCss }: EditorProps) {
 
   return (
     <div className="flex flex-1 flex-col gap-4 px-6 pb-6">
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-3">
+        {session && (
+          <>
+            <span className="text-sm text-foreground/70">
+              {session.user.email}
+            </span>
+            <button
+              type="button"
+              onClick={() => supabase.auth.signOut()}
+              className="text-sm text-foreground/70 underline underline-offset-2"
+            >
+              Sign out
+            </button>
+          </>
+        )}
         <button
           type="button"
-          onClick={() => setSignInPromptAction("save")}
+          onClick={() => {
+            if (!session) setSignInPromptAction("save");
+          }}
           className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
         >
           Save
         </button>
         <button
           type="button"
-          onClick={() => setSignInPromptAction("share")}
+          onClick={() => {
+            if (!session) setSignInPromptAction("share");
+          }}
           className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
         >
           Share

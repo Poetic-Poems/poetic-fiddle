@@ -21,6 +21,7 @@
   "dependencies": {
     "@codemirror/language": "^6.12.4",
     "@lezer/highlight": "^1.2.3",
+    "@supabase/supabase-js": "^2.109.0",
     "@uiw/react-codemirror": "^4.25.11",
     "codemirror": "^6.0.2",
     "dompurify": "^3.4.12",
