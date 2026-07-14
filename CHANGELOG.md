@@ -20,3 +20,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   highlighting, a friendly example poem pre-populated on first visit, and a
   debounced (~200ms) in-browser preview rendered via poetic's browser-safe
   renderer inside a sandboxed, DOMPurify-sanitised iframe.
+- Anonymous drafts: the in-progress poem autosaves to the browser's
+  `localStorage` and is restored on reload, with no sign-in required to edit
+  or preview. Save and Share buttons prompt for sign-in only when clicked.
