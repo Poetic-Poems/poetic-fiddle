@@ -17,6 +17,10 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Poetic Fiddle",
   description: "A friendly web editor for the Poetic poem-authoring framework.",
+  applicationName: "Poetic Fiddle",
+  openGraph: {
+    siteName: "Poetic Fiddle",
+  },
 };
 
 export default function RootLayout({
