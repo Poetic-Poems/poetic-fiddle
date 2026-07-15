@@ -39,6 +39,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A missing space in the Privacy Policy's "What we collect" list, where
   "Account information." ran into the following sentence with no space
   between them in some rendering paths.
+- The Analysis section's "Show analysis"/"Hide analysis" buttons now work in
+  the live preview. They previously did nothing, because DOMPurify strips
+  the inline `onclick` handlers poetic's template relies on; the preview now
+  rewires the same show/hide behaviour after sanitisation.
 
 ### Security
 

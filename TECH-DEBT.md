@@ -22,27 +22,6 @@ so the Ledger (not memory or scrollback) is the source of truth for the next
 free ID. Compute it with `scripts/next-tech-debt-id.pl` rather than counting
 by hand.
 
-## TD26071401 Analysis show/hide toggle is inert under DOMPurify sanitisation
-
-poetic's page/fragment templates (`src/templates/_poem-content.pug`) show/hide
-a poem's Analysis section via inline `onclick` handlers on the "Show
-analysis"/"Hide analysis" buttons. `PoemPreview.tsx`'s default-config
-`DOMPurify.sanitize()` (M2) strips all `on*` attributes, so a poem with an
-Analysis section renders with those buttons present but non-functional in
-Fiddle's live preview and (once M6 lands) the SSR share page — the content
-stays exactly as poetic's CSS defaults it (likely permanently hidden, since
-`.analysis` has no other reveal mechanism once the onclick handlers are gone).
-This doesn't affect M2's own scope: the curated example `.poem` has no
-Analysis section, and every M2 acceptance criterion is unaffected.
-
-Fix at whichever milestone first needs Analysis-section fidelity (M6 share
-pages are the more likely trigger than the editor preview): either add a
-small script-free reveal (e.g. a checkbox+label CSS toggle, matching the
-postscript preview's own pattern, landing upstream in poetic since it's a
-template change) or a light client-side rehydration step in Fiddle that
-re-wires the toggle after sanitisation instead of relying on the sanitised
-inline handlers.
-
 ## TD26071504 OAuth consent screen App name doesn't match the home page
 
 Google's brand verification for the Poetic Fiddle Google Cloud OAuth client
@@ -111,6 +90,23 @@ Fix (dashboard + DNS, plus one code step):
    not after (the published policy would be incomplete while it is).
    REQUIREMENTS.md §15's sub-processor list already names it.
 
+## TD26071602 Analysis synopsis/full selector is inert under DOMPurify sanitisation
+
+poetic's `_poem-content.pug` also renders a `.full-or-synopsis-selector` (two
+buttons, "Synopsis" / "Full Analysis") inside the Analysis panel when an
+analysis has both `{Synopsis}` and `{Full}` content. Like the show/hide
+toggle resolved by TD26071401 (`PoemPreview.tsx`'s `wireAnalysisToggles`),
+these buttons rely on inline `onclick` handlers that `DOMPurify.sanitize()`
+strips, so they render but do nothing — a poem with both forms of analysis
+shows only the synopsis view (poetic's CSS default), with no way to switch to
+the full analysis in Fiddle's preview or a future SSR share page.
+
+Left out of TD26071401's fix to keep that PR scoped to the show/hide toggle
+its acceptance criteria named. Fix the same way: extend
+`wireAnalysisToggles` in `src/components/PoemPreview.tsx` to also wire
+`button.analysis.selector` clicks, toggling the `#analysis-full--<slug>` /
+`#analysis-syno--<slug>` panels and each button's `.selected` class.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -146,9 +142,10 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | ID | Title | Status | Resolved | Ref |
 |----|-------|--------|----------|-----|
 | TD26071301 | poetic git dependency needs types shim + transpilePackages | resolved | 2026-07-13 | https://github.com/Poetic-Poems/poetic-fiddle/pull/14 |
-| TD26071401 | Analysis show/hide toggle is inert under DOMPurify sanitisation | open | | |
+| TD26071401 | Analysis show/hide toggle is inert under DOMPurify sanitisation | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/32 |
 | TD26071501 | Auth needs manual Supabase/Vercel dashboard configuration | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/24 |
 | TD26071502 | Privacy policy needed for Google OAuth brand verification | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/26 |
 | TD26071503 | Point the Google OAuth consent screen at the published privacy policy | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/27 |
 | TD26071504 | OAuth consent screen App name doesn't match the home page | open | | |
 | TD26071601 | Auth email reaches only project-team addresses (no custom SMTP) | open | | |
+| TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | open | | |
