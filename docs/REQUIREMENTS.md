@@ -34,9 +34,9 @@ Blogger sites.
 
 ### Reference repositories
 - **Provider / framework:** `poetic` — https://github.com/Poetic-Poems/poetic
-  (local: `/home/wallen/Code/poetic`)
+  (local: `/home/wallen/Code/Poetic-Poems/poetic`)
 - **This project:** `poetic-fiddle` — https://github.com/Poetic-Poems/poetic-fiddle
-  (local: `/home/wallen/Code/poetic-fiddle`)
+  (local: `/home/wallen/Code/Poetic-Poems/poetic-fiddle`)
 - **Example consumer:** `fragments-and-unity` — https://github.com/Warwick-Allen/fragments-and-unity
   (local: `/home/wallen/fragments-and-unity`) — a real, working Poetic poem collection.
 
