@@ -9,4 +9,11 @@ describe("SiteFooter", () => {
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/privacy");
   });
+
+  it("links to the terms of service", () => {
+    render(<SiteFooter />);
+    const link = screen.getByRole("link", { name: /terms of service/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/terms");
+  });
 });

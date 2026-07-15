@@ -39,23 +39,26 @@ export default function PrivacyPolicy() {
         <section>
           <h2 className="font-serif text-lg font-semibold">What we collect</h2>
           <ul className="mt-2 flex list-disc flex-col gap-2 pl-5">
+            {/* prettier-ignore */}
             <li>
-              <strong>Account information.</strong> If you sign in, your email
-              address, and, if you choose &ldquo;Continue with Google&rdquo;,
-              the basic profile Google shares for sign-in (name, email address,
-              profile picture). This is handled by our authentication provider,
-              Supabase.
+              <strong>Account information.</strong>{" "}
+              If you sign in, your email address, and, if you choose
+              &ldquo;Continue with Google&rdquo;, the basic profile Google
+              shares for sign-in (name, email address, profile picture). This
+              is handled by our authentication provider, Supabase.
             </li>
+            {/* prettier-ignore */}
             <li>
-              <strong>Poems you write.</strong> The text of poems you author in
-              the editor.
+              <strong>Poems you write.</strong>{" "}
+              The text of poems you author in the editor.
             </li>
+            {/* prettier-ignore */}
             <li>
-              <strong>Anonymous drafts.</strong> While you are not signed in,
-              your in-progress poem is kept only in your own browser (using
-              <code> localStorage</code>) — it is never sent to our servers.
-              Signing in for the first time moves that draft into your account
-              and clears it from the browser.
+              <strong>Anonymous drafts.</strong>{" "}
+              While you are not signed in, your in-progress poem is kept only
+              in your own browser (using <code> localStorage</code>) — it is
+              never sent to our servers. Signing in for the first time moves
+              that draft into your account and clears it from the browser.
             </li>
           </ul>
         </section>
