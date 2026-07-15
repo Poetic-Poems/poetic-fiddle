@@ -103,4 +103,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071401 | Analysis show/hide toggle is inert under DOMPurify sanitisation | open | | |
 | TD26071501 | Auth needs manual Supabase/Vercel dashboard configuration | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/24 |
 | TD26071502 | Privacy policy needed for Google OAuth brand verification | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/26 |
-| TD26071503 | Point the Google OAuth consent screen at the published privacy policy | open | | |
+| TD26071503 | Point the Google OAuth consent screen at the published privacy policy | in-progress | | |
