@@ -47,24 +47,33 @@ inline handlers.
 
 Google's brand verification for the Poetic Fiddle Google Cloud OAuth client
 is flagging: "The app name 'Poetic Fiddle' configured for your OAuth consent
-screen does not match the app name on your home page." The home page side is
-already correct — `src/app/layout.tsx`'s `<title>` and
-`src/components/brand-header.tsx`'s wordmark both render exactly "Poetic
-Fiddle" (confirmed against the live `https://www.poeticfiddle.com/` HTML) —
-so the mismatch is in the **Google Cloud Console** OAuth consent screen's
-"App information" → App name field, not the codebase. This needs a human
-with Google Cloud Console access to the Poetic Fiddle project; there's no
-API/CLI credential for it in an agent's environment.
+screen does not match the app name on your home page." Ruled out so far:
+
+- Console's App name field is an exact `Poetic Fiddle` (confirmed by the
+  project owner).
+- Console's Application home page field is `https://www.poeticfiddle.com`
+  (confirmed by the project owner).
+- The live page matches both: `src/app/layout.tsx`'s `<title>` and
+  `src/components/brand-header.tsx`'s wordmark render exactly "Poetic
+  Fiddle", including when fetched with a Googlebot user agent — no bot
+  challenge or alternate response.
+
+What was missing: the page had no machine-readable app/site name signal —
+no `<meta name="application-name">`, no `og:site_name`. Added both via
+`applicationName` and `openGraph.siteName` in `src/app/layout.tsx`'s
+`metadata` export, since Google's brand checker most plausibly matches
+against a structured signal like these rather than scraping arbitrary page
+text. This is the best remaining code-side hypothesis, not a confirmed fix.
 
 This does not block sign-in: Supabase's Google provider requests only the
 non-sensitive scopes `openid`, `email`, and `profile`, so there is no
 "unverified app" warning and no user cap — only the custom branding is
 withheld from the consent screen until verification completes.
 
-Fix: a human opens the Google Cloud Console OAuth consent screen, checks the
-App name field for anything other than an exact `Poetic Fiddle` (case,
-spacing, a leftover project-ID default, or a suffix), corrects it, and lets
-Google's brand verification re-run.
+Fix: once this deploys, a human resubmits/re-triggers Google's brand
+verification and confirms the mismatch warning clears. If it persists,
+the next step is contacting Google's OAuth API verification support, since
+every checkable configuration and content signal already matches.
 
 ## Claiming an item
 
