@@ -75,6 +75,10 @@ verification and confirms the mismatch warning clears. If it persists,
 the next step is contacting Google's OAuth API verification support, since
 every checkable configuration and content signal already matches.
 
+**Update** *2026-07-15 16:00 NZST*:  
+An "I believe the issues found are incorrect" request has been sent to the
+Google verification team.  The estimated time for a response is three days.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
