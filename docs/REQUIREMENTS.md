@@ -14,8 +14,8 @@ cross-cutting non-functional requirements (§12) + branding (§13) + domain
 (§14) + legal/privacy (§15) + user stories & personas (§16) specified.
 The requirements registry is feature-complete; implementation planning has
 begun in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) (milestones,
-critical path, open build decisions).
-**Last updated:** 2026-07-13
+critical path, build decisions — all of which are now resolved).
+**Last updated:** 2026-07-16
 
 ---
 
@@ -167,8 +167,8 @@ i18n, and offline posture — consolidated across all phases.
   [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)**: the MVP is broken into
   milestones (M0–M9), with the poetic-side renderer extraction (a framework
   change) as the critical-path first step (M0). The packaging/versioning and
-  DB-schema/RLS "later rounds" below are carried forward there as open build
-  decisions.
+  DB-schema/RLS "later rounds" below were carried forward there as build
+  decisions, and are now resolved (§6 of that document).
 - MVP acceptance criteria — **done, see §9**. Phase-2a acceptance criteria —
   **done, see §10**. Phase-2b acceptance criteria — **done, see §11**. Branding
   — **done, see §13**. Domain — **done, see §14**. Legal/privacy — **done, see
@@ -176,8 +176,11 @@ i18n, and offline posture — consolidated across all phases.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
-  vs monorepo) — packaging/versioning mechanism.
-- Data model & persistence details; DB schema; RLS policies.
+  vs monorepo) — packaging/versioning mechanism — **done: a tag-pinned git
+  dependency, see IMPLEMENTATION-PLAN.md §6.1**.
+- Data model & persistence details; DB schema; RLS policies — **done, see
+  IMPLEMENTATION-PLAN.md §6.2** (`poems` + `profiles`, default-deny RLS, and a
+  `security definer` RPC for share reads).
 - Phase-2 publishing mechanics (Fiddle-hosted site structure; GitHub OAuth scopes;
   Blogger).
 - Non-functional requirements (accessibility, i18n, offline/PWA, performance,
@@ -552,8 +555,11 @@ replace, the narrative spec in §7.*
   hosted, then no paid infrastructure is required to run it (free-tier
   hosting + DB is sufficient), consistent with the minimal-cost goal.
 - **AC29** — Given a new poem, when its visibility is not explicitly changed
-  by the user, then it defaults to `unlisted`, never publicly listed — there
-  is no publishing surface in the MVP at all (see 9.10).
+  by the user, then it defaults to the most private state available and is
+  never publicly listed — there is no publishing surface in the MVP at all
+  (see 9.10). Concretely (per AC90 and IMPLEMENTATION-PLAN.md §6.2): a saved
+  poem defaults to `draft` and has no `share_id` until the user chooses Share,
+  which mints one and moves it to `unlisted`.
 
 ### 9.10 Non-goals (verify absent)
 
@@ -866,8 +872,10 @@ headline security requirement.
 ### 12.6 Reliability & availability
 
 - **AC93** [D10] — Given the Supabase free tier, when a project is idle ~7 days and
-  is paused (a known caveat), then no user data is lost across the pause; a
-  keep-alive/upgrade path is a later operational concern, acceptable for MVP.
+  is paused (a known caveat), then no user data is lost across the pause. The
+  Supabase organisation is currently on the Pro plan — for reasons external to
+  Fiddle — so pausing does not apply; a keep-alive cron is nevertheless built
+  (IMPLEMENTATION-PLAN.md §6.5) so the free tier stays a viable fallback.
 - **AC94** [D12] — Given failure conditions, when they occur, then the app degrades
   gracefully: a parse error keeps the last good preview (AC4); an anonymous draft
   survives reload via localStorage (AC8); a failed save surfaces an error and does
@@ -1068,9 +1076,10 @@ defaults):**
   Auth session) — no advertising/analytics cookies — so **no consent banner** is
   required under ePrivacy's essential-cookie exemption.
 - **Sub-processors [my call]** (disclosed in the Privacy Policy): **Supabase**
-  (Postgres/Auth/storage), the **hosting provider** (Vercel/Cloudflare/Netlify),
-  the **transactional-email provider**, and **Google** (as an optional sign-in
-  provider). The Supabase project **region** is chosen deliberately for
+  (Postgres/Auth/storage), **Vercel** (hosting), **Cloudflare** (domain
+  registrar and DNS), **Resend** (transactional email — the auth mail carrying
+  magic links, see IMPLEMENTATION-PLAN.md §6.4), and **Google** (as an optional
+  sign-in provider). The Supabase project **region** is chosen deliberately for
   data-residency and disclosed: **`ap-southeast-1` (Southeast Asia, Singapore)**
   (see IMPLEMENTATION-PLAN.md §6.3).
 - **User rights (AC92):** signed-in users can delete individual poems, delete
@@ -1106,7 +1115,9 @@ defaults):**
   remixed, **defaulting to off**.
 - **AC115** [D39] — Given account sign-up, when age is gated, then the service
   states a **minimum age of 16** and does not knowingly create accounts for
-  under-16s.
+  under-16s. Mechanism (IMPLEMENTATION-PLAN.md §6.7): a statement at the
+  sign-in prompt; no date of birth or age flag is collected or stored, per
+  D41's data minimisation.
 - **AC116** [D40] — Given infringing or abusive content, when a valid takedown
   request is received at the published address, then the content can be removed
   from **every** surface (dashboard, share link, site).

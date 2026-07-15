@@ -26,8 +26,14 @@ keystroke and restores on load, with no sign-in prompt during ordinary
 editing; Save and Share are stubbed with a sign-in prompt shown only when
 attempted. **M4 (authentication) is delivered** — Supabase Auth (magic link,
 Google, email/password) via `@supabase/supabase-js`, with the M3 draft
-migrating into the session on first sign-in. Running the §6.2 schema/RLS
-design pass for M5 is the immediate next step.
+migrating into the session on first sign-in. **The §6 implementation decisions
+are all resolved** (2026-07-16): the schema/RLS design (§6.2), auth-email
+provider (§6.4), idle-pause posture (§6.5), Pug precompilation (§6.6, settled
+upstream by M0) and minimum-age evidence (§6.7). **M5 (data model, Save &
+dashboard) is therefore unblocked and is the immediate next step** — with one
+caveat it inherits: auth mail reaches only project-team addresses until §6.4's
+custom SMTP is configured (TD26071601), so testing M5's ownership rules with a
+genuine second account depends on that.
 
 ---
 
@@ -317,9 +323,11 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - **ACs:** AC11, AC12, AC9.
 
 ### M5 — Data model, Save & dashboard
-*Depends on: M4; requires the schema/RLS design pass (§6.2).*
-- `poems` table (raw `.poem` `source_text` as canonical source — D15, AC16);
-  title derived from the header (AC23); RLS so users touch only their own rows
+*Depends on: M4. Schema/RLS designed — build to §6.2.*
+- `poems` + `profiles` per §6.2, as committed Supabase CLI migrations: raw
+  `.poem` `source_text` as canonical source (D15, AC16); title derived from the
+  header (AC23); a saved poem defaults to `draft` (§6.2, clarifying AC29
+  against AC90); RLS so users touch only their own rows, with pgTAP tests in CI
   (AC87).
 - Manual Save with an "unsaved changes" indicator (AC13, AC14); a failed save
   surfaces an error and never silently drops edits (AC94, AC95).
@@ -361,7 +369,8 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
   edit-time invalidation.
 - **Privacy/i18n/reliability:** data minimisation + no third-party analytics
   (AC91, AC103); full Unicode poem content (AC96); English-only UI authored for
-  later l10n (AC97); graceful degradation (AC93, AC94).
+  later l10n (AC97); graceful degradation (AC93, AC94); the §6.5 keep-alive
+  cron (dormant on Pro, insurance against a future free-tier drop — AC93).
 - **ACs:** AC74–AC100 (as they attach to each surface).
 
 ### M9 — Legal, branding & domain surface
@@ -408,10 +417,13 @@ the MVP renderer and data model.
 
 ---
 
-## 6. Open implementation decisions (resolve before/at build)
+## 6. Implementation decisions
 
-These are the registry's parked "later rounds" plus what surfaced from reading
-the render code. Each needs a decision before the milestone that consumes it.
+The registry's parked "later rounds" plus what surfaced from reading the render
+code. Each needed a decision before the milestone that consumes it; **all are
+now resolved** — none gates a milestone. What remains from them is execution:
+§6.2 is built by M5, §6.5's cron by M8, and §6.4's SMTP configuration is a
+dashboard task tracked as TD26071601.
 
 ### 6.1 Renderer packaging & versioning *(gates M0 → M2)* — ✅ **DECIDED 2026-07-13**
 
@@ -455,21 +467,144 @@ namespace): poetic ships no TypeScript declarations for `./browser`, and its
 CommonJS (`require`) source needs `transpilePackages: ['poetic']` in Fiddle's
 `next.config`. Neither blocks M2; both should land with the first import.
 
-### 6.2 Database schema & RLS design *(gates M5)*
-A proper design pass is owed (registry parked it). Consolidated **draft** from
-the registry's data-model sketches (§7, §8.1, §8.2, §15) — to be firmed up:
+### 6.2 Database schema & RLS design *(built by M5)* — ✅ **DECIDED 2026-07-16**
 
-- `poems`: `id`, `owner_id`, `title` (derived), `source_text` (raw `.poem`),
-  `status`/`visibility` (`draft|unlisted|published`, default most-private),
-  `share_id` (opaque), `slug` (2a, unique per site), `allow_remix` (nullable,
-  D38), `created_at`, `updated_at`.
-- `users`/profile: `remix_default` (default `false`, D38), handle (2a).
-- `sites` (2a): `owner_id`, `handle` (unique), `title`, `subtitle`, `author`,
-  `favicon`, `publish_target` (`fiddle|github`, 2b), GitHub linkage.
-- `github_connections` (2b): App installation id, account/login, status.
-- **RLS:** owner full CRUD; `unlisted` readable only via `share_id`; `draft`
-  never exposed; published readable (AC40, AC87). RLS is security-critical —
-  design and test explicitly.
+The design pass the registry parked. Scope: the tables M5 actually needs, plus
+the forward-compatibility choices that stop Phase 2a/2b needing a rewrite. The
+committed migrations become the source of truth once M5 lands; the SQL below is
+the agreed shape, not a transcript of the final files.
+
+**Migrations mechanism [my call].** Supabase CLI migrations committed under
+`supabase/migrations/*.sql` and applied with `supabase db push` — schema changes
+are then reviewable in the PR that needs them, matching the PR-only workflow.
+Hand-run dashboard SQL is the fallback only, never the record.
+
+#### Tables (M5)
+
+```sql
+create type public.poem_status as enum ('draft', 'unlisted', 'published');
+
+create table public.profiles (
+  id            uuid primary key references auth.users(id) on delete cascade,
+  remix_default boolean not null default false,          -- D38
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create table public.poems (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid not null references auth.users(id) on delete cascade,
+  title       text not null default '',                  -- derived, AC23
+  source_text text not null,                             -- canonical, D15/AC16
+  status      public.poem_status not null default 'draft',
+  share_id    text unique,                               -- opaque, minted on Share
+  allow_remix boolean,                                   -- nullable override, D38
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  constraint poems_shared_has_share_id
+    check (status = 'draft' or share_id is not null)
+);
+
+create index poems_owner_recent_idx on public.poems (owner_id, updated_at desc);
+```
+
+A `profiles` row is created by an `after insert` trigger on `auth.users`, so
+every account has one before M7 reads `remix_default`.
+
+#### The decisions inside that shape
+
+1. **A saved poem defaults to `draft`** — private to its owner, no `share_id` at
+   all. This resolves AC29 ("defaults to `unlisted`") against AC90 ("the most
+   private applicable state — *draft where drafts exist*") in favour of AC90,
+   because M5 is where DB-backed drafts start existing. An un-shared poem is
+   therefore unreachable *by construction*, not merely by an unguessed URL.
+   AC29's intent — never publicly listed — still holds exactly. Registry
+   updated.
+2. **`share_id` is minted lazily, by the database.** A `before insert or update`
+   trigger fills `share_id` when a poem leaves `draft`, and the
+   `poems_shared_has_share_id` constraint makes the invariant unbreakable from
+   the client. The client only ever sets `status`; it cannot forget to mint an
+   id, nor supply its own. The same trigger maintains `updated_at`.
+   Value: `replace(gen_random_uuid()::text, '-', '')` — 32 hex chars, 122 bits
+   of entropy, no pgcrypto dependency, URL-safe. Ample against enumeration.
+3. **Share pages read through a `security definer` RPC — not an anon `SELECT`
+   policy, and not the service-role key.** This is the security-critical
+   choice. A policy like `using (status = 'unlisted')` would satisfy "unlisted
+   is readable" while letting anyone with the anon key *enumerate every unlisted
+   poem in the database* — the exact opposite of AC87's "reachable only via
+   their opaque `share_id`". So `poems` gets **no anon policy at all**, and M6
+   calls:
+
+   ```sql
+   create function public.get_shared_poem(p_share_id text)
+   returns table (title text, source_text text, allow_remix boolean, updated_at timestamptz)
+   language sql stable security definer set search_path = '' as $$
+     select p.title, p.source_text,
+            coalesce(p.allow_remix, pr.remix_default, false),
+            p.updated_at
+     from public.poems p
+     left join public.profiles pr on pr.id = p.owner_id
+     where p.share_id = p_share_id
+       and p.status in ('unlisted', 'published');
+   $$;
+
+   revoke all on function public.get_shared_poem(text) from public;
+   grant execute on function public.get_shared_poem(text) to anon, authenticated;
+   ```
+
+   Exact-id lookup only; returns nothing for a `draft` (AC87); resolves the
+   effective remix flag server-side so M7 never exposes `profiles` to a viewer
+   (AC113–AC114); returns no `owner_id`, so a share link leaks no user graph.
+   `set search_path = ''` is mandatory on a `security definer` function —
+   without it the definer's privileges can be turned against a caller-controlled
+   search path. The join to `profiles` is a **left** join deliberately: an inner
+   join would make a poem with a missing profile row vanish from its own share
+   page, whereas this degrades to `allow_remix = false` — the safe direction
+   (D38).
+4. **No service-role key for M6.** Because the RPC runs safely under the anon
+   key, the SSR share page needs no privileged credential —
+   `SUPABASE_SERVICE_ROLE_KEY` stays unset (as `.env.example` advises) until
+   account deletion (AC92, M9) genuinely requires `auth.admin`. A key that is
+   never set is a key that cannot leak (AC88).
+5. **Title is derived app-side at save** (AC23), using the `poetic` parser
+   Fiddle already imports, and stored as a plain column — a cache of the
+   `.poem` header, never separately editable. A generated column is impossible
+   here: the header only yields a title by running the JS parser.
+6. **The render cache is Next's data cache, not a table** — tagged per poem and
+   invalidated on the owner's save (AC19, AC82, AC43). No stale HTML is ever
+   stored as truth (D15), and the schema stays lean.
+7. **No age column.** The minimum-age gate (D39, AC115) is a statement at the
+   sign-in prompt, not stored data — see §6.7.
+8. **Phase 2a/2b tables are deferred to their phases**, but `poem_status`
+   ships with `published` in it from the start, so AC38's "exactly one of
+   draft/unlisted/published" holds without an enum migration later. `sites`,
+   `poems.slug`, and `github_connections` land with 2a/2b respectively.
+
+#### RLS
+
+Both tables get `enable row level security` and therefore **default-deny**;
+every policy below is scoped `to authenticated` and matches on ownership:
+
+| Table | Policy | Rule |
+|-------|--------|------|
+| `poems` | select / insert / update / delete | `(select auth.uid()) = owner_id` |
+| `profiles` | select / update | `(select auth.uid()) = id` |
+
+`(select auth.uid())` rather than bare `auth.uid()` so Postgres caches it as an
+initplan instead of re-evaluating per row. Anonymous users get **no** table
+policy — their only read path is `get_shared_poem`, and their only write path is
+localStorage (AC7, AC21). Account deletion cascades from `auth.users` through
+both tables (AC92).
+
+**Testing (AC87 demands it explicitly).** RLS is security-critical and silently
+fails open when misconfigured, so it gets pgTAP tests run in CI via
+`supabase test db` against a local Supabase (the `supabase/setup-cli` action;
+Actions minutes are free on this public repo). The cases that must fail are as
+important as the ones that must pass: owner CRUD succeeds; a second user reading
+or updating another's poem returns nothing; anon `select` on `poems` returns
+nothing; `get_shared_poem` returns an unlisted poem by id, **refuses a draft**,
+and coalesces `allow_remix` correctly through both the per-poem override and
+`remix_default`.
 
 ### 6.3 Hosting / environment
 Vercel project (D11) — **created, `www.poeticfiddle.com` live** since
@@ -481,10 +616,17 @@ disclosed per D41 (see REQUIREMENTS.md §15). Client wiring landed with M4
 (`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`); the variable
 contract the app codes against is captured in `.env.example` (copy to
 `.env.local` for local dev; set the same variables in Vercel for deploys) —
-see README.md "Environment & secrets". The schema/RLS pass (§6.2) is still to
-come, gating M5. Setting those env vars in Vercel and enabling the Google
-Auth provider in the Supabase dashboard remain outstanding manual steps —
-`TECH-DEBT.md` TD26071501.
+see README.md "Environment & secrets".
+
+The Supabase organisation is on the **Pro** plan, because of *other* projects
+on the same account rather than any Fiddle requirement — nothing in Fiddle's
+architecture needs paid infrastructure, so AC28/AC47 ("no paid infrastructure
+*required*") still hold, and the design stays free-tier-viable so the plan can
+be dropped again (§6.5). Pro's practical effect here is that idle-pausing does
+not apply (AC93).
+
+Auth mail still needs custom SMTP before anyone outside the project team can
+sign in — see §6.4 and `TECH-DEBT.md` TD26071601.
 
 `poeticfiddle.com` (Cloudflare Registrar + DNS, registered 2026-07-13; see
 REQUIREMENTS.md §14) is wired to Vercel: Vercel's own domain setup redirects
@@ -492,20 +634,112 @@ the apex → `www` (308), so **`www.poeticfiddle.com` is the canonical host**
 (kept as-is per D34-status-update rather than reversed to match D23's original
 apex-only examples — those examples now read `www.poeticfiddle.com/@handle`).
 
-### 6.4 Auth email deliverability *(gates M9, informs M4)*
-Sending domain for magic-link/password mail needs SPF/DKIM/DMARC (AC109).
-**[flag]** Supabase's built-in SMTP vs. a dedicated transactional-email
-sub-processor (the latter is disclosed per D41); pick before public launch.
+### 6.4 Auth email deliverability *(blocks real sign-in; informs M4, gates M9)* — ✅ **DECIDED 2026-07-16**
 
-### 6.5 Supabase free-tier idle-pause *(operability)*
-Free projects pause after ~7 days idle (D10, AC93). No data loss, but a
-keep-alive or paid-upgrade path is a later operational call — acceptable to
-defer for MVP.
+**Decision: Resend as the custom SMTP provider**, sending as
+`no-reply@poeticfiddle.com`.
 
-### 6.6 Pug precompilation toolchain *(inside M0)*
-Choose how templates are precompiled to functions (pug's `compileClient`/
-`compileFileClient`, or a build step emitting a module) and where that runs in
-poetic's build.
+**This is more urgent than "before public launch".** Supabase's built-in mailer
+is not merely rate-limited — it **refuses to deliver to any address that is not
+part of the project's team**, caps at **2 messages/hour**, and carries no
+delivery or uptime SLA; Supabase documents it as not for production use. So
+magic-link and password mail cannot reach *any* real user today. M4 is
+delivered and correct in code, but nobody outside the project team can complete
+a sign-in until this is configured — which also blocks testing M5's ownership
+and RLS behaviour with a genuine second account. Configuring custom SMTP raises
+the cap to 30 messages/hour (adjustable in the dashboard).
+
+**Why Resend:** free tier of 3,000/month (100/day) against Fiddle's auth-only
+volume, one verified domain, and DKIM/SPF/DMARC generated as DNS records for
+`poeticfiddle.com` — whose zone is already on Cloudflare (§6.3). Supabase
+documents it as a supported provider. AWS SES is cheaper at volume but needs a
+sandbox-removal request and more IAM surface than auth mail justifies; Brevo's
+EU hosting is moot given the database is already `ap-southeast-1`.
+
+**Where the credential lives — Supabase, not Vercel, not this repo.** Supabase
+Auth sends the mail itself, server-side; Fiddle's application code never
+composes or sends an email. So the Resend API key is **not** a Fiddle
+environment variable: it does not belong in `.env.local`, in Vercel's
+environment variables, or in `.env.example`'s contract, and no code change is
+needed to adopt it. Outstanding manual steps are tracked as `TECH-DEBT.md`
+**TD26071601**:
+
+1. **Resend → Domains:** add `poeticfiddle.com`; Resend emits DKIM (+ SPF, and
+   optionally DMARC) records.
+2. **Cloudflare DNS:** add those records to the `poeticfiddle.com` zone. If an
+   SPF `TXT` already exists, **merge** Resend's `include:` into it — a second
+   SPF record invalidates both.
+3. **Resend → API Keys:** create one key with **Sending access** (not Full
+   access — least privilege, AC88).
+4. **Supabase → Authentication → Emails → SMTP Settings:** enable custom SMTP
+   with host `smtp.resend.com`, port `465`, username the literal `resend`,
+   password the API key, sender `no-reply@poeticfiddle.com`, sender name
+   "Poetic Fiddle". The key is a secret held by Supabase — it must not be
+   pasted into an agent workspace or any tracked file.
+5. Send a magic link to a non-team address to confirm delivery (AC109), then
+   raise Auth → Rate Limits above 30/hour only if a real need appears.
+
+Resend joins the disclosed sub-processor list (D41) as "the transactional-email
+provider" the Privacy Policy already anticipated — REQUIREMENTS.md §15 now
+names it.
+
+### 6.5 Supabase idle-pause *(operability)* — ✅ **DECIDED 2026-07-16**
+
+**Decision: implement the daily keep-alive cron, as insurance rather than a
+live need.** The Supabase organisation is on the **Pro** plan — an upgrade
+forced by *other* projects on the same account, not by anything Fiddle needs —
+and Pro projects are never paused for inactivity, so AC93's failure mode is
+currently dormant.
+
+It is implemented anyway because the constraint that made the upgrade necessary
+is external to Fiddle and may lift: a future drop back to the free tier would
+otherwise silently re-arm a real outage mode. A free project pauses after
+**7 days without database activity** (data is preserved; restore is manual),
+and the moment that bites hardest is just after launch — when the first visitor
+to a permanent share link (D34) arrives before there is enough organic traffic
+to keep the project warm.
+
+**Shape [my call]:** a Vercel cron (once daily — the Hobby limit, and ~7× the
+frequency needed) hits an app route guarded by a `CRON_SECRET`, which calls a
+trivial RPC that writes to a single-row heartbeat table. A *write*, not a read,
+because the pause timer tracks database activity. Free, ~30 lines, and it keeps
+AC28/AC47's "no paid infrastructure *required*" intact — a claim the Pro
+upgrade does not falsify, since Fiddle itself still requires none. Lands with
+M8 (operability); worth noting it works around a resource-saving measure —
+widely done and not prohibited, but a deliberate choice rather than an
+oversight.
+
+### 6.6 Pug precompilation toolchain *(inside M0)* — ✅ **RESOLVED 2026-07-13 (upstream)**
+
+Settled by M0 and already as-built in `poetic`: **a build step emitting a
+module**, not runtime `compileClient`. `src/tools/build-templates.js` (run via
+`npm run build:generated`) precompiles `src/templates/*.pug` into
+`src/tools/poem-templates.js` as standalone functions — `inlineRuntimeFunctions`
+makes each self-contained (no `pug` compiler, no `fs`, no `__dirname` in the
+browser bundle), each is wrapped in an IIFE so the inlined runtimes cannot
+collide, and `pretty: false` / `compileDebug: false` match `poem-render.js`'s
+runtime options exactly. The emitted output is asserted byte-identical to the
+runtime compile over poetic's whole poem corpus (`test/poem-templates.test.js`),
+so the CLI and browser render paths cannot silently diverge. Nothing is owed on
+the Fiddle side.
+
+### 6.7 Minimum-age evidence *(informs M4's prompt, gates M9)* — ✅ **DECIDED 2026-07-16**
+
+**Decision: a statement, not stored data.** The sign-in prompt carries "By
+continuing you confirm you're 16 or older and agree to the Terms" beneath the
+sign-in options; nothing about age is collected or persisted (hence no column
+in §6.2's `profiles`).
+
+This satisfies D39/AC115's "states a minimum age of 16 and does not knowingly
+create accounts for under-16s" at the lowest friction for a non-technical poet
+(D2) — a magic-link or Google sign-in stays one click — and is the strongest
+available reading of D41's data minimisation: a date of birth would be personal
+data Fiddle has no other use for. The trade is accepted deliberately: a
+statement is weaker evidence than a ticked checkbox if ever challenged, which
+is proportionate for a small non-commercial service. If legal review before
+launch (§15's "not legal advice" caveat) wants affirmative consent recorded,
+the upgrade is a checkbox plus an `age_confirmed_at` timestamp on `profiles` —
+one column and one click, addable without touching anything else.
 
 ---
 
@@ -524,10 +758,16 @@ poetic's build.
 4. ~~**Start M2**~~ — **done**: the editor + live preview (see §4).
 5. ~~**Start M3**~~ — **done**: anonymous drafts (see §4).
 6. ~~**Start M4**~~ — **done**: Supabase authentication (see §4).
-7. **Run the §6.2 schema/RLS design pass** so M5 is ready to start.
+7. ~~**Run the §6.2 schema/RLS design pass**~~ — **done**, along with every
+   other open §6 decision (see §6).
+8. **Configure custom SMTP** (§6.4, TD26071601) — a dashboard/DNS task, no
+   code. Until it's done no one outside the project team can sign in, which
+   caps how far M5 can be tested.
+9. **Start M5** — the §6.2 migrations, Save, and the dashboard.
 
-With M0–M4 done, **the §6.2 schema/RLS design pass is the immediate next
-step**, gating M5. The rest sequences behind it per §2.
+With M0–M4 delivered and §6 resolved, **M5 is the immediate next step**; the
+rest sequences behind it per §2. §6.4's SMTP configuration runs in parallel —
+it blocks *verifying* M5 with a second account, not building it.
 
 ---
 

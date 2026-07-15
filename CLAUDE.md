@@ -14,12 +14,14 @@ The app is scaffolded: a Next.js (App Router) + TypeScript app lives under
 light/dark) in place. `.github/workflows/build.yml` (lint, typecheck, format
 check, test, build) and CodeQL's `javascript-typescript` scan
 (`.github/workflows/codeql.yml`) run on every pull request and push to
-`main`. The editor, live preview, and anonymous drafts (autosaved to
-`localStorage`) are built; auth and data layers are not yet — see
-`docs/IMPLEMENTATION-PLAN.md` for the milestone sequence.
+`main`. The editor, live preview, anonymous drafts (autosaved to
+`localStorage`) and Supabase authentication are built; the data layer
+(save, dashboard, share) is not yet — see `docs/IMPLEMENTATION-PLAN.md` for
+the milestone sequence.
 
 Requirements gathering is complete; `docs/REQUIREMENTS.md` is the
 authoritative, living registry of decisions, rationale, and open questions.
+The build decisions it parked are resolved in `docs/IMPLEMENTATION-PLAN.md` §6.
 
 ## Architecture & stack
 
@@ -49,8 +51,10 @@ is not a poem-collection repo — it does not use `sync-framework.sh` or track a
 - **Single source of truth.** Fiddle renders poems with a browser-safe renderer
   **exported by the `poetic` repo**, not a copy. Do not fork or re-implement the
   `.poem` parser/renderer in this repo — changes to `.poem` syntax or rendering
-  belong upstream in `poetic` and reach Fiddle through that shared module. (The
-  packaging/versioning mechanism for that module is still to be decided.)
+  belong upstream in `poetic` and reach Fiddle through that shared module. That
+  module arrives as a **tag-pinned git dependency** on the `poetic` repo
+  (`docs/IMPLEMENTATION-PLAN.md` §6.1); bumping it is a deliberate
+  `package.json` edit, never a silent float.
 
 ## Development approach
 
