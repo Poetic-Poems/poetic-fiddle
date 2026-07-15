@@ -100,8 +100,8 @@ describe("wireAnalysisToggles", () => {
 
     (fullButton as HTMLElement).click();
 
-    expect(synoPanel.style.display).toBe("none");
-    expect(fullPanel.style.display).toBe("block");
+    expect(synoPanel.classList.contains("hidden")).toBe(true);
+    expect(fullPanel.classList.contains("hidden")).toBe(false);
     expect(synoButton.classList.contains("selected")).toBe(false);
     expect(fullButton.classList.contains("selected")).toBe(true);
   });
@@ -118,8 +118,8 @@ describe("wireAnalysisToggles", () => {
     (fullButton as HTMLElement).click();
     (synoButton as HTMLElement).click();
 
-    expect(synoPanel.style.display).toBe("block");
-    expect(fullPanel.style.display).toBe("none");
+    expect(synoPanel.classList.contains("hidden")).toBe(false);
+    expect(fullPanel.classList.contains("hidden")).toBe(true);
     expect(synoButton.classList.contains("selected")).toBe(true);
     expect(fullButton.classList.contains("selected")).toBe(false);
   });

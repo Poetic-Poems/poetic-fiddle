@@ -50,8 +50,11 @@ export function wireAnalysisToggles(doc: Document) {
 
       const showsSynopsis = variant === "syno";
       selectorButton.addEventListener("click", () => {
-        synoPanel.style.display = showsSynopsis ? "block" : "none";
-        fullPanel.style.display = showsSynopsis ? "none" : "block";
+        // The full panel starts with poetic's `hidden` class, whose
+        // `display: none !important` an inline style.display can't
+        // override, so toggle that class rather than style.display.
+        synoPanel.classList.toggle("hidden", !showsSynopsis);
+        fullPanel.classList.toggle("hidden", showsSynopsis);
         synoButton.classList.toggle("selected", showsSynopsis);
         fullButton.classList.toggle("selected", !showsSynopsis);
       });
