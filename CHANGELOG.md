@@ -27,6 +27,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sign-in, with the session persisting across reloads. Signing in for the
   first time adopts any anonymous `localStorage` draft into the session and
   clears it.
+- A Privacy Policy page (`/privacy`), linked from the site footer on every
+  page, covering what Poetic Fiddle collects and how it's used.
 
 ### Security
 

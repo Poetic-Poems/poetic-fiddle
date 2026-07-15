@@ -43,21 +43,27 @@ template change) or a light client-side rehydration step in Fiddle that
 re-wires the toggle after sanitisation instead of relying on the sanitised
 inline handlers.
 
-## TD26071502 Privacy policy needed for Google OAuth brand verification
+## TD26071503 Point the Google OAuth consent screen at the published privacy policy
 
-Uploading a custom app logo to the Poetic Fiddle Google Cloud OAuth consent
-screen triggered Google's brand verification, which is now pending. Brand
-verification requires a published privacy policy linked from the consent
-screen and reachable on the app's authorised domain, `www.poeticfiddle.com`.
+TD26071502 published `/privacy` (linked from the site footer) so Poetic
+Fiddle has a live privacy policy at `https://www.poeticfiddle.com/privacy`
+once this lands on `main` and deploys. Google's brand verification for the
+Poetic Fiddle Google Cloud OAuth client is still pending, blocked on that
+URL being entered into the **Google Cloud Console** OAuth consent screen's
+"App information" → Privacy policy link field (this is a Google Cloud
+Console setting, not a Supabase dashboard one — Supabase's Google provider
+config has no such field). This needs a human with Google Cloud Console
+access to the Poetic Fiddle project; there's no API/CLI credential for it in
+an agent's environment.
 
 This does not block sign-in: Supabase's Google provider requests only the
 non-sensitive scopes `openid`, `email`, and `profile`, so there is no
 "unverified app" warning and no user cap — only the custom branding is
 withheld from the consent screen until verification completes.
 
-Fix: publish a privacy policy page on `www.poeticfiddle.com`, link it from the
-OAuth consent screen (and the app homepage), then let brand verification
-complete.
+Fix: once `/privacy` is live, a human sets the consent screen's Privacy
+policy link to `https://www.poeticfiddle.com/privacy` and lets Google's
+brand verification re-run.
 
 ## Claiming an item
 
@@ -96,4 +102,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071301 | poetic git dependency needs types shim + transpilePackages | resolved | 2026-07-13 | https://github.com/Poetic-Poems/poetic-fiddle/pull/14 |
 | TD26071401 | Analysis show/hide toggle is inert under DOMPurify sanitisation | open | | |
 | TD26071501 | Auth needs manual Supabase/Vercel dashboard configuration | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/24 |
-| TD26071502 | Privacy policy needed for Google OAuth brand verification | open | | |
+| TD26071502 | Privacy policy needed for Google OAuth brand verification | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/26 |
+| TD26071503 | Point the Google OAuth consent screen at the published privacy policy | open | | |
