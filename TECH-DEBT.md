@@ -43,6 +43,29 @@ template change) or a light client-side rehydration step in Fiddle that
 re-wires the toggle after sanitisation instead of relying on the sanitised
 inline handlers.
 
+## TD26071504 OAuth consent screen App name doesn't match the home page
+
+Google's brand verification for the Poetic Fiddle Google Cloud OAuth client
+is flagging: "The app name 'Poetic Fiddle' configured for your OAuth consent
+screen does not match the app name on your home page." The home page side is
+already correct — `src/app/layout.tsx`'s `<title>` and
+`src/components/brand-header.tsx`'s wordmark both render exactly "Poetic
+Fiddle" (confirmed against the live `https://www.poeticfiddle.com/` HTML) —
+so the mismatch is in the **Google Cloud Console** OAuth consent screen's
+"App information" → App name field, not the codebase. This needs a human
+with Google Cloud Console access to the Poetic Fiddle project; there's no
+API/CLI credential for it in an agent's environment.
+
+This does not block sign-in: Supabase's Google provider requests only the
+non-sensitive scopes `openid`, `email`, and `profile`, so there is no
+"unverified app" warning and no user cap — only the custom branding is
+withheld from the consent screen until verification completes.
+
+Fix: a human opens the Google Cloud Console OAuth consent screen, checks the
+App name field for anything other than an exact `Poetic Fiddle` (case,
+spacing, a leftover project-ID default, or a suffix), corrects it, and lets
+Google's brand verification re-run.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -82,3 +105,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071501 | Auth needs manual Supabase/Vercel dashboard configuration | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/24 |
 | TD26071502 | Privacy policy needed for Google OAuth brand verification | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/26 |
 | TD26071503 | Point the Google OAuth consent screen at the published privacy policy | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/27 |
+| TD26071504 | OAuth consent screen App name doesn't match the home page | open | | |
