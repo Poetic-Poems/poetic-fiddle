@@ -29,6 +29,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clears it.
 - A Privacy Policy page (`/privacy`), linked from the site footer on every
   page, covering what Poetic Fiddle collects and how it's used.
+- A Terms of Service page (`/terms`), linked from the site footer alongside
+  the Privacy Policy, covering acceptance of terms, the service, accounts,
+  content ownership, acceptable use, availability, liability, termination,
+  and governing law.
+
+### Fixed
+
+- A missing space in the Privacy Policy's "What we collect" list, where
+  "Account information." ran into the following sentence with no space
+  between them in some rendering paths.
 
 ### Security
 
