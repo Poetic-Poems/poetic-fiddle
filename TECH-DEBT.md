@@ -148,4 +148,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071503 | Point the Google OAuth consent screen at the published privacy policy | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/27 |
 | TD26071504 | OAuth consent screen App name doesn't match the home page | open | | |
 | TD26071601 | Auth email reaches only project-team addresses (no custom SMTP) | open | | |
-| TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | open | | |
+| TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | in-progress | | |
