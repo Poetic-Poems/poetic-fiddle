@@ -227,7 +227,7 @@ export async function sharePoem(id: string): Promise<string> {
  * re-sharing the same poem later reveals the same link rather than minting
  * a new one.
  *
- * @throws {PoemShareError} if the update doesn't come back with a row.
+ * @throws {PoemUnshareError} if the update doesn't come back with a row.
  */
 export async function unsharePoem(id: string): Promise<void> {
   const { data, error } = await supabase
