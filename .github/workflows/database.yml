@@ -1,0 +1,42 @@
+name: Database
+
+# CI backstop for the data layer: applies the committed migrations to a
+# throwaway local Supabase and runs the pgTAP suite on every pull request and
+# push to main. RLS is security-critical and fails open silently when
+# misconfigured, so a policy regression must break the build rather than reach
+# production. Mirrors build.yml/codeql.yml's structure and comment style.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/database.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/database.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Starts Postgres and applies supabase/migrations in order, so a migration
+      # that does not apply cleanly from scratch fails here.
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Run pgTAP tests
+        run: supabase test db
