@@ -48,9 +48,13 @@ describe("sanitizeSharedPoemHtml", () => {
     // Audiomack and Mega both declare embed_url — both become a real iframe.
     const iframeCount = (clean.match(/<iframe/g) || []).length;
     expect(iframeCount).toBe(2);
-    expect(clean).toContain('src="https://audiomack.com/embed/my-artist/song/my-song"');
+    expect(clean).toContain(
+      'src="https://audiomack.com/embed/my-artist/song/my-song"',
+    );
     expect(clean).toContain('src="https://mega.nz/embed/FileId123#Key456"');
-    expect(clean).toContain('sandbox="allow-scripts allow-same-origin allow-popups"');
+    expect(clean).toContain(
+      'sandbox="allow-scripts allow-same-origin allow-popups"',
+    );
     // The player is no longer hidden behind a click-to-load button.
     expect(clean).not.toContain("song-embed-btn");
     expect(clean).not.toMatch(/song-embed-player[^>]*\bhidden\b/);

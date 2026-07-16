@@ -63,7 +63,10 @@ describe("Editor share", () => {
       expect.objectContaining({ id: null, ownerId: "user-1" }),
     );
     const link = await screen.findByRole("link", { name: /\/share\/abc123/ });
-    expect(link).toHaveAttribute("href", expect.stringContaining("/share/abc123"));
+    expect(link).toHaveAttribute(
+      "href",
+      expect.stringContaining("/share/abc123"),
+    );
     expect(revalidateSharedPoem).toHaveBeenCalledWith("abc123");
   });
 

@@ -217,7 +217,11 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
       // since the last save.
       let idToShare = poemId;
       if (idToShare === null || hasUnsavedChanges) {
-        const saved = await savePoem({ id: poemId, ownerId: session.user.id, source });
+        const saved = await savePoem({
+          id: poemId,
+          ownerId: session.user.id,
+          source,
+        });
         setPoemId(saved.id);
         setSavedSource(source);
         idToShare = saved.id;
