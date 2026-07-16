@@ -34,6 +34,7 @@ describe("Editor opening a saved poem", () => {
       id: "poem-1",
       source:
         "={title}=Ode to a Fiddle\n\nOde to a Fiddle\nA Poet\n2026-07-16\n\n{Verse 1}\nHello.\n",
+      shareId: null,
     });
 
     render(<Editor poeticCss="" initialPoemId="poem-1" />);
@@ -52,6 +53,7 @@ describe("Editor opening a saved poem", () => {
       id: "poem-1",
       title: "Ode to a Fiddle",
       updatedAt: "2026-07-17T00:00:00Z",
+      shareId: null,
     });
     screen.getByRole("button", { name: "Save" }).click();
     await waitFor(() =>

@@ -44,6 +44,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`/poems/<id>`) restores it in the editor with its id preserved, so
   reloading that page resumes editing the same poem instead of losing track
   of which one it was.
+- Share permalinks: the Share button saves your poem if needed, then shows a
+  `/share/<id>` link you can copy. Anyone with the link sees a read-only,
+  server-rendered view of the poem — no sign-in and no JavaScript required —
+  with the poem's own styling, a correct page title, and Open Graph preview
+  details. A shared poem's link always reflects your latest save, and its
+  "My poems" listing is now marked "Shared". Media/song embeds (MEGA,
+  Audiomack) show the full player on the share page, restricted to those two
+  providers and sandboxed.
 
 ### Changed
 

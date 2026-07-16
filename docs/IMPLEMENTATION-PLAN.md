@@ -35,7 +35,12 @@ tests (PR #35), Save with an unsaved-changes indicator (PR #36), and the "My
 poems" dashboard with save-and-resume (PR #37). One caveat it inherits: auth
 mail reaches only project-team addresses until §6.4's custom SMTP is
 configured (TD26071601), so testing M5's ownership rules with a genuine
-second account depends on that.
+second account depends on that. **M6 (share permalinks, SSR) is delivered**
+(PR #38) — `sharePoem`/`getSharedPoem` in `poems-store.ts`, a read-only
+`/share/[share_id]` SSR page (correct `<title>`/Open Graph meta, poetic's own
+CSS, full sandboxed media embeds, no client-side JS required), server-side
+DOMPurify sanitisation as the untrusted-content boundary, and a Next Data
+Cache reader invalidated on the owner's next save.
 
 ---
 
@@ -351,7 +356,33 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - **ACs:** AC13–AC16, AC22, AC23, AC87, AC94, AC95.
 
 ### M6 — Share permalinks (SSR)
-*Depends on: M5, M0 (`renderPoemPage` server-side).*
+
+> **✅ Delivered 2026-07-17** (PR #38). `sharePoem()` (`src/lib/poems-store.ts`)
+> moves a poem out of `draft` so §6.2's trigger mints (or, idempotently, keeps)
+> its `share_id`; `getSharedPoem()` reads it back through the `get_shared_poem`
+> RPC. `/share/[share_id]` (`src/app/share/[share_id]/page.tsx`) is a Server
+> Component: `generateMetadata` sets `<title>`/Open Graph from the already-
+> derived `title` column, and the page itself renders `renderPoem`'s HTML
+> fragment (not `renderPoemPage` — its page template's relative asset links and
+> site nav assume poetic's own on-disk build layout, which doesn't fit Fiddle's
+> routing, and AC24 already excludes that site-level chrome) through
+> `sanitizeSharedPoemHtml()` (`src/lib/render-share.ts`): DOMPurify-over-`jsdom`
+> as the untrusted-content boundary, then a transform that turns each
+> allow-listed song-handler embed (MEGA, Audiomack — Suno has no `embed_url`)
+> into a real, always-visible, sandboxed `<iframe>`, so the share page shows
+> the full player (AC25) rather than the editor preview's click-to-load button.
+> `SharedPoemView` renders that HTML inside an isolated `srcDoc` iframe (the
+> same style-isolation technique as `PoemPreview`) with its own strict CSP as a
+> sanitisation backstop, viewable with no client-side JS (AC84). Reads go
+> through `getCachedSharedPoem` (`src/lib/shared-poem-cache.ts`), an
+> `unstable_cache` reader tagged per poem; the editor's Share/Save flows call
+> the `revalidateSharedPoem` Server Action (`updateTag`) after any save that
+> touches an already-shared poem, so the permalink is never a frozen snapshot
+> (AC19, AC82). `listPoems` now lists every status, not just `draft`, so a
+> shared poem stays reachable from "My poems" (marked "Shared") for its owner
+> to keep editing.
+
+*Depends on: M5, M0 (`renderPoem` server-side).*
 - Generate an unlisted permalink; visibility defaults to `unlisted` (D14, AC17,
   AC29, AC90); opaque `share_id`.
 - Read-only **SSR** render with no editor chrome, viewable without JS (AC18,
@@ -780,14 +811,15 @@ one column and one click, addable without touching anything else.
 6. ~~**Start M4**~~ — **done**: Supabase authentication (see §4).
 7. ~~**Run the §6.2 schema/RLS design pass**~~ — **done**, along with every
    other open §6 decision (see §6).
-8. **Configure custom SMTP** (§6.4, TD26071601) — a dashboard/DNS task, no
-   code. Until it's done no one outside the project team can sign in, which
-   caps how far M5 can be tested.
-9. **Start M5** — the §6.2 migrations, Save, and the dashboard.
+8. ~~**Configure custom SMTP**~~ — **done** (§6.4, TD26071601): SMTP2GO is
+   configured, so sign-in reaches addresses outside the project team.
+9. ~~**Start M5**~~ — **done**: the §6.2 migrations, Save, and the dashboard
+   (see §4).
+10. ~~**Start M6**~~ — **done**: share permalinks, SSR (see §4).
+11. **Start M7** — Remix (opt-in), the next milestone behind M6 per §2.
 
-With M0–M4 delivered and §6 resolved, **M5 is the immediate next step**; the
-rest sequences behind it per §2. §6.4's SMTP configuration runs in parallel —
-it blocks *verifying* M5 with a second account, not building it.
+With M0–M6 delivered and §6 resolved, **M7 is the immediate next step**; the
+rest sequences behind it per §2.
 
 ---
 

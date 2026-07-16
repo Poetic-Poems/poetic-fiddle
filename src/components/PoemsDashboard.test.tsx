@@ -49,8 +49,14 @@ describe("PoemsDashboard", () => {
         id: "poem-1",
         title: "Ode to a Fiddle",
         updatedAt: "2026-07-16T00:00:00Z",
+        shareId: null,
       },
-      { id: "poem-2", title: "", updatedAt: "2026-07-15T00:00:00Z" },
+      {
+        id: "poem-2",
+        title: "",
+        updatedAt: "2026-07-15T00:00:00Z",
+        shareId: null,
+      },
     ]);
 
     render(<PoemsDashboard />);
@@ -63,6 +69,22 @@ describe("PoemsDashboard", () => {
     const untitledLink = screen.getByRole("link", { name: /untitled/i });
     expect(untitledLink).toHaveAttribute("href", "/poems/poem-2");
     expect(listPoems).toHaveBeenCalledWith("user-1");
+  });
+
+  it("marks a shared poem so its owner can tell at a glance", async () => {
+    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(listPoems).mockResolvedValue([
+      {
+        id: "poem-1",
+        title: "Ode to a Fiddle",
+        updatedAt: "2026-07-16T00:00:00Z",
+        shareId: "abc123",
+      },
+    ]);
+
+    render(<PoemsDashboard />);
+
+    expect(await screen.findByText("Shared")).toBeInTheDocument();
   });
 
   it("surfaces an error without crashing when the list fails to load", async () => {
