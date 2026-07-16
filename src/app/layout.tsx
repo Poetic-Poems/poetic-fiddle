@@ -15,6 +15,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.poeticfiddle.com"),
   title: "Poetic Fiddle",
   description: "A friendly web editor for the Poetic poem-authoring framework.",
   applicationName: "Poetic Fiddle",

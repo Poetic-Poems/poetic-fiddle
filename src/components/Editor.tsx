@@ -9,7 +9,8 @@ import { PoemPreview } from "@/components/PoemPreview";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
-import { loadPoem, savePoem } from "@/lib/poems-store";
+import { loadPoem, savePoem, sharePoem } from "@/lib/poems-store";
+import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { supabase } from "@/lib/supabase-client";
 import { useSession } from "@/lib/use-session";
 
@@ -77,6 +78,9 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [opening, setOpening] = useState(Boolean(initialPoemId));
   const [openError, setOpenError] = useState<string | null>(null);
+  const [shareId, setShareId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -97,6 +101,7 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
         setRendered(tryRenderPoem(poem.source));
         setPoemId(poem.id);
         setSavedSource(poem.source);
+        setShareId(poem.shareId);
         setOpening(false);
       })
       .catch((err) => {
@@ -149,6 +154,8 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
     setPoemId(null);
     setSavedSource(null);
     setSaveError(null);
+    setShareId(null);
+    setShareError(null);
   }
 
   const handleChange = useCallback((value: string) => {
@@ -159,6 +166,8 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
       setRendered((previous) => tryRenderPoem(value, previous.html));
     }, DEBOUNCE_MS);
   }, []);
+
+  const hasUnsavedChanges = savedSource !== source;
 
   const handleSave = useCallback(async () => {
     if (!session) {
@@ -178,6 +187,13 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
       // The source as it was sent, not as it stands now: an edit made while the
       // save was in flight leaves the poem legitimately unsaved (AC14).
       setSavedSource(source);
+      // Already shared: the permalink must reflect this save, not a stale
+      // cached render, as soon as it's re-opened (AC19, AC82). Best-effort —
+      // a failure here just leaves the cache to expire on its own schedule,
+      // so it doesn't turn an otherwise-successful save into an error.
+      if (saved.shareId) {
+        revalidateSharedPoem(saved.shareId).catch(() => {});
+      }
     } catch (err) {
       // The editor keeps every edit either way — a failed save changes nothing
       // but the message (AC94, AC95).
@@ -187,7 +203,42 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
     }
   }, [poemId, session, source]);
 
-  const hasUnsavedChanges = savedSource !== source;
+  const handleShare = useCallback(async () => {
+    if (!session) {
+      setSignInPromptAction("share");
+      return;
+    }
+
+    setSharing(true);
+    setShareError(null);
+    try {
+      // Share always mints/reveals a link for the *current* source (AC17):
+      // save first if there's nothing saved yet, or the poem has changed
+      // since the last save.
+      let idToShare = poemId;
+      if (idToShare === null || hasUnsavedChanges) {
+        const saved = await savePoem({ id: poemId, ownerId: session.user.id, source });
+        setPoemId(saved.id);
+        setSavedSource(source);
+        idToShare = saved.id;
+      }
+      // Idempotent: re-clicking Share on an already-shared poem returns the
+      // same id rather than minting a new one.
+      const newShareId = await sharePoem(idToShare);
+      setShareId(newShareId);
+      revalidateSharedPoem(newShareId).catch(() => {});
+    } catch (err) {
+      setShareError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSharing(false);
+    }
+  }, [hasUnsavedChanges, poemId, session, source]);
+
+  const shareUrl =
+    shareId && typeof window !== "undefined"
+      ? `${window.location.origin}/share/${shareId}`
+      : null;
+
   const saveStatus = !session
     ? ""
     : saving
@@ -267,14 +318,38 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
         </button>
         <button
           type="button"
-          onClick={() => {
-            if (!session) setSignInPromptAction("share");
-          }}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
+          onClick={handleShare}
+          disabled={sharing}
+          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
         >
-          Share
+          {sharing ? "Sharing…" : "Share"}
         </button>
       </div>
+      {shareError && (
+        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+          {shareError}
+        </p>
+      )}
+      {shareUrl && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/10">
+          <span className="text-foreground/70">Share link:</span>
+          <a
+            href={shareUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            {shareUrl}
+          </a>
+          <button
+            type="button"
+            onClick={() => navigator.clipboard.writeText(shareUrl)}
+            className="ml-auto rounded-md border border-black/10 px-2 py-1 text-xs font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
+          >
+            Copy
+          </button>
+        </div>
+      )}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="flex min-h-0 flex-col gap-2">
           <div className="flex items-center justify-between gap-2">

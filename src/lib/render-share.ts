@@ -1,5 +1,6 @@
 import { JSDOM } from "jsdom";
 import DOMPurify from "dompurify";
+import { renderPoem } from "poetic/browser";
 
 /**
  * Hosts poetic's builtin song handlers can point an embed at (see poetic's
@@ -84,4 +85,23 @@ export function sanitizeSharedPoemHtml(rawHtml: string): string {
     });
 
   return container.innerHTML;
+}
+
+/**
+ * The share page's full read-to-render path: parse + render + sanitise +
+ * activate embeds, tolerant of source that doesn't parse. A saved poem's
+ * `source_text` is never validated at save time (M5 — a half-written poem
+ * must still save), and Share can be clicked straight after pasting broken
+ * source, so the share page must degrade to a friendly message rather than
+ * a 500 (matching the editor's own `tryRenderPoem` posture).
+ */
+export function renderSharedPoemHtml(source: string): {
+  html: string;
+  error: boolean;
+} {
+  try {
+    return { html: sanitizeSharedPoemHtml(renderPoem(source)), error: false };
+  } catch {
+    return { html: "", error: true };
+  }
 }
