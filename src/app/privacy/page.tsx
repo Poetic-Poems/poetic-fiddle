@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
           Privacy Policy
         </h1>
         <p className="mt-1 text-sm text-foreground/70">
-          Last updated 15 July 2026
+          Last updated 16 July 2026
         </p>
       </div>
 
@@ -117,6 +117,10 @@ export default function PrivacyPolicy() {
             </li>
             <li>
               <strong>Vercel</strong> — hosts the web app.
+            </li>
+            <li>
+              <strong>SMTP2GO</strong> — delivers our authentication emails: the
+              magic-link and password messages that let you sign in.
             </li>
             <li>
               <strong>Google</strong> — only if you choose to sign in with

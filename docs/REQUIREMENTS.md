@@ -1077,7 +1077,7 @@ defaults):**
   required under ePrivacy's essential-cookie exemption.
 - **Sub-processors [my call]** (disclosed in the Privacy Policy): **Supabase**
   (Postgres/Auth/storage), **Vercel** (hosting), **Cloudflare** (domain
-  registrar and DNS), **Resend** (transactional email — the auth mail carrying
+  registrar and DNS), **SMTP2GO** (transactional email — the auth mail carrying
   magic links, see IMPLEMENTATION-PLAN.md §6.4), and **Google** (as an optional
   sign-in provider). The Supabase project **region** is chosen deliberately for
   data-residency and disclosed: **`ap-southeast-1` (Southeast Asia, Singapore)**
