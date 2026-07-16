@@ -58,38 +58,6 @@ every checkable configuration and content signal already matches.
 An "I believe the issues found are incorrect" request has been sent to the
 Google verification team.  The estimated time for a response is three days.
 
-## TD26071601 Auth email reaches only project-team addresses (no custom SMTP)
-
-Supabase's built-in mailer **refuses to deliver to any address that is not part
-of the project's team**, caps at 2 messages/hour, and has no delivery SLA —
-Supabase documents it as not for production. M4's auth is complete and correct
-in code, but until custom SMTP is configured **nobody outside the project team
-can complete a magic-link or password sign-in** (AC109), and M5's ownership/RLS
-behaviour cannot be tested with a genuine second account.
-
-The provider decision is made — **Resend**, sending as
-`no-reply@poeticfiddle.com` (IMPLEMENTATION-PLAN.md §6.4, which carries the
-rationale and the full step list). No code change is involved: Supabase Auth
-sends the mail server-side, so the API key lives in Supabase's dashboard and
-must never reach `.env.local`, Vercel, `.env.example`, or any tracked file.
-
-Fix (dashboard + DNS, plus one code step):
-
-1. Resend → Domains: add `poeticfiddle.com`; add the emitted DKIM/SPF records
-   to the Cloudflare zone (merge into any existing SPF record — two SPF records
-   invalidate both).
-2. Resend → API Keys: create a key with **Sending access** only (AC88).
-3. Supabase → Authentication → Emails → SMTP Settings: host `smtp.resend.com`,
-   port `465`, username `resend`, password the API key, sender
-   `no-reply@poeticfiddle.com`, sender name "Poetic Fiddle".
-4. Verify by sending a magic link to a non-team address.
-5. **Same change-set:** add Resend to the sub-processor list published at
-   `src/app/privacy/page.tsx` (it currently names only Supabase, Vercel and
-   Google). D41/AC117 commit to disclosing sub-processors, so this must land
-   *with* enablement — not before (Resend isn't processing anything yet) and
-   not after (the published policy would be incomplete while it is).
-   REQUIREMENTS.md §15's sub-processor list already names it.
-
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -130,5 +98,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071502 | Privacy policy needed for Google OAuth brand verification | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/26 |
 | TD26071503 | Point the Google OAuth consent screen at the published privacy policy | resolved | 2026-07-15 | https://github.com/Poetic-Poems/poetic-fiddle/pull/27 |
 | TD26071504 | OAuth consent screen App name doesn't match the home page | open | | |
-| TD26071601 | Auth email reaches only project-team addresses (no custom SMTP) | open | | |
+| TD26071601 | Auth email reaches only project-team addresses (no custom SMTP) | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/34 |
 | TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/33 |

@@ -636,7 +636,7 @@ apex-only examples — those examples now read `www.poeticfiddle.com/@handle`).
 
 ### 6.4 Auth email deliverability *(blocks real sign-in; informs M4, gates M9)* — ✅ **DECIDED 2026-07-16**
 
-**Decision: Resend as the custom SMTP provider**, sending as
+**Decision: SMTP2GO as the custom SMTP provider**, sending as
 `no-reply@poeticfiddle.com`.
 
 **This is more urgent than "before public launch".** Supabase's built-in mailer
@@ -649,39 +649,44 @@ a sign-in until this is configured — which also blocks testing M5's ownership
 and RLS behaviour with a genuine second account. Configuring custom SMTP raises
 the cap to 30 messages/hour (adjustable in the dashboard).
 
-**Why Resend:** free tier of 3,000/month (100/day) against Fiddle's auth-only
-volume, one verified domain, and DKIM/SPF/DMARC generated as DNS records for
-`poeticfiddle.com` — whose zone is already on Cloudflare (§6.3). Supabase
-documents it as a supported provider. AWS SES is cheaper at volume but needs a
-sandbox-removal request and more IAM surface than auth mail justifies; Brevo's
-EU hosting is moot given the database is already `ap-southeast-1`.
+**Why SMTP2GO:** a free tier of 1,000/month (200/day) comfortably covers
+Fiddle's auth-only volume, with CNAME-based domain verification (return-path,
+DKIM and link-tracking) for `poeticfiddle.com` — whose zone is already on
+Cloudflare (§6.3) — and standard SMTP that Supabase's custom-SMTP setting
+consumes directly. Resend's free tier permits only **one** verified domain,
+which is committed to another project, so a second domain there would force a
+paid plan. AWS SES is cheaper at high volume but needs a sandbox-removal request
+and more IAM surface than auth mail justifies; Brevo stamps its own branding on
+the free tier. SMTP2GO's one caveat is a reduced free-tier cap until the sending
+domain is three months old — immaterial at auth-mail volume.
 
 **Where the credential lives — Supabase, not Vercel, not this repo.** Supabase
 Auth sends the mail itself, server-side; Fiddle's application code never
-composes or sends an email. So the Resend API key is **not** a Fiddle
-environment variable: it does not belong in `.env.local`, in Vercel's
+composes or sends an email. So the SMTP2GO username and password are **not**
+Fiddle environment variables: they do not belong in `.env.local`, in Vercel's
 environment variables, or in `.env.example`'s contract, and no code change is
-needed to adopt it. Outstanding manual steps are tracked as `TECH-DEBT.md`
+needed to adopt them. Outstanding manual steps are tracked as `TECH-DEBT.md`
 **TD26071601**:
 
-1. **Resend → Domains:** add `poeticfiddle.com`; Resend emits DKIM (+ SPF, and
-   optionally DMARC) records.
-2. **Cloudflare DNS:** add those records to the `poeticfiddle.com` zone. If an
-   SPF `TXT` already exists, **merge** Resend's `include:` into it — a second
-   SPF record invalidates both.
-3. **Resend → API Keys:** create one key with **Sending access** (not Full
-   access — least privilege, AC88).
+1. **SMTP2GO → Verified Senders:** add the sender domain `poeticfiddle.com`;
+   SMTP2GO emits three `CNAME` records (return-path, DKIM and link-tracking).
+2. **Cloudflare DNS:** add those `CNAME`s to the `poeticfiddle.com` zone, left
+   **DNS-only (not proxied)**. They carry SPF alignment via the return-path
+   subdomain, so no root SPF `TXT` edit is needed.
+3. **SMTP2GO → SMTP Users:** use (or create) an SMTP user and note its username
+   and password — sending is the only capability an SMTP user has (AC88).
 4. **Supabase → Authentication → Emails → SMTP Settings:** enable custom SMTP
-   with host `smtp.resend.com`, port `465`, username the literal `resend`,
-   password the API key, sender `no-reply@poeticfiddle.com`, sender name
-   "Poetic Fiddle". The key is a secret held by Supabase — it must not be
-   pasted into an agent workspace or any tracked file.
+   with host `mail.smtp2go.com`, port `465` (SSL; `587` STARTTLS is the
+   fallback), the SMTP2GO username and password, sender
+   `no-reply@poeticfiddle.com`, sender name "Poetic Fiddle". The password is a
+   secret held by Supabase — it must not be pasted into an agent workspace or
+   any tracked file.
 5. Send a magic link to a non-team address to confirm delivery (AC109), then
    raise Auth → Rate Limits above 30/hour only if a real need appears.
 
-Resend joins the disclosed sub-processor list (D41) as "the transactional-email
-provider" the Privacy Policy already anticipated — REQUIREMENTS.md §15 now
-names it.
+SMTP2GO joins the disclosed sub-processor list (D41) as the transactional-email
+provider — named in REQUIREMENTS.md §15 and in the published Privacy Policy
+(`src/app/privacy/page.tsx`).
 
 ### 6.5 Supabase idle-pause *(operability)* — ✅ **DECIDED 2026-07-16**
 

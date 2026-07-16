@@ -34,6 +34,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   content ownership, acceptable use, availability, liability, termination,
   and governing law.
 
+### Changed
+
+- The Privacy Policy now discloses **SMTP2GO** as the sub-processor that
+  delivers authentication emails (the magic-link and password sign-in
+  messages).
+
 ### Fixed
 
 - A missing space in the Privacy Policy's "What we collect" list, where
