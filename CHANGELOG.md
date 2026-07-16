@@ -43,6 +43,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the live preview. They previously did nothing, because DOMPurify strips
   the inline `onclick` handlers poetic's template relies on; the preview now
   rewires the same show/hide behaviour after sanitisation.
+- The Analysis section's "Synopsis"/"Full Analysis" selector buttons (shown
+  when an analysis has both forms) now work in the live preview, for the
+  same reason and via the same rewiring approach as the show/hide buttons.
 
 ### Security
 

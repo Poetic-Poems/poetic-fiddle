@@ -33,6 +33,32 @@ export function wireAnalysisToggles(doc: Document) {
         showButton.style.display = "block";
       });
     });
+
+  doc
+    .querySelectorAll<HTMLElement>("button.analysis.selector")
+    .forEach((selectorButton) => {
+      const match = selectorButton.id.match(
+        /^analysis-select-(syno|full)--(.+)$/,
+      );
+      if (!match) return;
+      const [, variant, slug] = match;
+      const synoPanel = doc.getElementById(`analysis-syno--${slug}`);
+      const fullPanel = doc.getElementById(`analysis-full--${slug}`);
+      const synoButton = doc.getElementById(`analysis-select-syno--${slug}`);
+      const fullButton = doc.getElementById(`analysis-select-full--${slug}`);
+      if (!synoPanel || !fullPanel || !synoButton || !fullButton) return;
+
+      const showsSynopsis = variant === "syno";
+      selectorButton.addEventListener("click", () => {
+        // The full panel starts with poetic's `hidden` class, whose
+        // `display: none !important` an inline style.display can't
+        // override, so toggle that class rather than style.display.
+        synoPanel.classList.toggle("hidden", !showsSynopsis);
+        fullPanel.classList.toggle("hidden", showsSynopsis);
+        synoButton.classList.toggle("selected", showsSynopsis);
+        fullButton.classList.toggle("selected", !showsSynopsis);
+      });
+    });
 }
 
 /**
