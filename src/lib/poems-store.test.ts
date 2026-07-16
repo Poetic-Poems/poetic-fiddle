@@ -4,10 +4,12 @@ import {
   PoemLoadError,
   PoemSaveError,
   PoemShareError,
+  PoemUnshareError,
   listPoems,
   loadPoem,
   savePoem,
   sharePoem,
+  unsharePoem,
 } from "./poems-store";
 import { supabase } from "@/lib/supabase-client";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
@@ -240,5 +242,25 @@ describe("sharePoem", () => {
 
     await expect(share).rejects.toBeInstanceOf(PoemShareError);
     await expect(share).rejects.toThrow(/Couldn't create a share link/);
+  });
+});
+
+describe("unsharePoem", () => {
+  it("moves a shared poem back to draft, leaving its share_id in place", async () => {
+    const query = mockQuery({ data: { id: "poem-1" }, error: null });
+
+    await unsharePoem("poem-1");
+
+    expect(query.update).toHaveBeenCalledWith({ status: "draft" });
+    expect(query.eq).toHaveBeenCalledWith("id", "poem-1");
+  });
+
+  it("throws when the row doesn't come back", async () => {
+    mockQuery({ data: null, error: { message: "no rows" } });
+
+    const unshare = unsharePoem("poem-1");
+
+    await expect(unshare).rejects.toBeInstanceOf(PoemUnshareError);
+    await expect(unshare).rejects.toThrow(/Couldn't remove the share link/);
   });
 });

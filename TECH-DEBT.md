@@ -22,28 +22,6 @@ so the Ledger (not memory or scrollback) is the source of truth for the next
 free ID. Compute it with `scripts/next-tech-debt-id.pl` rather than counting
 by hand.
 
-## TD26071701 No way to revoke a share link
-
-M6 (share permalinks) added `sharePoem()` to mint/reveal a poem's `share_id`
-and move it to `unlisted`, but no way back: there is no "unshare" action in
-the editor or dashboard, so a poet who shares a poem cannot make the link
-stop working again. The schema already supports it — `poems_before_write`'s
-trigger only forbids a *client-supplied* `share_id`, and the
-`poems_shared_has_share_id` check only requires a non-null `share_id` while
-`status <> 'draft'`, so setting `status` back to `'draft'` is a legal update
-and `get_shared_poem`'s `where p.status in ('unlisted', 'published')` would
-correctly stop serving it (the old `share_id` stays on the row, unused,
-rather than being cleared — reusing it if the poem is re-shared later, which
-matches the "permanent, never repointed" invariant the trigger already
-documents).
-
-Fix: add an `unsharePoem(id)` alongside `sharePoem()` in
-`src/lib/poems-store.ts` (an update to `status: 'draft'`), an "Unshare"
-control in the editor next to the share link, and a
-`revalidateSharedPoem(shareId)` call afterwards so the now-draft poem's old
-`/share/<id>` page reflects the change (via `getCachedSharedPoem`'s cache) on
-its next request rather than continuing to serve a cached render.
-
 ## TD26071504 OAuth consent screen App name doesn't match the home page
 
 Google's brand verification for the Poetic Fiddle Google Cloud OAuth client
@@ -122,4 +100,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071504 | OAuth consent screen App name doesn't match the home page | open | | |
 | TD26071601 | Auth email reaches only project-team addresses (no custom SMTP) | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/34 |
 | TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/33 |
-| TD26071701 | No way to revoke a share link | open | | |
+| TD26071701 | No way to revoke a share link | resolved | 2026-07-17 | https://github.com/Poetic-Poems/poetic-fiddle/pull/39 |

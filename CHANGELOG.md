@@ -52,6 +52,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   "My poems" listing is now marked "Shared". Media/song embeds (MEGA,
   Audiomack) show the full player on the share page, restricted to those two
   providers and sandboxed.
+- An Unshare control next to a poem's share link: it stops the poem's
+  `/share/<id>` permalink from serving, moving the poem back to a draft.
 
 ### Changed
 
