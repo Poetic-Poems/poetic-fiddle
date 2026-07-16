@@ -27,6 +27,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sign-in, with the session persisting across reloads. Signing in for the
   first time adopts any anonymous `localStorage` draft into the session and
   clears it.
+- Saving a poem to your account: signed in, the Save button stores the poem
+  and keeps updating that same poem on every later save. The toolbar says
+  whether you have unsaved changes, and a save that fails says so and leaves
+  your work untouched. A saved poem's title comes from the poem's own header,
+  and a poem that isn't finished enough to parse still saves.
 - A Privacy Policy page (`/privacy`), linked from the site footer on every
   page, covering what Poetic Fiddle collects and how it's used.
 - A Terms of Service page (`/terms`), linked from the site footer alongside
