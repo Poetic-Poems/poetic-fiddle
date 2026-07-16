@@ -91,8 +91,13 @@ export function PoemsDashboard() {
             href={`/poems/${poem.id}`}
             className="flex items-center justify-between gap-4 rounded-lg border border-black/10 px-4 py-3 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
           >
-            <span className="font-serif text-base font-medium">
+            <span className="flex items-center gap-2 font-serif text-base font-medium">
               {poem.title || "Untitled"}
+              {poem.shareId && (
+                <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-normal text-foreground/70 dark:bg-white/10">
+                  Shared
+                </span>
+              )}
             </span>
             <span className="text-xs text-foreground/60">
               {new Date(poem.updatedAt).toLocaleDateString()}

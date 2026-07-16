@@ -55,6 +55,7 @@ describe("Editor save", () => {
       id: "poem-1",
       title: "A Title",
       updatedAt: "2026-07-16T00:00:00Z",
+      shareId: null,
     });
     render(<Editor poeticCss="" />);
 
