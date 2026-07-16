@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
-import { getSharedPoem, type SharedPoem } from "@/lib/poems-store";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSharedPoem, type SharedPoem } from "@/lib/get-shared-poem";
+import { getSupabaseServer } from "@/lib/supabase-server";
 
 /**
  * The Next Data Cache tag for a single shared poem — shared between the
@@ -23,7 +23,7 @@ export function getCachedSharedPoem(
   shareId: string,
 ): Promise<SharedPoem | null> {
   return unstable_cache(
-    () => getSharedPoem(shareId, supabaseServer),
+    () => getSharedPoem(shareId, getSupabaseServer()),
     ["shared-poem", shareId],
     { tags: [sharedPoemCacheTag(shareId)], revalidate: 300 },
   )();

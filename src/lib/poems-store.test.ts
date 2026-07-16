@@ -4,7 +4,6 @@ import {
   PoemLoadError,
   PoemSaveError,
   PoemShareError,
-  getSharedPoem,
   listPoems,
   loadPoem,
   savePoem,
@@ -14,7 +13,7 @@ import { supabase } from "@/lib/supabase-client";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
 
 vi.mock("@/lib/supabase-client", () => ({
-  supabase: { from: vi.fn(), rpc: vi.fn() },
+  supabase: { from: vi.fn() },
 }));
 
 interface QueryResult {
@@ -36,15 +35,6 @@ function mockQuery(result: QueryResult) {
   };
   vi.mocked(supabase.from).mockReturnValue(
     query as unknown as ReturnType<typeof supabase.from>,
-  );
-  return query;
-}
-
-/** A stand-in for the RPC query builder (get_shared_poem). */
-function mockRpc(result: QueryResult) {
-  const query = { maybeSingle: vi.fn(() => Promise.resolve(result)) };
-  vi.mocked(supabase.rpc).mockReturnValue(
-    query as unknown as ReturnType<typeof supabase.rpc>,
   );
   return query;
 }
@@ -250,44 +240,5 @@ describe("sharePoem", () => {
 
     await expect(share).rejects.toBeInstanceOf(PoemShareError);
     await expect(share).rejects.toThrow(/Couldn't create a share link/);
-  });
-});
-
-describe("getSharedPoem", () => {
-  it("reads a shared poem through the get_shared_poem RPC", async () => {
-    const query = mockRpc({
-      data: {
-        title: "A Title",
-        source_text: EXAMPLE_POEM,
-        allow_remix: false,
-        updated_at: "2026-07-16T00:00:00Z",
-      },
-      error: null,
-    });
-
-    const poem = await getSharedPoem("abc123");
-
-    expect(supabase.rpc).toHaveBeenCalledWith("get_shared_poem", {
-      p_share_id: "abc123",
-    });
-    expect(query.maybeSingle).toHaveBeenCalled();
-    expect(poem).toEqual({
-      title: "A Title",
-      source: EXAMPLE_POEM,
-      allowRemix: false,
-      updatedAt: "2026-07-16T00:00:00Z",
-    });
-  });
-
-  it("returns null for an id that doesn't exist or names a draft (AC87)", async () => {
-    mockRpc({ data: null, error: null });
-
-    expect(await getSharedPoem("no-such-id")).toBeNull();
-  });
-
-  it("returns null rather than throwing on an RPC error", async () => {
-    mockRpc({ data: null, error: { message: "network error" } });
-
-    expect(await getSharedPoem("abc123")).toBeNull();
   });
 });
