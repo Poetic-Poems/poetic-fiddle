@@ -9,7 +9,7 @@ import { PoemPreview } from "@/components/PoemPreview";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
-import { loadPoem, savePoem, sharePoem } from "@/lib/poems-store";
+import { loadPoem, savePoem, sharePoem, unsharePoem } from "@/lib/poems-store";
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { supabase } from "@/lib/supabase-client";
 import { useSession } from "@/lib/use-session";
@@ -81,6 +81,7 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
   const [shareId, setShareId] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
+  const [unsharing, setUnsharing] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -238,6 +239,28 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
     }
   }, [hasUnsavedChanges, poemId, session, source]);
 
+  // Reverses Share: moves the poem back to draft so its permalink stops
+  // serving. `poemId` is always set here (this only renders once `shareId`
+  // is), and the cache invalidation is best-effort, matching handleSave's
+  // treatment of the same call — a failure here leaves the cache to expire
+  // on its own schedule rather than turning a successful unshare into an
+  // error.
+  const handleUnshare = useCallback(async () => {
+    if (!poemId || !shareId) return;
+
+    setUnsharing(true);
+    setShareError(null);
+    try {
+      await unsharePoem(poemId);
+      setShareId(null);
+      revalidateSharedPoem(shareId).catch(() => {});
+    } catch (err) {
+      setShareError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUnsharing(false);
+    }
+  }, [poemId, shareId]);
+
   const shareUrl =
     shareId && typeof window !== "undefined"
       ? `${window.location.origin}/share/${shareId}`
@@ -351,6 +374,14 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
             className="ml-auto rounded-md border border-black/10 px-2 py-1 text-xs font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
           >
             Copy
+          </button>
+          <button
+            type="button"
+            onClick={handleUnshare}
+            disabled={unsharing}
+            className="rounded-md border border-black/10 px-2 py-1 text-xs font-medium hover:bg-black/5 disabled:opacity-60 dark:border-white/10 dark:hover:bg-white/5"
+          >
+            {unsharing ? "Unsharing…" : "Unshare"}
           </button>
         </div>
       )}

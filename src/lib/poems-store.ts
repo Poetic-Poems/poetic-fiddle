@@ -67,6 +67,20 @@ export class PoemShareError extends Error {
   }
 }
 
+/**
+ * A share couldn't be revoked. `message` is safe to show a poet as-is; the
+ * underlying Supabase/network error is kept as `cause`.
+ */
+export class PoemUnshareError extends Error {
+  constructor(cause: unknown) {
+    super(
+      "Couldn't remove the share link — your poem is still saved. Please try again.",
+    );
+    this.name = "PoemUnshareError";
+    this.cause = cause;
+  }
+}
+
 const SAVED_POEM_COLUMNS = "id, title, updated_at, share_id";
 
 interface PoemRow {
@@ -203,4 +217,25 @@ export async function sharePoem(id: string): Promise<string> {
   if (error || !data?.share_id) throw new PoemShareError(error);
 
   return data.share_id;
+}
+
+/**
+ * Unshares a saved poem: moves it back to `draft`, so `get_shared_poem`
+ * stops serving its permalink (it only selects `unlisted`/`published` rows).
+ * The poem's `share_id` is left on the row rather than cleared — it's
+ * permanent and never repointed (docs/IMPLEMENTATION-PLAN.md §6.2), so
+ * re-sharing the same poem later reveals the same link rather than minting
+ * a new one.
+ *
+ * @throws {PoemShareError} if the update doesn't come back with a row.
+ */
+export async function unsharePoem(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("poems")
+    .update({ status: "draft" })
+    .eq("id", id)
+    .select("id")
+    .single<{ id: string }>();
+
+  if (error || !data) throw new PoemUnshareError(error);
 }
