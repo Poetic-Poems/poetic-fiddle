@@ -23,6 +23,34 @@ export class PoemSaveError extends Error {
   }
 }
 
+/**
+ * A poem couldn't be listed. `message` is safe to show a poet as-is; the
+ * underlying Supabase/network error is kept as `cause` for diagnosis.
+ */
+export class PoemListError extends Error {
+  constructor(cause: unknown) {
+    super("Couldn't load your poems — please try again.");
+    this.name = "PoemListError";
+    this.cause = cause;
+  }
+}
+
+/**
+ * A specific poem couldn't be opened — it doesn't exist, or it belongs to
+ * someone else. RLS makes the two indistinguishable from here (AC87), which
+ * is the point: a poem that isn't the caller's reads back as absent, not as
+ * a permission error that would confirm it exists.
+ */
+export class PoemLoadError extends Error {
+  constructor(cause: unknown) {
+    super(
+      "That poem couldn't be found — it may have been deleted, or belongs to someone else.",
+    );
+    this.name = "PoemLoadError";
+    this.cause = cause;
+  }
+}
+
 const SAVED_POEM_COLUMNS = "id, title, updated_at";
 
 interface PoemRow {
@@ -75,4 +103,56 @@ export async function savePoem({
   if (error || !data) throw new PoemSaveError(error);
 
   return { id: data.id, title: data.title, updatedAt: data.updated_at };
+}
+
+/**
+ * Lists the signed-in poet's saved drafts, most recently updated first, for
+ * the "My poems" dashboard (AC15, AC22). RLS already scopes every row to its
+ * owner; the explicit `owner_id` filter here matches the style of `savePoem`
+ * rather than relying on it alone. Only `draft`-status poems are listed —
+ * the only status a poem can have until Share (M6) exists.
+ *
+ * @throws {PoemListError} if the list can't be fetched.
+ */
+export async function listPoems(ownerId: string): Promise<SavedPoem[]> {
+  const { data, error } = await supabase
+    .from("poems")
+    .select(SAVED_POEM_COLUMNS)
+    .eq("owner_id", ownerId)
+    .eq("status", "draft")
+    .order("updated_at", { ascending: false })
+    .returns<PoemRow[]>();
+
+  if (error) throw new PoemListError(error);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    updatedAt: row.updated_at,
+  }));
+}
+
+/** A saved poem's full source, as the editor needs it to resume editing. */
+export interface LoadedPoem {
+  id: string;
+  source: string;
+}
+
+/**
+ * Loads a saved poem's source for the editor, so opening it from the
+ * dashboard (or reloading its URL) restores the poem with its id preserved
+ * (AC15) instead of the reload losing which row is being edited.
+ *
+ * @throws {PoemLoadError} if the poem doesn't exist or isn't the caller's.
+ */
+export async function loadPoem(id: string): Promise<LoadedPoem> {
+  const { data, error } = await supabase
+    .from("poems")
+    .select("id, source_text")
+    .eq("id", id)
+    .single<{ id: string; source_text: string }>();
+
+  if (error || !data) throw new PoemLoadError(error);
+
+  return { id: data.id, source: data.source_text };
 }

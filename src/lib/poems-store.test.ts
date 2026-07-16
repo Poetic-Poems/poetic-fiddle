@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PoemSaveError, savePoem } from "./poems-store";
+import {
+  PoemListError,
+  PoemLoadError,
+  PoemSaveError,
+  listPoems,
+  loadPoem,
+  savePoem,
+} from "./poems-store";
 import { supabase } from "@/lib/supabase-client";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
 
@@ -8,17 +15,19 @@ vi.mock("@/lib/supabase-client", () => ({
 }));
 
 interface QueryResult {
-  data: { id: string; title: string; updated_at: string } | null;
+  data: unknown;
   error: { message: string } | null;
 }
 
-/** A stand-in for the PostgREST query builder, which chains until `single()`. */
+/** A stand-in for the PostgREST query builder, which chains until it resolves. */
 function mockQuery(result: QueryResult) {
   const query = {
     insert: vi.fn(() => query),
     update: vi.fn(() => query),
     eq: vi.fn(() => query),
     select: vi.fn(() => query),
+    order: vi.fn(() => query),
+    returns: vi.fn(() => Promise.resolve(result)),
     single: vi.fn(() => Promise.resolve(result)),
   };
   vi.mocked(supabase.from).mockReturnValue(
@@ -102,5 +111,73 @@ describe("savePoem", () => {
     await expect(save).rejects.toMatchObject({
       cause: { message: "violates row-level security" },
     });
+  });
+});
+
+describe("listPoems", () => {
+  it("lists the owner's draft poems, most recently updated first", async () => {
+    const rows = [
+      { id: "poem-2", title: "Newer", updated_at: "2026-07-17T00:00:00Z" },
+      { id: "poem-1", title: "Older", updated_at: "2026-07-16T00:00:00Z" },
+    ];
+    const query = mockQuery({ data: rows, error: null });
+
+    const poems = await listPoems("user-1");
+
+    expect(query.eq).toHaveBeenCalledWith("owner_id", "user-1");
+    expect(query.eq).toHaveBeenCalledWith("status", "draft");
+    expect(query.order).toHaveBeenCalledWith("updated_at", {
+      ascending: false,
+    });
+    expect(poems).toEqual([
+      { id: "poem-2", title: "Newer", updatedAt: "2026-07-17T00:00:00Z" },
+      { id: "poem-1", title: "Older", updatedAt: "2026-07-16T00:00:00Z" },
+    ]);
+  });
+
+  it("returns an empty list rather than null when there are no poems", async () => {
+    mockQuery({ data: null, error: null });
+
+    expect(await listPoems("user-1")).toEqual([]);
+  });
+
+  it("throws a readable error, keeping the cause, when the list fails", async () => {
+    mockQuery({ data: null, error: { message: "network error" } });
+
+    const list = listPoems("user-1");
+
+    await expect(list).rejects.toBeInstanceOf(PoemListError);
+    await expect(list).rejects.toThrow(/Couldn't load your poems/);
+    await expect(list).rejects.toMatchObject({
+      cause: { message: "network error" },
+    });
+  });
+});
+
+describe("loadPoem", () => {
+  it("loads a poem's source by id", async () => {
+    const query = mockQuery({
+      data: { id: "poem-1", source_text: EXAMPLE_POEM },
+      error: null,
+    });
+
+    const poem = await loadPoem("poem-1");
+
+    expect(query.eq).toHaveBeenCalledWith("id", "poem-1");
+    expect(poem).toEqual({ id: "poem-1", source: EXAMPLE_POEM });
+  });
+
+  it("throws when the poem doesn't exist or isn't the caller's (AC87)", async () => {
+    mockQuery({
+      data: null,
+      error: {
+        message: "JSON object requested, multiple (or no) rows returned",
+      },
+    });
+
+    const load = loadPoem("someone-elses-poem");
+
+    await expect(load).rejects.toBeInstanceOf(PoemLoadError);
+    await expect(load).rejects.toThrow(/couldn't be found/);
   });
 });

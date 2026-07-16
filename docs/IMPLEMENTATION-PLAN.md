@@ -30,10 +30,12 @@ migrating into the session on first sign-in. **The §6 implementation decisions
 are all resolved** (2026-07-16): the schema/RLS design (§6.2), auth-email
 provider (§6.4), idle-pause posture (§6.5), Pug precompilation (§6.6, settled
 upstream by M0) and minimum-age evidence (§6.7). **M5 (data model, Save &
-dashboard) is therefore unblocked and is the immediate next step** — with one
-caveat it inherits: auth mail reaches only project-team addresses until §6.4's
-custom SMTP is configured (TD26071601), so testing M5's ownership rules with a
-genuine second account depends on that.
+dashboard) is delivered** — the `poems`/`profiles` schema and RLS with pgTAP
+tests (PR #35), Save with an unsaved-changes indicator (PR #36), and the "My
+poems" dashboard with save-and-resume (PR #37). One caveat it inherits: auth
+mail reaches only project-team addresses until §6.4's custom SMTP is
+configured (TD26071601), so testing M5's ownership rules with a genuine
+second account depends on that.
 
 ---
 
@@ -323,6 +325,19 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - **ACs:** AC11, AC12, AC9.
 
 ### M5 — Data model, Save & dashboard
+
+> **✅ Delivered 2026-07-17.** `poems`/`profiles` per §6.2, as Supabase CLI
+> migrations, with RLS and pgTAP tests in CI (PR #35). `savePoem`
+> (`src/lib/poems-store.ts`) inserts on a first save and updates the same row
+> thereafter, with an "unsaved changes"/"Saving…"/"Saved" indicator and an
+> error that never drops edits (PR #36). The "My poems" dashboard
+> (`/poems`, `PoemsDashboard`) lists the signed-in poet's saved drafts,
+> most-recently-updated first, with an empty state linking back to the
+> editor; each poem links to `/poems/[id]`, which loads it via `loadPoem`
+> and hands it to `Editor` as `initialPoemId` — the poem's id then lives in
+> the URL, so opening it (or reloading that URL) restores the same row
+> instead of losing which poem was open (PR #37).
+
 *Depends on: M4. Schema/RLS designed — build to §6.2.*
 - `poems` + `profiles` per §6.2, as committed Supabase CLI migrations: raw
   `.poem` `source_text` as canonical source (D15, AC16); title derived from the

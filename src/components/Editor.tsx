@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import CodeMirror from "@uiw/react-codemirror";
 import { renderPoem } from "poetic/browser";
 import { poemLanguage, poemSyntaxHighlighting } from "@/lib/poem-syntax";
@@ -8,7 +9,7 @@ import { PoemPreview } from "@/components/PoemPreview";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
-import { savePoem } from "@/lib/poems-store";
+import { loadPoem, savePoem } from "@/lib/poems-store";
 import { supabase } from "@/lib/supabase-client";
 import { useSession } from "@/lib/use-session";
 
@@ -48,10 +49,18 @@ function usePrefersDark() {
 
 interface EditorProps {
   poeticCss: string;
+  /**
+   * Opens a specific saved poem instead of the anonymous draft/example —
+   * the poem's id then survives a reload because it lives in the URL
+   * (`/poems/[id]`) rather than only in this component's state.
+   */
+  initialPoemId?: string;
 }
 
-export default function Editor({ poeticCss }: EditorProps) {
-  const [source, setSource] = useState(() => loadDraft() ?? EXAMPLE_POEM);
+export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
+  const [source, setSource] = useState(() =>
+    initialPoemId ? "" : (loadDraft() ?? EXAMPLE_POEM),
+  );
   const [rendered, setRendered] = useState(() => tryRenderPoem(source));
   const [signInPromptAction, setSignInPromptAction] = useState<
     "save" | "share" | null
@@ -66,6 +75,8 @@ export default function Editor({ poeticCss }: EditorProps) {
   const [savedSource, setSavedSource] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(Boolean(initialPoemId));
+  const [openError, setOpenError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -73,24 +84,58 @@ export default function Editor({ poeticCss }: EditorProps) {
     };
   }, []);
 
+  // Opening a saved poem fetches its source once and adopts it as this
+  // session's poem (AC15) — the fix for the reload-loses-the-id gap: the id
+  // now comes from the URL, not just from in-memory state.
+  useEffect(() => {
+    if (!initialPoemId) return;
+    let cancelled = false;
+    loadPoem(initialPoemId)
+      .then((poem) => {
+        if (cancelled) return;
+        setSource(poem.source);
+        setRendered(tryRenderPoem(poem.source));
+        setPoemId(poem.id);
+        setSavedSource(poem.source);
+        setOpening(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setOpenError(err instanceof Error ? err.message : String(err));
+        setOpening(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialPoemId]);
+
   // AC9: on first sign-in, the anonymous localStorage draft (if any) becomes
   // this session's poem instead of being silently left behind. Adjusted
   // during render (React's "resetting state when a prop changes" pattern)
   // rather than in an effect, guarded per-user so a later token refresh
   // (a new session object for the same user) doesn't re-run it; loadDraft()
   // returning null after the first run makes repeat sign-ins a no-op anyway.
+  //
+  // Opening a specific poem (`initialPoemId`) skips the draft migration and
+  // the forget below: this render also fires the first time a *returning*
+  // signed-in poet's session resolves after a reload, which is exactly the
+  // case that must NOT forget the poem `initialPoemId` is in the middle of
+  // (re)loading.
   if (session && session.user.id !== migratedUserId) {
     setMigratedUserId(session.user.id);
-    const draft = loadDraft();
-    if (draft !== null) {
-      setSource(draft);
-      setRendered(tryRenderPoem(draft));
-      clearDraft();
+    if (!initialPoemId) {
+      const draft = loadDraft();
+      if (draft !== null) {
+        setSource(draft);
+        setRendered(tryRenderPoem(draft));
+        clearDraft();
+      }
+      // A saved poem belongs to the account that saved it, so a different
+      // user signing in starts from no row: their Save inserts a poem of
+      // their own rather than updating one they don't own (which RLS would
+      // refuse anyway).
+      forgetSavedPoem();
     }
-    // A saved poem belongs to the account that saved it, so a different user
-    // signing in starts from no row: their Save inserts a poem of their own
-    // rather than updating one they don't own (which RLS would refuse anyway).
-    forgetSavedPoem();
   }
 
   // Signing out does the same, so the editor doesn't hold a row identity no
@@ -151,6 +196,32 @@ export default function Editor({ poeticCss }: EditorProps) {
         ? "Unsaved changes"
         : "Saved";
 
+  if (openError) {
+    return (
+      <div className="flex flex-1 flex-col items-start gap-3 px-6 pb-6">
+        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+          {openError}
+        </p>
+        <Link
+          href="/poems"
+          className="text-sm text-primary underline underline-offset-2"
+        >
+          Back to My poems
+        </Link>
+      </div>
+    );
+  }
+
+  if (opening) {
+    return (
+      <div className="flex flex-1 items-center justify-center px-6 pb-6">
+        <p role="status" className="text-sm text-foreground/70">
+          Opening your poem…
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4 px-6 pb-6">
       <div className="flex flex-wrap items-center justify-end gap-3">
@@ -168,6 +239,12 @@ export default function Editor({ poeticCss }: EditorProps) {
         </span>
         {session && (
           <>
+            <Link
+              href="/poems"
+              className="text-sm text-foreground/70 underline underline-offset-2"
+            >
+              My poems
+            </Link>
             <span className="text-sm text-foreground/70">
               {session.user.email}
             </span>

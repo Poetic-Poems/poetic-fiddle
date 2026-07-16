@@ -38,6 +38,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the Privacy Policy, covering acceptance of terms, the service, accounts,
   content ownership, acceptable use, availability, liability, termination,
   and governing law.
+- A "My poems" dashboard (`/poems`), linked from the editor toolbar when
+  signed in: lists your saved poems, most recently updated first, with an
+  empty state guiding you back to the editor. Opening a poem from the list
+  (`/poems/<id>`) restores it in the editor with its id preserved, so
+  reloading that page resumes editing the same poem instead of losing track
+  of which one it was.
 
 ### Changed
 
