@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:db": "supabase test db",
     "postinstall": "node scripts/sync-poetic-css.mjs"
   },
   "dependencies": {
