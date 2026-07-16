@@ -8,6 +8,7 @@ import { PoemPreview } from "@/components/PoemPreview";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
+import { savePoem } from "@/lib/poems-store";
 import { supabase } from "@/lib/supabase-client";
 import { useSession } from "@/lib/use-session";
 
@@ -61,6 +62,10 @@ export default function Editor({ poeticCss }: EditorProps) {
   const prefersDark = usePrefersDark();
   const session = useSession();
   const [migratedUserId, setMigratedUserId] = useState<string | null>(null);
+  const [poemId, setPoemId] = useState<string | null>(null);
+  const [savedSource, setSavedSource] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -82,6 +87,23 @@ export default function Editor({ poeticCss }: EditorProps) {
       setRendered(tryRenderPoem(draft));
       clearDraft();
     }
+    // A saved poem belongs to the account that saved it, so a different user
+    // signing in starts from no row: their Save inserts a poem of their own
+    // rather than updating one they don't own (which RLS would refuse anyway).
+    forgetSavedPoem();
+  }
+
+  // Signing out does the same, so the editor doesn't hold a row identity no
+  // session can write to.
+  if (!session && migratedUserId !== null) {
+    setMigratedUserId(null);
+    forgetSavedPoem();
+  }
+
+  function forgetSavedPoem() {
+    setPoemId(null);
+    setSavedSource(null);
+    setSaveError(null);
   }
 
   const handleChange = useCallback((value: string) => {
@@ -93,9 +115,57 @@ export default function Editor({ poeticCss }: EditorProps) {
     }, DEBOUNCE_MS);
   }, []);
 
+  const handleSave = useCallback(async () => {
+    if (!session) {
+      setSignInPromptAction("save");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const saved = await savePoem({
+        id: poemId,
+        ownerId: session.user.id,
+        source,
+      });
+      setPoemId(saved.id);
+      // The source as it was sent, not as it stands now: an edit made while the
+      // save was in flight leaves the poem legitimately unsaved (AC14).
+      setSavedSource(source);
+    } catch (err) {
+      // The editor keeps every edit either way — a failed save changes nothing
+      // but the message (AC94, AC95).
+      setSaveError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }, [poemId, session, source]);
+
+  const hasUnsavedChanges = savedSource !== source;
+  const saveStatus = !session
+    ? ""
+    : saving
+      ? "Saving…"
+      : hasUnsavedChanges
+        ? "Unsaved changes"
+        : "Saved";
+
   return (
     <div className="flex flex-1 flex-col gap-4 px-6 pb-6">
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {saveError && (
+          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+            {saveError}
+          </p>
+        )}
+        <span
+          role="status"
+          aria-label="Save status"
+          className="text-sm text-foreground/70"
+        >
+          {saveStatus}
+        </span>
         {session && (
           <>
             <span className="text-sm text-foreground/70">
@@ -112,10 +182,9 @@ export default function Editor({ poeticCss }: EditorProps) {
         )}
         <button
           type="button"
-          onClick={() => {
-            if (!session) setSignInPromptAction("save");
-          }}
-          className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-60 dark:border-white/10 dark:hover:bg-white/5"
         >
           Save
         </button>
