@@ -110,39 +110,44 @@ select is(
 );
 
 select is(
-  (with updated as (
-     update public.poems set title = 'hijacked'
-      where id = 'aaaaaaaa-0000-0000-0000-000000000001'
-      returning 1)
-   select count(*)::int from updated),
-  0,
-  'a second poet cannot update another poet''s poem'
-);
-
-select is(
-  (with deleted as (
-     delete from public.poems
-      where id = 'aaaaaaaa-0000-0000-0000-000000000001'
-      returning 1)
-   select count(*)::int from deleted),
-  0,
-  'a second poet cannot delete another poet''s poem'
-);
-
-select is(
   (select count(*)::int from public.profiles),
   1,
   'a poet sees only their own profile row'
 );
 
+-- Poet A's rows match none of poet B's policies, so these writes raise no error
+-- -- they simply touch nothing. What matters is that A's data is untouched, so
+-- the assertions below re-enter as A and check exactly that: the security
+-- property itself, rather than the number of rows a client happened to see.
+update public.poems set title = 'hijacked'
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+delete from public.poems
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+update public.profiles set remix_default = true
+ where id = '11111111-1111-1111-1111-111111111111';
+
+set local request.jwt.claims to
+  '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
 select is(
-  (with updated as (
-     update public.profiles set remix_default = true
-      where id = '11111111-1111-1111-1111-111111111111'
-      returning 1)
-   select count(*)::int from updated),
-  0,
-  'a poet cannot update another poet''s profile'
+  (select count(*)::int from public.poems
+    where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
+  1,
+  'a second poet cannot delete another poet''s poem'
+);
+
+select is(
+  (select title from public.poems
+    where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
+  'Ode to a Better Fiddle',
+  'a second poet cannot update another poet''s poem'
+);
+
+select is(
+  (select remix_default from public.profiles
+    where id = '11111111-1111-1111-1111-111111111111'),
+  false,
+  'a second poet cannot update another poet''s profile'
 );
 
 -- === Anonymous visitors have no table access whatsoever ===
@@ -150,15 +155,21 @@ select is(
 set local role anon;
 set local request.jwt.claims to '{"role":"anon"}';
 
-select is(
-  (select count(*)::int from public.poems),
-  0,
+-- Refused outright, rather than returning an empty result: anon holds no
+-- privilege on either table, so the table cannot even be referenced. That is a
+-- stronger guarantee than "RLS matches no rows", and it is what keeps a poem
+-- unreachable if a policy is ever added carelessly.
+select throws_ok(
+  $$select 1 from public.poems$$,
+  '42501',
+  null,
   'an anonymous visitor cannot read poems'
 );
 
-select is(
-  (select count(*)::int from public.profiles),
-  0,
+select throws_ok(
+  $$select 1 from public.profiles$$,
+  '42501',
+  null,
   'an anonymous visitor cannot read profiles'
 );
 
@@ -203,12 +214,12 @@ select is(
   'a minted share_id is permanent across later updates'
 );
 
+update public.poems set share_id = 'client-chosen-value'
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+
 select is(
-  (with updated as (
-     update public.poems set share_id = 'client-chosen-value'
-      where id = 'aaaaaaaa-0000-0000-0000-000000000001'
-      returning share_id)
-   select share_id from updated),
+  (select share_id from public.poems
+    where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
   (select share_id from refs where name = 'poem1'),
   'a client cannot repoint a share_id to a value of its own choosing'
 );
@@ -242,12 +253,13 @@ select ok(
   'an update bumps updated_at'
 );
 
+update public.poems set updated_at = '2000-01-01'::timestamptz
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+
 select ok(
-  (with updated as (
-     update public.poems set updated_at = '2000-01-01'::timestamptz
-      where id = 'aaaaaaaa-0000-0000-0000-000000000001'
-      returning updated_at)
-   select updated_at from updated) > '2020-01-01'::timestamptz,
+  (select updated_at from public.poems
+    where id = 'aaaaaaaa-0000-0000-0000-000000000001')
+    > '2020-01-01'::timestamptz,
   'a client cannot backdate updated_at'
 );
 

@@ -52,7 +52,11 @@ begin
     -- silently repointed or revoked by a client-supplied value.
     new.share_id := old.share_id;
     new.created_at := old.created_at;
-    new.updated_at := now();
+    -- clock_timestamp(), not now(): now() is the transaction's start time, so
+    -- rows written in one transaction would share a timestamp and an update
+    -- could carry the same updated_at as the insert it followed. This records
+    -- when the row was actually written, which is what the dashboard orders on.
+    new.updated_at := clock_timestamp();
   else
     new.share_id := null;
   end if;
@@ -79,7 +83,7 @@ as $$
 begin
   new.id := old.id;
   new.created_at := old.created_at;
-  new.updated_at := now();
+  new.updated_at := clock_timestamp();
   return new;
 end;
 $$;
@@ -107,6 +111,21 @@ $$;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
+
+-- Table privileges, stated explicitly rather than inherited from the project's
+-- default privileges, so the local test database and the hosted project cannot
+-- disagree and the privilege model is reviewable here. RLS governs which ROWS a
+-- role may touch; it does not grant access to the table in the first place, so
+-- both are needed.
+--
+-- anon deliberately receives nothing: its only read path is get_shared_poem,
+-- and its only write path is localStorage. The revokes make that independent of
+-- whatever default privileges the project happens to carry.
+revoke all on public.poems from anon, authenticated;
+revoke all on public.profiles from anon, authenticated;
+
+grant select, insert, update, delete on public.poems to authenticated;
+grant select, update on public.profiles to authenticated;
 
 -- RLS: both tables are default-deny. Every policy is scoped `to authenticated`
 -- and matches on ownership, so anonymous users get no table access at all --
