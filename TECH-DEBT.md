@@ -122,4 +122,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071504 | OAuth consent screen App name doesn't match the home page | open | | |
 | TD26071601 | Auth email reaches only project-team addresses (no custom SMTP) | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/34 |
 | TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/33 |
-| TD26071701 | No way to revoke a share link | open | | |
+| TD26071701 | No way to revoke a share link | in-progress | | |
