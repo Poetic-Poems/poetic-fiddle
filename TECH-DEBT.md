@@ -58,6 +58,39 @@ every checkable configuration and content signal already matches.
 An "I believe the issues found are incorrect" request has been sent to the
 Google verification team.  The estimated time for a response is three days.
 
+## TD26071801 `npm test` fails on Node 26 (26 tests, all localStorage)
+
+*Noticed 2026-07-18.* Every test touching `window.localStorage` — the whole of
+`src/lib/draft-storage.test.ts` plus the editor's draft/save/share/remix
+suites, 26 in all — fails on Node 26 with `TypeError: Cannot read properties
+of undefined (reading 'clear')`. CI is green and the code is fine: this is
+purely a local-toolchain gap, but it makes a clean `npm test` impossible on
+the newest Node, and that is where a contributor arriving today lands.
+
+Cause: Node 26 exposes its own experimental global `localStorage`, inert
+unless `--localstorage-file` is passed (it warns: "localStorage is not
+available because --localstorage-file was not provided"). It shadows the one
+Vitest's jsdom environment installs, so `window.localStorage` reads back
+`undefined`. Confirmed by version — `'localStorage' in globalThis` is `false`
+on Node 20, 22 and 24, and `true` on 26.5. CI pins `node-version: "20"` in
+`.github/workflows/build.yml`, which predates the global — hence the
+disagreement. `package.json` says `engines.node: ">=20.9.0"`, so a contributor
+on 26 is within the declared range and still gets 26 red tests.
+
+Workaround for a local run (not a fix — Node's file-backed store is shared
+across test files, where jsdom gives each its own, so parallel suites can race
+over it):
+
+    NODE_OPTIONS="--localstorage-file=$(mktemp -u)" npm test
+
+Fix: pick one — (a) run tests under a Node without the global, pinning it in an
+`.nvmrc`/`engines` narrowing so it's the same version CI uses; (b) neutralise
+the global in `vitest.setup.ts` by redefining `localStorage` from the jsdom
+window before the suites run; or (c) track Vitest/jsdom upstream, which may
+handle the collision in a later release. (b) is the cheapest and keeps CI and
+local on one path; whichever is chosen, bump CI off Node 20 (out of support
+since 2026-04) at the same time so the two stop diverging silently.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -101,3 +134,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071601 | Auth email reaches only project-team addresses (no custom SMTP) | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/34 |
 | TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/33 |
 | TD26071701 | No way to revoke a share link | resolved | 2026-07-17 | https://github.com/Poetic-Poems/poetic-fiddle/pull/39 |
+| TD26071801 | `npm test` fails on Node 26 (26 tests, all localStorage) | open | | |
