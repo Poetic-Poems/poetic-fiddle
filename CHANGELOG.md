@@ -71,6 +71,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The poem title is now visible in the preview panel. It was previously hidden
+  by the poetic framework's stylesheet; the app now overrides that rule.
 - A missing space in the Privacy Policy's "What we collect" list, where
   "Account information." ran into the following sentence with no space
   between them in some rendering paths.

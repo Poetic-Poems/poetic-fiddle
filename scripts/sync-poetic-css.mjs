@@ -13,7 +13,16 @@ import path from "node:path";
 
 const require = createRequire(import.meta.url);
 const cssPath = require.resolve("poetic/browser/poetic.css");
-const css = readFileSync(cssPath, "utf8");
+let css = readFileSync(cssPath, "utf8");
+
+// Override: make the poem title visible (issue #41).
+// The original poetic.css hides `.poem-info .title` — remove that rule.
+// This regex is matched against the exact formatting of the pinned poetic
+// version; see TECH-DEBT.md TD26071802 for the upgrade-safety gap.
+css = css.replace(
+  /\.poem-info\s+\.title,\s*\.poem-info\s+#title\s*\{\s*display:\s*none;\s*\}/g,
+  "",
+);
 
 const outPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
