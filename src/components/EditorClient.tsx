@@ -7,8 +7,19 @@ const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 interface EditorClientProps {
   poeticCss: string;
   initialPoemId?: string;
+  initialSource?: string;
 }
 
-export function EditorClient({ poeticCss, initialPoemId }: EditorClientProps) {
-  return <Editor poeticCss={poeticCss} initialPoemId={initialPoemId} />;
+export function EditorClient({
+  poeticCss,
+  initialPoemId,
+  initialSource,
+}: EditorClientProps) {
+  return (
+    <Editor
+      poeticCss={poeticCss}
+      initialPoemId={initialPoemId}
+      initialSource={initialSource}
+    />
+  );
 }

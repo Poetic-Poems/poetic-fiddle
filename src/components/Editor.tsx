@@ -56,11 +56,23 @@ interface EditorProps {
    * (`/poems/[id]`) rather than only in this component's state.
    */
   initialPoemId?: string;
+  /**
+   * Seeds the editor with source that isn't (yet) a row of the poet's own —
+   * a remix of someone else's shared poem (`/remix/[share_id]`, AC20). No
+   * `poemId` comes with it deliberately: the copy is independent, so the
+   * first Save inserts a new poem owned by whoever is signed in, leaving the
+   * original untouched.
+   */
+  initialSource?: string;
 }
 
-export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
+export default function Editor({
+  poeticCss,
+  initialPoemId,
+  initialSource,
+}: EditorProps) {
   const [source, setSource] = useState(() =>
-    initialPoemId ? "" : (loadDraft() ?? EXAMPLE_POEM),
+    initialPoemId ? "" : (initialSource ?? loadDraft() ?? EXAMPLE_POEM),
   );
   const [rendered, setRendered] = useState(() => tryRenderPoem(source));
   const [signInPromptAction, setSignInPromptAction] = useState<
@@ -88,6 +100,15 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+  // AC21: an anonymous remix is just an anonymous draft — persisted to
+  // localStorage on arrival so it survives a reload, and adopted into the
+  // account on sign-in like any other draft (AC7–AC10). It replaces whatever
+  // draft was there, which is the same single-draft model the editor already
+  // has: one anonymous poem in progress at a time.
+  useEffect(() => {
+    if (initialSource !== undefined) saveDraft(initialSource);
+  }, [initialSource]);
 
   // Opening a saved poem fetches its source once and adopts it as this
   // session's poem (AC15) — the fix for the reload-loses-the-id gap: the id
@@ -126,10 +147,13 @@ export default function Editor({ poeticCss, initialPoemId }: EditorProps) {
   // the forget below: this render also fires the first time a *returning*
   // signed-in poet's session resolves after a reload, which is exactly the
   // case that must NOT forget the poem `initialPoemId` is in the middle of
-  // (re)loading.
+  // (re)loading. A remix (`initialSource`) skips it for the mirror-image
+  // reason: the poem to keep is the one the URL names, so a leftover draft
+  // must not overwrite it — the effect above has already made the remix the
+  // stored draft, so nothing is stranded either way.
   if (session && session.user.id !== migratedUserId) {
     setMigratedUserId(session.user.id);
-    if (!initialPoemId) {
+    if (!initialPoemId && initialSource === undefined) {
       const draft = loadDraft();
       if (draft !== null) {
         setSource(draft);

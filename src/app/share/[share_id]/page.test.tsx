@@ -51,6 +51,43 @@ describe("SharePage", () => {
     ).rejects.toThrow();
   });
 
+  it("offers no Remix action by default (AC113)", async () => {
+    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(renderSharedPoemHtml).mockReturnValue({
+      html: "<p>Hi</p>",
+      error: false,
+    });
+
+    render(
+      await SharePage({ params: Promise.resolve({ share_id: "abc123" }) }),
+    );
+
+    expect(
+      screen.queryByRole("link", { name: "Remix" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers Remix when the owner has enabled it (AC20, AC113)", async () => {
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({
+      ...POEM,
+      allowRemix: true,
+    });
+    vi.mocked(renderSharedPoemHtml).mockReturnValue({
+      html: "<p>Hi</p>",
+      error: false,
+    });
+
+    render(
+      await SharePage({ params: Promise.resolve({ share_id: "abc123" }) }),
+    );
+
+    // A plain link, so Remix is reachable with no client-side JS (AC84).
+    expect(screen.getByRole("link", { name: "Remix" })).toHaveAttribute(
+      "href",
+      "/remix/abc123",
+    );
+  });
+
   it("shows a friendly message instead of crashing when the poem can't be rendered", async () => {
     vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
     vi.mocked(renderSharedPoemHtml).mockReturnValue({ html: "", error: true });
