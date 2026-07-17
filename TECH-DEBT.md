@@ -91,21 +91,6 @@ handle the collision in a later release. (b) is the cheapest and keeps CI and
 local on one path; whichever is chosen, bump CI off Node 20 (out of support
 since 2026-04) at the same time so the two stop diverging silently.
 
-## TD26071802 poem-title CSS override is a brittle regex against vendored CSS
-
-`scripts/sync-poetic-css.mjs` strips `poetic`'s `.poem-info .title, .poem-info
-#title { display: none; }` rule with a regex matched against the exact
-whitespace/formatting of the vendored `poetic.css` (pinned at v6.0.1), to fix
-issue #41 (poem title not shown in the preview). If a future `poetic` version
-bump reformats or restructures that rule, the regex silently stops matching —
-`npm install`'s postinstall step does not fail, it just re-hides the title,
-regressing #41 with no build signal.
-
-Fix: either assert the regex actually matched something in
-`sync-poetic-css.mjs` (throw if `css.length` is unchanged after the
-`.replace()`), or replace the removal with a doc/e2e check that fails loudly
-if the title becomes hidden again.
-
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -150,4 +135,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/33 |
 | TD26071701 | No way to revoke a share link | resolved | 2026-07-17 | https://github.com/Poetic-Poems/poetic-fiddle/pull/39 |
 | TD26071801 | `npm test` fails on Node 26 (26 tests, all localStorage) | open | | |
-| TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | in-progress | | |
+| TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/47 |
