@@ -83,6 +83,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The Analysis section's "Synopsis"/"Full Analysis" selector buttons (shown
   when an analysis has both forms) now work in the live preview, for the
   same reason and via the same rewiring approach as the show/hide buttons.
+- "My Poems" no longer 404s. The M5 schema migrations had been merged but
+  never applied to the live Supabase project, so `poems`/`profiles` were
+  missing from its schema cache; the migrations are now pushed and the
+  dashboard loads saved drafts correctly (see TD26071803 for the
+  process gap this exposed).
 
 ### Security
 
