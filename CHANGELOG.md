@@ -81,3 +81,5 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   via an `overrides` entry, resolving a medium-severity XSS via unescaped
   `</style>` in CSS Stringify Output
   ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)).
+
+<!-- test fixture: agent-ops requirement 2.2a back-pressure restriction. Close, do not merge. -->
