@@ -150,4 +150,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071602 | Analysis synopsis/full selector is inert under DOMPurify sanitisation | resolved | 2026-07-16 | https://github.com/Poetic-Poems/poetic-fiddle/pull/33 |
 | TD26071701 | No way to revoke a share link | resolved | 2026-07-17 | https://github.com/Poetic-Poems/poetic-fiddle/pull/39 |
 | TD26071801 | `npm test` fails on Node 26 (26 tests, all localStorage) | open | | |
-| TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | open | | |
+| TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | in-progress | | |
