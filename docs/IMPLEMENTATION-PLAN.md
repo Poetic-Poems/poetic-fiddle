@@ -394,7 +394,7 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 
 ### M7 — Remix (opt-in)
 
-> **◐ Part-delivered 2026-07-18** (PR #40) — the remix flow (AC20, AC21,
+> **◐ Part-delivered 2026-07-18** (PR #42) — the remix flow (AC20, AC21,
 > AC113); the permission **controls** (AC114) are the outstanding half.
 > `/remix/[share_id]` (`src/app/remix/[share_id]/page.tsx`) is a Server
 > Component reading the same `getCachedSharedPoem` path as the share page and
