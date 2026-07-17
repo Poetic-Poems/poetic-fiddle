@@ -54,6 +54,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   providers and sandboxed.
 - An Unshare control next to a poem's share link: it stops the poem's
   `/share/<id>` permalink from serving, moving the poem back to a draft.
+- Remixing a shared poem, where its poet has allowed it: the share page then
+  offers a Remix action that opens your own copy in the editor, at
+  `/remix/<id>`. The copy is independent — saving it creates a new poem of
+  your own and never touches the original — and remixing without signing in
+  behaves like any other anonymous draft, held in your browser until you sign
+  in and save. Remixing stays **off unless a poet turns it on**: by default a
+  shared poem offers no Remix action, and its `/remix/<id>` address is not
+  found even if typed directly.
 
 ### Changed
 

@@ -393,6 +393,30 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - **ACs:** AC17–AC19, AC25, AC29, AC82, AC84, AC90.
 
 ### M7 — Remix (opt-in)
+
+> **◐ Part-delivered 2026-07-18** (PR #42) — the remix flow (AC20, AC21,
+> AC113); the permission **controls** (AC114) are the outstanding half.
+> `/remix/[share_id]` (`src/app/remix/[share_id]/page.tsx`) is a Server
+> Component reading the same `getCachedSharedPoem` path as the share page and
+> handing `poem.source` to the editor as `initialSource` — with no poem id, so
+> the copy is independent by construction: the first Save inserts a new row
+> owned by the remixer (`savePoem({ id: null, … })`) and RLS would refuse an
+> update to the original regardless (AC20). Anonymous, `initialSource` is
+> written straight to the localStorage draft, so a remix is just an anonymous
+> draft and M3/M4's adopt-on-sign-in path carries it into the account (AC21);
+> the draft migration is skipped when `initialSource` is present, so a stale
+> draft can't overwrite the poem the URL names. The share page offers Remix
+> only when `allowRemix` — already resolved against `remix_default` and
+> `allow_remix` by the `get_shared_poem` RPC (§6.2), which coalesces a missing
+> value to `false` — and it is a plain `<Link>`, so it needs no client-side JS
+> (AC84). The route re-checks the permission itself rather than trusting the
+> page that links to it: with remixing off, `/remix/<share_id>` 404s exactly
+> as an unknown id does (AC113), so a guessed URL confirms nothing.
+>
+> **Outstanding (AC114):** nothing in the UI yet sets `remix_default` or
+> `allow_remix`, so remixing can currently only be enabled in the database.
+> The switch (per-poet global) and the per-poem override are the next PR.
+
 *Depends on: M6.*
 - **Remixing is off by default** (D38): a global per-poet switch (`remix_default`,
   default `false`) + a per-poem nullable `allow_remix` override.
@@ -816,10 +840,15 @@ one column and one click, addable without touching anything else.
 9. ~~**Start M5**~~ — **done**: the §6.2 migrations, Save, and the dashboard
    (see §4).
 10. ~~**Start M6**~~ — **done**: share permalinks, SSR (see §4).
-11. **Start M7** — Remix (opt-in), the next milestone behind M6 per §2.
+11. ~~**Start M7**~~ — **part-done**: the remix flow (AC20, AC21, AC113) is in
+    (see §4).
+12. **Finish M7** — the remix permission controls (AC114): the per-poet global
+    switch (`profiles.remix_default`) and the per-poem override
+    (`poems.allow_remix`). Until they exist, remixing can only be enabled in
+    the database, so no poet can actually turn it on.
 
-With M0–M6 delivered and §6 resolved, **M7 is the immediate next step**; the
-rest sequences behind it per §2.
+With M0–M6 delivered, §6 resolved, and M7's remix flow in, **M7's permission
+controls are the immediate next step**; the rest sequences behind it per §2.
 
 ---
 

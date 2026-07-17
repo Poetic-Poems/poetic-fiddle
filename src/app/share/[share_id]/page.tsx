@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { poeticCss } from "@/lib/poetic-css.generated";
 import { getCachedSharedPoem } from "@/lib/shared-poem-cache";
@@ -36,6 +37,12 @@ export async function generateMetadata({
  * without client-side JS (AC84), and never a frozen snapshot — it reads
  * through `getCachedSharedPoem`, a short-lived cache invalidated on the
  * owner's next save (AC19, AC82).
+ *
+ * The one action it offers is Remix, and only when the poem's owner has
+ * enabled it — globally or on this poem (D38, AC113). `allowRemix` arrives
+ * already resolved against both settings by the `get_shared_poem` RPC, which
+ * coalesces a missing value to `false`, so the default here is silence: no
+ * Remix action, no hint that remixing exists.
  */
 export default async function SharePage({ params }: SharePageProps) {
   const { share_id: shareId } = await params;
@@ -52,7 +59,23 @@ export default async function SharePage({ params }: SharePageProps) {
           This poem couldn&rsquo;t be displayed right now.
         </p>
       ) : (
-        <SharedPoemView html={html} css={poeticCss} title={title} />
+        <>
+          <SharedPoemView html={html} css={poeticCss} title={title} />
+          {poem.allowRemix && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/remix/${shareId}`}
+                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
+              >
+                Remix
+              </Link>
+              <span className="text-sm text-foreground/70">
+                Open your own copy to edit. The original stays as its poet wrote
+                it.
+              </span>
+            </div>
+          )}
+        </>
       )}
     </main>
   );
