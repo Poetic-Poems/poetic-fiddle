@@ -18,13 +18,26 @@ export function sharedPoemCacheTag(shareId: string): string {
  * cache is invalidated on the owner's next save via `revalidateSharedPoem`
  * (AC19) rather than by a time-based expiry alone. `revalidate` is a
  * fallback safety net, not the primary invalidation mechanism.
+ *
+ * Resolves to `null` — indistinguishable from "no such poem" — on any
+ * unexpected failure (a missing env var, a transient Supabase outage, a
+ * cache-layer error), not just a normal RPC miss. Both callers (the share
+ * and remix pages) already treat `null` as "show the not-found state", so a
+ * viewer who isn't signed in gets that same friendly page instead of an
+ * unhandled 500 (AC17, AC87) — an unauthenticated GET has no session to
+ * retry with, so surfacing the raw error here would only replace one bad
+ * response with a different one.
  */
-export function getCachedSharedPoem(
+export async function getCachedSharedPoem(
   shareId: string,
 ): Promise<SharedPoem | null> {
-  return unstable_cache(
-    () => getSharedPoem(shareId, getSupabaseServer()),
-    ["shared-poem", shareId],
-    { tags: [sharedPoemCacheTag(shareId)], revalidate: 300 },
-  )();
+  try {
+    return await unstable_cache(
+      () => getSharedPoem(shareId, getSupabaseServer()),
+      ["shared-poem", shareId],
+      { tags: [sharedPoemCacheTag(shareId)], revalidate: 300 },
+    )();
+  } catch {
+    return null;
+  }
 }

@@ -97,6 +97,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`.github/workflows/database.yml`'s `deploy` job), so a merged schema
   change can no longer sit unapplied against production the way the above
   fix had to be applied by hand.
+- Opening a shared link no longer 500s if reading the poem fails for any
+  reason. The share page now shows its existing "poem not found" state
+  instead of an unhandled server error, matching how a genuinely unknown
+  share id was already handled.
 
 ### Security
 
