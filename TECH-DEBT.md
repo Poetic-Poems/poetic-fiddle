@@ -123,4 +123,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071701 | No way to revoke a share link | resolved | 2026-07-17 | https://github.com/Poetic-Poems/poetic-fiddle/pull/39 |
 | TD26071801 | `npm test` fails on Node 26 (26 tests, all localStorage) | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/46 |
 | TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/47 |
-| TD26071803 | Merged migrations don't reach the live Supabase project on their own | open | | |
+| TD26071803 | Merged migrations don't reach the live Supabase project on their own | in-progress | | |
