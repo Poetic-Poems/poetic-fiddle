@@ -58,6 +58,32 @@ every checkable configuration and content signal already matches.
 An "I believe the issues found are incorrect" request has been sent to the
 Google verification team.  The estimated time for a response is three days.
 
+## TD26071805 `database.yml`'s live-migration push is failing silently
+
+*Noticed 2026-07-18, while investigating #52.* [[TD26071803]]'s fix
+(`.github/workflows/database.yml`'s `deploy` job, merged in #49) is not
+actually pushing migrations to the live project — the run it triggered on
+merge failed at the "Link live project" step:
+
+```
+Access token not provided. Supply an access token by running `supabase login`
+or setting the SUPABASE_ACCESS_TOKEN environment variable.
+```
+
+(`gh run view 29624934310 --repo Poetic-Poems/poetic-fiddle --log-failed`).
+The job's `env:` block shows `SUPABASE_ACCESS_TOKEN` and
+`SUPABASE_DB_PASSWORD` both blank, meaning the repo secrets of those names
+are unset or empty — not merely masked. This is not currently causing
+schema drift (`supabase/migrations/` hasn't changed since the one migration
+commit that *did* deploy successfully, #35, before this regression), but the
+next migration that merges will silently fail to reach production exactly
+the way [[TD26071803]] was meant to prevent.
+
+Fix: a repo admin needs to set `SUPABASE_ACCESS_TOKEN` (a Supabase personal
+access token) and `SUPABASE_DB_PASSWORD` (the live project's Postgres
+password) as repo secrets (Settings → Secrets and variables → Actions),
+then re-run the `deploy` job to confirm it links and pushes cleanly.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -105,3 +131,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/47 |
 | TD26071803 | Merged migrations don't reach the live Supabase project on their own | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/49 |
 | TD26071804 | npm 12 blocks the `poetic` git dependency by default | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/53 |
+| TD26071805 | `database.yml`'s live-migration push is failing silently | open | | |

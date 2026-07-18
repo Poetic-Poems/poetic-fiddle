@@ -1,8 +1,8 @@
 # Poetic Fiddle — Implementation Plan
 
 > **Living planning document.** This turns the settled requirements in
-> [`REQUIREMENTS.md`](REQUIREMENTS.md) (decisions D1–D41, acceptance criteria
-> AC1–AC118) into a sequenced build plan: the critical-path dependency, the
+> [`REQUIREMENTS.md`](REQUIREMENTS.md) (decisions D1–D42, acceptance criteria
+> AC1–AC122) into a sequenced build plan: the critical-path dependency, the
 > milestones that deliver the MVP, and the implementation decisions still to
 > make. It is *not* an as-built doc — it records intended sequencing and open
 > questions. Keep it current: as a milestone is delivered, note it here and let
@@ -451,6 +451,10 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
   (AC91, AC103); full Unicode poem content (AC96); English-only UI authored for
   later l10n (AC97); graceful degradation (AC93, AC94); the §6.5 keep-alive
   cron (dormant on Pro, insurance against a future free-tier drop — AC93).
+- **Observability:** durable server-side error reporting + logs with
+  agent-readable triage access — planned and sequenced separately in
+  [`OBSERVABILITY-PLAN.md`](OBSERVABILITY-PLAN.md) (O1–O4), within the same
+  D41/AC84/AC103 constraints.
 - **ACs:** AC74–AC100 (as they attach to each surface).
 
 ### M9 — Legal, branding & domain surface
