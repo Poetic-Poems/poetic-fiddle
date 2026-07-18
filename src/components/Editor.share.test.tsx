@@ -77,6 +77,7 @@ describe("Editor share", () => {
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
       shareId: null,
+      allowRemix: null,
     });
     vi.mocked(sharePoem).mockResolvedValue("abc123");
     render(<Editor poeticCss="" initialPoemId="poem-1" />);
@@ -94,6 +95,7 @@ describe("Editor share", () => {
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
       shareId: "abc123",
+      allowRemix: null,
     });
     render(<Editor poeticCss="" initialPoemId="poem-1" />);
 
@@ -138,6 +140,7 @@ describe("Editor share", () => {
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
       shareId: "abc123",
+      allowRemix: null,
     });
     vi.mocked(unsharePoem).mockResolvedValue(undefined);
     render(<Editor poeticCss="" initialPoemId="poem-1" />);
@@ -161,6 +164,7 @@ describe("Editor share", () => {
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
       shareId: "abc123",
+      allowRemix: null,
     });
     vi.mocked(unsharePoem).mockRejectedValue(
       new Error("Couldn't remove the share link"),

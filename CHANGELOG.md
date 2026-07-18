@@ -62,6 +62,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   in and save. Remixing stays **off unless a poet turns it on**: by default a
   shared poem offers no Remix action, and its `/remix/<id>` address is not
   found even if typed directly.
+- Remix permission controls: the "My poems" dashboard has a setting for
+  whether others may remix your poems by default (off unless you turn it on),
+  and the editor has a per-poem override — inherit your default, always
+  allow, or never allow — so a single poem can be opened for remixing (or
+  closed off) regardless of your account-wide setting.
 
 ### Changed
 

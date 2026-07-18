@@ -1,12 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Session } from "@supabase/supabase-js";
 import { PoemsDashboard } from "./PoemsDashboard";
-import { listPoems } from "@/lib/poems-store";
+import {
+  getRemixDefault,
+  listPoems,
+  updateRemixDefault,
+} from "@/lib/poems-store";
 import { useSession } from "@/lib/use-session";
 
 vi.mock("@/lib/poems-store", () => ({
+  getRemixDefault: vi.fn(),
   listPoems: vi.fn(),
+  updateRemixDefault: vi.fn(),
 }));
 
 vi.mock("@/lib/use-session", () => ({
@@ -16,6 +22,11 @@ vi.mock("@/lib/use-session", () => ({
 const SESSION = {
   user: { id: "user-1", email: "poet@example.com" },
 } as Session;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(getRemixDefault).mockResolvedValue(false);
+});
 
 describe("PoemsDashboard", () => {
   it("asks a signed-out visitor to sign in, without listing anything", () => {
@@ -27,6 +38,7 @@ describe("PoemsDashboard", () => {
       screen.getByText(/sign in to see your saved poems/i),
     ).toBeInTheDocument();
     expect(listPoems).not.toHaveBeenCalled();
+    expect(getRemixDefault).not.toHaveBeenCalled();
   });
 
   it("shows an empty state that links back to the editor (AC22)", async () => {
@@ -100,5 +112,75 @@ describe("PoemsDashboard", () => {
         "Couldn't load your poems — please try again.",
       ),
     );
+  });
+
+  describe("remix default (AC114)", () => {
+    it("shows the poet's global remix default, off by default", async () => {
+      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(listPoems).mockResolvedValue([]);
+      vi.mocked(getRemixDefault).mockResolvedValue(false);
+
+      render(<PoemsDashboard />);
+
+      const checkbox = await screen.findByRole("checkbox", {
+        name: /let others remix my poems by default/i,
+      });
+      expect(checkbox).not.toBeChecked();
+      expect(getRemixDefault).toHaveBeenCalledWith("user-1");
+    });
+
+    it("shows an already-enabled remix default as checked", async () => {
+      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(listPoems).mockResolvedValue([]);
+      vi.mocked(getRemixDefault).mockResolvedValue(true);
+
+      render(<PoemsDashboard />);
+
+      const checkbox = await screen.findByRole("checkbox", {
+        name: /let others remix my poems by default/i,
+      });
+      expect(checkbox).toBeChecked();
+    });
+
+    it("saves a toggle to the poet's global remix default", async () => {
+      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(listPoems).mockResolvedValue([]);
+      vi.mocked(getRemixDefault).mockResolvedValue(false);
+      vi.mocked(updateRemixDefault).mockResolvedValue(true);
+
+      render(<PoemsDashboard />);
+
+      const checkbox = await screen.findByRole("checkbox", {
+        name: /let others remix my poems by default/i,
+      });
+      fireEvent.click(checkbox);
+
+      await waitFor(() =>
+        expect(updateRemixDefault).toHaveBeenCalledWith("user-1", true),
+      );
+      await waitFor(() => expect(checkbox).toBeChecked());
+    });
+
+    it("surfaces an error without crashing when the remix default fails to save", async () => {
+      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(listPoems).mockResolvedValue([]);
+      vi.mocked(getRemixDefault).mockResolvedValue(false);
+      vi.mocked(updateRemixDefault).mockRejectedValue(
+        new Error("Couldn't save your remix setting — please try again."),
+      );
+
+      render(<PoemsDashboard />);
+
+      const checkbox = await screen.findByRole("checkbox", {
+        name: /let others remix my poems by default/i,
+      });
+      fireEvent.click(checkbox);
+
+      await waitFor(() =>
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "Couldn't save your remix setting — please try again.",
+        ),
+      );
+    });
   });
 });

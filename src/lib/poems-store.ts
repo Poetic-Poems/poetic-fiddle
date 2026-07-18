@@ -81,6 +81,44 @@ export class PoemUnshareError extends Error {
   }
 }
 
+/**
+ * A poet's global remix default (`profiles.remix_default`) couldn't be read.
+ * `message` is safe to show a poet as-is; the underlying Supabase/network
+ * error is kept as `cause`.
+ */
+export class RemixDefaultLoadError extends Error {
+  constructor(cause: unknown) {
+    super("Couldn't load your remix setting — please try again.");
+    this.name = "RemixDefaultLoadError";
+    this.cause = cause;
+  }
+}
+
+/**
+ * A poet's global remix default couldn't be saved. `message` is safe to show
+ * a poet as-is; the underlying Supabase/network error is kept as `cause`.
+ */
+export class RemixDefaultSaveError extends Error {
+  constructor(cause: unknown) {
+    super("Couldn't save your remix setting — please try again.");
+    this.name = "RemixDefaultSaveError";
+    this.cause = cause;
+  }
+}
+
+/**
+ * A poem's per-poem remix override (`poems.allow_remix`) couldn't be saved.
+ * `message` is safe to show a poet as-is; the underlying Supabase/network
+ * error is kept as `cause`.
+ */
+export class PoemRemixOverrideError extends Error {
+  constructor(cause: unknown) {
+    super("Couldn't update remixing for this poem — please try again.");
+    this.name = "PoemRemixOverrideError";
+    this.cause = cause;
+  }
+}
+
 const SAVED_POEM_COLUMNS = "id, title, updated_at, share_id";
 
 interface PoemRow {
@@ -174,6 +212,8 @@ export interface LoadedPoem {
   id: string;
   source: string;
   shareId: string | null;
+  /** Null means "inherit the poet's remix_default" (AC114). */
+  allowRemix: boolean | null;
 }
 
 /**
@@ -181,20 +221,31 @@ export interface LoadedPoem {
  * dashboard (or reloading its URL) restores the poem with its id preserved
  * (AC15) instead of the reload losing which row is being edited. Also
  * carries `shareId`, so the editor can show an already-minted share link
- * instead of hiding it until Share is clicked again.
+ * instead of hiding it until Share is clicked again, and `allowRemix`, so it
+ * can show the poem's current remix override (AC114).
  *
  * @throws {PoemLoadError} if the poem doesn't exist or isn't the caller's.
  */
 export async function loadPoem(id: string): Promise<LoadedPoem> {
   const { data, error } = await supabase
     .from("poems")
-    .select("id, source_text, share_id")
+    .select("id, source_text, share_id, allow_remix")
     .eq("id", id)
-    .single<{ id: string; source_text: string; share_id: string | null }>();
+    .single<{
+      id: string;
+      source_text: string;
+      share_id: string | null;
+      allow_remix: boolean | null;
+    }>();
 
   if (error || !data) throw new PoemLoadError(error);
 
-  return { id: data.id, source: data.source_text, shareId: data.share_id };
+  return {
+    id: data.id,
+    source: data.source_text,
+    shareId: data.share_id,
+    allowRemix: data.allow_remix,
+  };
 }
 
 /**
@@ -238,4 +289,68 @@ export async function unsharePoem(id: string): Promise<void> {
     .single<{ id: string }>();
 
   if (error || !data) throw new PoemUnshareError(error);
+}
+
+/**
+ * Reads a poet's global remix default (`profiles.remix_default`), off by
+ * default, for the dashboard's remix-settings control (AC114). RLS scopes
+ * the read to the caller's own profile row.
+ *
+ * @throws {RemixDefaultLoadError} if the profile row can't be read.
+ */
+export async function getRemixDefault(ownerId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("remix_default")
+    .eq("id", ownerId)
+    .single<{ remix_default: boolean }>();
+
+  if (error || !data) throw new RemixDefaultLoadError(error);
+
+  return data.remix_default;
+}
+
+/**
+ * Sets a poet's global remix default (AC114). RLS scopes the update to the
+ * caller's own profile row.
+ *
+ * @throws {RemixDefaultSaveError} if the update doesn't come back with a row.
+ */
+export async function updateRemixDefault(
+  ownerId: string,
+  remixDefault: boolean,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ remix_default: remixDefault })
+    .eq("id", ownerId)
+    .select("remix_default")
+    .single<{ remix_default: boolean }>();
+
+  if (error || !data) throw new RemixDefaultSaveError(error);
+
+  return data.remix_default;
+}
+
+/**
+ * Sets a poem's per-poem remix override (AC114): `true`/`false` overrides
+ * the poet's global default, `null` clears the override back to "inherit
+ * remix_default". RLS scopes the update to the caller's own poem.
+ *
+ * @throws {PoemRemixOverrideError} if the update doesn't come back with a row.
+ */
+export async function updateAllowRemix(
+  id: string,
+  allowRemix: boolean | null,
+): Promise<boolean | null> {
+  const { data, error } = await supabase
+    .from("poems")
+    .update({ allow_remix: allowRemix })
+    .eq("id", id)
+    .select("allow_remix")
+    .single<{ allow_remix: boolean | null }>();
+
+  if (error || !data) throw new PoemRemixOverrideError(error);
+
+  return data.allow_remix;
 }

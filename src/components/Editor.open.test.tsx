@@ -35,6 +35,7 @@ describe("Editor opening a saved poem", () => {
       source:
         "={title}=Ode to a Fiddle\n\nOde to a Fiddle\nA Poet\n2026-07-16\n\n{Verse 1}\nHello.\n",
       shareId: null,
+      allowRemix: null,
     });
 
     render(<Editor poeticCss="" initialPoemId="poem-1" />);
