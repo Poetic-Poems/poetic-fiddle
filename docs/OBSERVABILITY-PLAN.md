@@ -116,6 +116,8 @@ Sources: [sentry.io/pricing](https://sentry.io/pricing/),
 ## 4. Decision — Sentry, server-side only ✅ **DECIDED 2026-07-18**
 
 **One service: Sentry's free Developer tier, instrumented server-side only.**
+Registered in the requirements registry as **D42**, with acceptance criteria
+**AC119–AC122** (REQUIREMENTS.md §4, §12.9); AC100 is amended accordingly.
 
 **Why Sentry over the field:**
 

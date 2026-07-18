@@ -1,8 +1,8 @@
 # Poetic Fiddle — Implementation Plan
 
 > **Living planning document.** This turns the settled requirements in
-> [`REQUIREMENTS.md`](REQUIREMENTS.md) (decisions D1–D41, acceptance criteria
-> AC1–AC118) into a sequenced build plan: the critical-path dependency, the
+> [`REQUIREMENTS.md`](REQUIREMENTS.md) (decisions D1–D42, acceptance criteria
+> AC1–AC122) into a sequenced build plan: the critical-path dependency, the
 > milestones that deliver the MVP, and the implementation decisions still to
 > make. It is *not* an as-built doc — it records intended sequencing and open
 > questions. Keep it current: as a milestone is delivered, note it here and let
