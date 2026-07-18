@@ -216,7 +216,9 @@ guard PR #54 adds to `getCachedSharedPoem`, so it lands after that PR.
   share-page read failure and per save failure — searchable, 5 GB/month
   free. **[my call]** start with failure-path logs only, not request logs:
   data minimisation, and it keeps quota headroom against error storms
-  (also set the project's spike-protection/rate limits in the dashboard).
+  (also enable the project's **spike protection** in the dashboard —
+  per-key/DSN rate limits are a Business-plan feature, so spike protection
+  and inbound filters are the free-tier levers).
 
 ### O2 — Disclosure (privacy posture)
 
@@ -259,9 +261,10 @@ guard PR #54 adds to `getCachedSharedPoem`, so it lands after that PR.
 
 - **Standing cost: $0.** Free-tier limits (5k errors, 5 GB logs/month,
   30-day lookback) are far above Fiddle's volumes; quota exhaustion is
-  handled by per-key rate limits, and the SDK fails open (an unreachable or
-  quota-exhausted Sentry never breaks a request — errors still degrade
-  gracefully exactly as today).
+  guarded by **spike protection** (the free-tier mechanism — per-key rate
+  limits are Business-plan only) plus inbound filters if ever needed, and the
+  SDK fails open (an unreachable or quota-exhausted Sentry never breaks a
+  request — errors still degrade gracefully exactly as today).
 - **Lock-in: low.** The instrumentation is a handful of `captureException`
   calls plus one hook; GlitchTip consumes the identical SDK if Sentry's
   free tier ever degrades, and Axiom is the named growth path for log
