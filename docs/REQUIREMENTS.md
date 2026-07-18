@@ -15,7 +15,7 @@ cross-cutting non-functional requirements (§12) + branding (§13) + domain
 The requirements registry is feature-complete; implementation planning has
 begun in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) (milestones,
 critical path, build decisions — all of which are now resolved).
-**Last updated:** 2026-07-16
+**Last updated:** 2026-07-18
 
 ---
 
@@ -142,6 +142,7 @@ Scan of `poetic/src/tools/` for in-browser feasibility:
 | D39 | 2026-07-13 | **Minimum account age = 16** | Legal R1. Single threshold satisfies GDPR's strictest child-consent age without per-country logic. |
 | D40 | 2026-07-13 | **Moderation = short Acceptable-Use Policy + email takedown, actioned manually** | Legal R1. Right-sized for a small non-commercial op; removal propagates to all surfaces (AC92). |
 | D41 | 2026-07-13 | **Privacy posture = data minimisation, no third-party analytics, essential/auth cookies only (no consent banner), sub-processor disclosure, deletion+export, NZ notifiable-breach compliance** | Legal R1. Consolidates AC90–AC92, AC103 with [my call] defaults. |
+| D42 | 2026-07-18 | **Observability = server-side-only error telemetry + structured server logs on a free tier (Sentry), disclosed under D41, with least-privilege read-only access for AI-agent triage** | Observability R1. **Amends AC100** — issue #52 showed platform logs alone are insufficient (Vercel Hobby retains runtime logs ~1 hour, no drains; the AC94 graceful-degradation pattern swallows errors silently, so incidents leave no record). No client-side collection, so AC84/AC103 hold; Sentry joins the D41 sub-processor list before collection starts. Adds AC119–AC122; survey, rationale and milestones (O1–O4) in [`OBSERVABILITY-PLAN.md`](OBSERVABILITY-PLAN.md). |
 
 ---
 
@@ -906,10 +907,32 @@ headline security requirement.
   `CLAUDE.md` holds (as-built docs, `CHANGELOG.md` for notable changes,
   `TECH-DEBT.md` for deferred work), and the `.poem` renderer is imported from
   `poetic`, not forked (AC3) — so `.poem` behaviour has a single source.
-- **AC100** [my call, D3] — Given MVP scale, when operability is considered, then
-  observability is minimal (platform-provided logs/metrics suffice); richer
+- **AC100** [my call, D3; amended by D42] — Given MVP scale, when operability is
+  considered, then observability is right-sized rather than zero: platform
+  logs/metrics plus the D42 free-tier error-telemetry/server-log layer
+  (AC119–AC122, [`OBSERVABILITY-PLAN.md`](OBSERVABILITY-PLAN.md)); richer
   monitoring is added only when a capability requires it, consistent with the
   minimal-cost goal.
+- **AC119** [D42] — Given a server-side failure in production — including one
+  the app deliberately degrades gracefully (AC93, AC94) — when it occurs, then
+  a durable error record (exception, stack, route, opaque identifiers) is
+  captured in the disclosed error-telemetry service and retained long enough
+  to investigate after the fact (weeks, not the platform's ~1 hour): graceful
+  degradation never means an invisible failure.
+- **AC120** [D42, D41] — Given the privacy posture, when telemetry is emitted,
+  then it is emitted server-side only (no client SDK or third-party JS on any
+  public surface — AC84, AC103), scrubbed of PII and of poem content (opaque
+  poem/share identifiers only, never `source_text`), and its provider is
+  disclosed as a sub-processor (AC117) before collection begins.
+- **AC121** [D42, AC88] — Given an AI agent performing triage, when it needs
+  read access to production errors/logs, then it reads through a
+  least-privilege, revocable, **read-only** credential (a narrowly-scoped API
+  token, or an OAuth-consented MCP session) that cannot write telemetry,
+  deploy, or read secrets — and that credential is never committed to the
+  repository.
+- **AC122** [D42] — Given error/log payloads, when agents or tooling consume
+  them, then their content is treated as untrusted data — it can embed
+  user-influenced strings — never as instructions to follow.
 
 ### 12.10 Non-goals (verify absent)
 
@@ -1071,20 +1094,23 @@ site), consistent with AC92.
 **Privacy posture (D41 — consolidates AC90–AC92, AC103 with [my call]
 defaults):**
 - **Data minimisation (AC91):** collect only account identity (email), poem
-  source, and site config; **no third-party analytics/tracking** (AC103).
+  source, and site config — plus minimised, server-side-only error/log
+  telemetry (D42, AC120: error metadata and opaque identifiers, never poem
+  content); **no third-party analytics/tracking** (AC103).
 - **Cookies [my call]:** only **essential/authentication** cookies (the Supabase
   Auth session) — no advertising/analytics cookies — so **no consent banner** is
   required under ePrivacy's essential-cookie exemption.
 - **Sub-processors [my call]** (disclosed in the Privacy Policy): **Supabase**
   (Postgres/Auth/storage), **Vercel** (hosting), **Cloudflare** (domain
-  registrar and DNS), **Sentry** (server-side error telemetry & structured
-  logs — error/stack/route metadata and opaque poem identifiers only, no poem
-  content and no client-side collection; **EU** region; see
-  OBSERVABILITY-PLAN.md), **SMTP2GO** (transactional email — the auth mail
-  carrying magic links, see IMPLEMENTATION-PLAN.md §6.4), and **Google** (as an
-  optional sign-in provider). The Supabase project **region** is chosen
-  deliberately for data-residency and disclosed: **`ap-southeast-1` (Southeast
-  Asia, Singapore)** (see IMPLEMENTATION-PLAN.md §6.3).
+  registrar and DNS), **SMTP2GO** (transactional email — the auth mail carrying
+  magic links, see IMPLEMENTATION-PLAN.md §6.4), **Sentry** (server-side error
+  telemetry and server logs — the D42 observability layer, see
+  OBSERVABILITY-PLAN.md; no poem content, no client-side collection; region
+  chosen at organisation creation — EU preferred — and disclosed once set),
+  and **Google** (as an optional sign-in provider). The Supabase project
+  **region** is chosen deliberately for data-residency and disclosed:
+  **`ap-southeast-1` (Southeast Asia, Singapore)** (see
+  IMPLEMENTATION-PLAN.md §6.3).
 - **User rights (AC92):** signed-in users can delete individual poems, delete
   their whole account, and export their raw `.poem` source; deletion propagates
   to all surfaces.
