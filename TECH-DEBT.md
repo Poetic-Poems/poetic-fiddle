@@ -153,4 +153,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071801 | `npm test` fails on Node 26 (26 tests, all localStorage) | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/46 |
 | TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/47 |
 | TD26071803 | Merged migrations don't reach the live Supabase project on their own | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/49 |
-| TD26071804 | npm 12 blocks the `poetic` git dependency by default | open | | |
+| TD26071804 | npm 12 blocks the `poetic` git dependency by default | in-progress | | |
