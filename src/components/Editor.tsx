@@ -9,7 +9,13 @@ import { PoemPreview } from "@/components/PoemPreview";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
-import { loadPoem, savePoem, sharePoem, unsharePoem } from "@/lib/poems-store";
+import {
+  loadPoem,
+  savePoem,
+  sharePoem,
+  unsharePoem,
+  updateAllowRemix,
+} from "@/lib/poems-store";
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { supabase } from "@/lib/supabase-client";
 import { useSession } from "@/lib/use-session";
@@ -94,6 +100,10 @@ export default function Editor({
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [unsharing, setUnsharing] = useState(false);
+  // Null means "inherit the poet's remix_default" (AC114).
+  const [allowRemix, setAllowRemix] = useState<boolean | null>(null);
+  const [allowRemixSaving, setAllowRemixSaving] = useState(false);
+  const [allowRemixError, setAllowRemixError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -124,6 +134,7 @@ export default function Editor({
         setPoemId(poem.id);
         setSavedSource(poem.source);
         setShareId(poem.shareId);
+        setAllowRemix(poem.allowRemix);
         setOpening(false);
       })
       .catch((err) => {
@@ -181,6 +192,8 @@ export default function Editor({
     setSaveError(null);
     setShareId(null);
     setShareError(null);
+    setAllowRemix(null);
+    setAllowRemixError(null);
   }
 
   const handleChange = useCallback((value: string) => {
@@ -285,6 +298,40 @@ export default function Editor({
     }
   }, [poemId, shareId]);
 
+  // Sets this poem's remix override (AC114). Mirrors handleShare's
+  // save-if-needed pattern: a poet setting the override on an unsaved poem
+  // saves it first, rather than the control silently doing nothing.
+  const handleAllowRemixChange = useCallback(
+    async (value: boolean | null) => {
+      if (!session) {
+        setSignInPromptAction("save");
+        return;
+      }
+
+      setAllowRemixSaving(true);
+      setAllowRemixError(null);
+      try {
+        let idToUpdate = poemId;
+        if (idToUpdate === null || hasUnsavedChanges) {
+          const saved = await savePoem({
+            id: poemId,
+            ownerId: session.user.id,
+            source,
+          });
+          setPoemId(saved.id);
+          setSavedSource(source);
+          idToUpdate = saved.id;
+        }
+        setAllowRemix(await updateAllowRemix(idToUpdate, value));
+      } catch (err) {
+        setAllowRemixError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setAllowRemixSaving(false);
+      }
+    },
+    [hasUnsavedChanges, poemId, session, source],
+  );
+
   const shareUrl =
     shareId && typeof window !== "undefined"
       ? `${window.location.origin}/share/${shareId}`
@@ -376,6 +423,36 @@ export default function Editor({
           {sharing ? "Sharing…" : "Share"}
         </button>
       </div>
+      {session && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/10">
+          <label htmlFor="poem-allow-remix" className="text-foreground/70">
+            Remixing this poem:
+          </label>
+          <select
+            id="poem-allow-remix"
+            value={
+              allowRemix === null ? "default" : allowRemix ? "allow" : "deny"
+            }
+            disabled={allowRemixSaving}
+            onChange={(event) => {
+              const next = event.target.value;
+              handleAllowRemixChange(
+                next === "default" ? null : next === "allow",
+              );
+            }}
+            className="rounded-md border border-black/10 bg-transparent px-2 py-1 text-sm dark:border-white/10"
+          >
+            <option value="default">Use my default setting</option>
+            <option value="allow">Always allow</option>
+            <option value="deny">Never allow</option>
+          </select>
+          {allowRemixError && (
+            <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+              {allowRemixError}
+            </p>
+          )}
+        </div>
+      )}
       {shareError && (
         <p role="alert" className="text-sm text-red-700 dark:text-red-400">
           {shareError}

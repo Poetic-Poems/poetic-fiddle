@@ -40,7 +40,10 @@ second account depends on that. **M6 (share permalinks, SSR) is delivered**
 `/share/[share_id]` SSR page (correct `<title>`/Open Graph meta, poetic's own
 CSS, full sandboxed media embeds, no client-side JS required), server-side
 DOMPurify sanitisation as the untrusted-content boundary, and a Next Data
-Cache reader invalidated on the owner's next save.
+Cache reader invalidated on the owner's next save. **M7 (remix) is
+delivered** (PR #42) — the remix flow (AC20, AC21, AC113) and the per-poet
+and per-poem permission controls (AC114) on top of M5's
+`remix_default`/`allow_remix` schema and RLS.
 
 ---
 
@@ -394,8 +397,8 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 
 ### M7 — Remix (opt-in)
 
-> **◐ Part-delivered 2026-07-18** (PR #42) — the remix flow (AC20, AC21,
-> AC113); the permission **controls** (AC114) are the outstanding half.
+> **✅ Delivered 2026-07-18** (PR #42, permission controls below) — the remix
+> flow (AC20, AC21, AC113) and the permission controls (AC114).
 > `/remix/[share_id]` (`src/app/remix/[share_id]/page.tsx`) is a Server
 > Component reading the same `getCachedSharedPoem` path as the share page and
 > handing `poem.source` to the editor as `initialSource` — with no poem id, so
@@ -413,9 +416,16 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 > page that links to it: with remixing off, `/remix/<share_id>` 404s exactly
 > as an unknown id does (AC113), so a guessed URL confirms nothing.
 >
-> **Outstanding (AC114):** nothing in the UI yet sets `remix_default` or
-> `allow_remix`, so remixing can currently only be enabled in the database.
-> The switch (per-poet global) and the per-poem override are the next PR.
+> **AC114:** `profiles.remix_default` and `poems.allow_remix` (M5's migration,
+> `supabase/migrations/20260716104021_poems_and_profiles.sql`) are the poet's
+> global default and per-poem nullable override; the existing `poems_update_own`
+> and `profiles_update_own` RLS policies already scope writes to their owner,
+> and `supabase/tests/rls_test.sql` already covers the allow/deny resolution
+> (§6.2). The "My poems" dashboard (`src/components/PoemsDashboard.tsx`) shows
+> and toggles `remix_default`, labelled off-by-default; the poem editor
+> (`src/components/Editor.tsx`) shows and sets the per-poem `allow_remix`
+> override (inherit / always allow / never allow) via `updateAllowRemix` in
+> `src/lib/poems-store.ts`, saving the poem first if it hasn't been saved yet.
 
 *Depends on: M6.*
 - **Remixing is off by default** (D38): a global per-poet switch (`remix_default`,
@@ -842,15 +852,15 @@ one column and one click, addable without touching anything else.
 9. ~~**Start M5**~~ — **done**: the §6.2 migrations, Save, and the dashboard
    (see §4).
 10. ~~**Start M6**~~ — **done**: share permalinks, SSR (see §4).
-11. ~~**Start M7**~~ — **part-done**: the remix flow (AC20, AC21, AC113) is in
+11. ~~**Start M7**~~ — **done**: the remix flow (AC20, AC21, AC113) is in
     (see §4).
-12. **Finish M7** — the remix permission controls (AC114): the per-poet global
-    switch (`profiles.remix_default`) and the per-poem override
-    (`poems.allow_remix`). Until they exist, remixing can only be enabled in
-    the database, so no poet can actually turn it on.
+12. ~~**Finish M7**~~ — **done**: the remix permission controls (AC114) — the
+    per-poet global switch (`profiles.remix_default`) and the per-poem
+    override (`poems.allow_remix`), with dashboard and editor controls (see
+    §4).
 
-With M0–M6 delivered, §6 resolved, and M7's remix flow in, **M7's permission
-controls are the immediate next step**; the rest sequences behind it per §2.
+With M0–M7 delivered and §6 resolved, **M8/M9's remaining non-functional and
+legal items are the immediate next step**; see §4's M8/M9 entries.
 
 ---
 

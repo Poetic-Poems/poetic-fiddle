@@ -2,14 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PoemListError,
   PoemLoadError,
+  PoemRemixOverrideError,
   PoemSaveError,
   PoemShareError,
   PoemUnshareError,
+  RemixDefaultLoadError,
+  RemixDefaultSaveError,
+  getRemixDefault,
   listPoems,
   loadPoem,
   savePoem,
   sharePoem,
   unsharePoem,
+  updateAllowRemix,
+  updateRemixDefault,
 } from "./poems-store";
 import { supabase } from "@/lib/supabase-client";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
@@ -184,7 +190,12 @@ describe("listPoems", () => {
 describe("loadPoem", () => {
   it("loads a poem's source by id", async () => {
     const query = mockQuery({
-      data: { id: "poem-1", source_text: EXAMPLE_POEM, share_id: null },
+      data: {
+        id: "poem-1",
+        source_text: EXAMPLE_POEM,
+        share_id: null,
+        allow_remix: null,
+      },
       error: null,
     });
 
@@ -195,18 +206,40 @@ describe("loadPoem", () => {
       id: "poem-1",
       source: EXAMPLE_POEM,
       shareId: null,
+      allowRemix: null,
     });
   });
 
   it("carries an already-minted share id", async () => {
     mockQuery({
-      data: { id: "poem-1", source_text: EXAMPLE_POEM, share_id: "abc123" },
+      data: {
+        id: "poem-1",
+        source_text: EXAMPLE_POEM,
+        share_id: "abc123",
+        allow_remix: null,
+      },
       error: null,
     });
 
     const poem = await loadPoem("poem-1");
 
     expect(poem.shareId).toBe("abc123");
+  });
+
+  it("carries a per-poem remix override (AC114)", async () => {
+    mockQuery({
+      data: {
+        id: "poem-1",
+        source_text: EXAMPLE_POEM,
+        share_id: null,
+        allow_remix: true,
+      },
+      error: null,
+    });
+
+    const poem = await loadPoem("poem-1");
+
+    expect(poem.allowRemix).toBe(true);
   });
 
   it("throws when the poem doesn't exist or isn't the caller's (AC87)", async () => {
@@ -262,5 +295,90 @@ describe("unsharePoem", () => {
 
     await expect(unshare).rejects.toBeInstanceOf(PoemUnshareError);
     await expect(unshare).rejects.toThrow(/Couldn't remove the share link/);
+  });
+});
+
+describe("getRemixDefault", () => {
+  it("reads a poet's global remix default (AC114)", async () => {
+    const query = mockQuery({
+      data: { remix_default: true },
+      error: null,
+    });
+
+    const value = await getRemixDefault("user-1");
+
+    expect(query.eq).toHaveBeenCalledWith("id", "user-1");
+    expect(value).toBe(true);
+  });
+
+  it("throws when the profile row can't be read", async () => {
+    mockQuery({ data: null, error: { message: "no rows" } });
+
+    const load = getRemixDefault("user-1");
+
+    await expect(load).rejects.toBeInstanceOf(RemixDefaultLoadError);
+    await expect(load).rejects.toThrow(/Couldn't load your remix setting/);
+  });
+});
+
+describe("updateRemixDefault", () => {
+  it("saves a poet's global remix default (AC114)", async () => {
+    const query = mockQuery({
+      data: { remix_default: true },
+      error: null,
+    });
+
+    const value = await updateRemixDefault("user-1", true);
+
+    expect(query.update).toHaveBeenCalledWith({ remix_default: true });
+    expect(query.eq).toHaveBeenCalledWith("id", "user-1");
+    expect(value).toBe(true);
+  });
+
+  it("throws when the update doesn't come back with a row", async () => {
+    mockQuery({ data: null, error: { message: "no rows" } });
+
+    const save = updateRemixDefault("user-1", true);
+
+    await expect(save).rejects.toBeInstanceOf(RemixDefaultSaveError);
+    await expect(save).rejects.toThrow(/Couldn't save your remix setting/);
+  });
+});
+
+describe("updateAllowRemix", () => {
+  it("sets a per-poem remix override (AC114)", async () => {
+    const query = mockQuery({
+      data: { allow_remix: false },
+      error: null,
+    });
+
+    const value = await updateAllowRemix("poem-1", false);
+
+    expect(query.update).toHaveBeenCalledWith({ allow_remix: false });
+    expect(query.eq).toHaveBeenCalledWith("id", "poem-1");
+    expect(value).toBe(false);
+  });
+
+  it("clears a per-poem override back to null (inherit remix_default)", async () => {
+    const query = mockQuery({
+      data: { allow_remix: null },
+      error: null,
+    });
+
+    const value = await updateAllowRemix("poem-1", null);
+
+    expect(query.update).toHaveBeenCalledWith({ allow_remix: null });
+    expect(value).toBeNull();
+  });
+
+  it("throws when the update doesn't come back with a row", async () => {
+    mockQuery({ data: null, error: { message: "no rows" } });
+
+    const save = updateAllowRemix("poem-1", true);
+
+    await expect(save).rejects.toBeInstanceOf(PoemRemixOverrideError);
+    await expect(save).rejects.toThrow(
+      /Couldn't update remixing for this poem/,
+    );
   });
 });
