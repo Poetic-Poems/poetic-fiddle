@@ -21,6 +21,51 @@ if (typeof HTMLDialogElement.prototype.showModal !== "function") {
   };
 }
 
+// Node's own experimental global `localStorage` (added in Node 26, inert
+// unless --localstorage-file is passed) already exists on globalThis before
+// this file runs, so Vitest's jsdom environment setup — which only proxies a
+// jsdom window property onto the global if that key isn't already present —
+// skips it, leaving window.localStorage undefined. Detect it via its
+// property descriptor rather than reading the value, since reading it is
+// what trips Node's "--localstorage-file was not provided" warning. Give it
+// a working, spec-shaped in-memory Storage so tests can use it regardless of
+// Node version.
+if (Object.getOwnPropertyDescriptor(window, "localStorage")?.get) {
+  class MemoryStorage implements Storage {
+    #store = new Map<string, string>();
+
+    get length() {
+      return this.#store.size;
+    }
+
+    clear() {
+      this.#store.clear();
+    }
+
+    getItem(key: string) {
+      return this.#store.has(key) ? this.#store.get(key)! : null;
+    }
+
+    key(index: number) {
+      return Array.from(this.#store.keys())[index] ?? null;
+    }
+
+    removeItem(key: string) {
+      this.#store.delete(key);
+    }
+
+    setItem(key: string, value: string) {
+      this.#store.set(key, String(value));
+    }
+  }
+
+  Object.defineProperty(window, "localStorage", {
+    value: new MemoryStorage(),
+    writable: true,
+    configurable: true,
+  });
+}
+
 // jsdom does not implement matchMedia; components that read
 // prefers-color-scheme need a stub to mount in tests.
 if (typeof window.matchMedia !== "function") {
