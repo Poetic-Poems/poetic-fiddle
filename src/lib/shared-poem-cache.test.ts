@@ -44,4 +44,10 @@ describe("getCachedSharedPoem", () => {
     expect(getSharedPoem).toHaveBeenCalledWith("abc123", "the-server-client");
     expect(poem?.title).toBe("A Title");
   });
+
+  it("resolves to null instead of throwing when the read path fails (issue #52)", async () => {
+    vi.mocked(getSharedPoem).mockRejectedValue(new Error("boom"));
+
+    await expect(getCachedSharedPoem("abc123")).resolves.toBeNull();
+  });
 });
