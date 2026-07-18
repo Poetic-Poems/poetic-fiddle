@@ -67,12 +67,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and the editor has a per-poem override — inherit your default, always
   allow, or never allow — so a single poem can be opened for remixing (or
   closed off) regardless of your account-wide setting.
+- Server-side error reporting and structured logs via Sentry, so a share-page
+  read or render that fails and degrades to a friendly message now leaves a
+  durable, searchable record for diagnosis instead of vanishing. Collection is
+  server-side only (no browser SDK, the share page stays JS-free), scrubbed of
+  poem content and request cookies/headers, and off until configured.
 
 ### Changed
 
 - The Privacy Policy now discloses **SMTP2GO** as the sub-processor that
   delivers authentication emails (the magic-link and password sign-in
   messages).
+- The Privacy Policy now discloses **Sentry** as the sub-processor that
+  records server-side errors and diagnostic logs, hosted in the EU region and
+  receiving no poem content.
 
 ### Fixed
 

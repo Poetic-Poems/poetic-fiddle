@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { reportSwallowedError } from "@/lib/observability";
 
 /**
  * Deliberately its own module, not part of poems-store.ts: poems-store.ts
@@ -42,7 +43,17 @@ export async function getSharedPoem(
       updated_at: string;
     }>();
 
-  if (error || !data) return null;
+  // A clean miss (`data` null, no `error`) is a normal 404 — a draft or an
+  // unknown id (AC87) — and is left silent. An actual RPC `error` is the
+  // failure this plan exists to record: capture it, then degrade to `null`
+  // exactly as before so the viewer still gets a 404 rather than a 500.
+  if (error) {
+    reportSwallowedError(error, "share page: get_shared_poem RPC failed", {
+      share_id: shareId,
+    });
+    return null;
+  }
+  if (!data) return null;
 
   return {
     title: data.title,

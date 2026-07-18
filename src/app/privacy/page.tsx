@@ -118,6 +118,15 @@ export default function PrivacyPolicy() {
             <li>
               <strong>Vercel</strong> — hosts the web app.
             </li>
+            {/* prettier-ignore */}
+            <li>
+              <strong>Sentry</strong> — records server-side errors and
+              diagnostic logs so we can find and fix faults. It receives error
+              and stack-trace details, the affected page or route, and opaque
+              identifiers for the poem involved — never the text of your poem,
+              and nothing collected in your browser. Our Sentry project is
+              hosted in the European Union (EU) region.
+            </li>
             <li>
               <strong>SMTP2GO</strong> — delivers our authentication emails: the
               magic-link and password messages that let you sign in.

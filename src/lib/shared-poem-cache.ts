@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { getSharedPoem, type SharedPoem } from "@/lib/get-shared-poem";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { reportSwallowedError } from "@/lib/observability";
 
 /**
  * The Next Data Cache tag for a single shared poem — shared between the
@@ -37,7 +38,12 @@ export async function getCachedSharedPoem(
       ["shared-poem", shareId],
       { tags: [sharedPoemCacheTag(shareId)], revalidate: 300 },
     )();
-  } catch {
+  } catch (error) {
+    // Record the failure before degrading — this catch is what turned issue
+    // #52's 500 into a silent 404, so its trigger must not stay invisible.
+    reportSwallowedError(error, "share page: cached read failed", {
+      share_id: shareId,
+    });
     return null;
   }
 }
