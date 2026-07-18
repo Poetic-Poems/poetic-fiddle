@@ -86,8 +86,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - "My Poems" no longer 404s. The M5 schema migrations had been merged but
   never applied to the live Supabase project, so `poems`/`profiles` were
   missing from its schema cache; the migrations are now pushed and the
-  dashboard loads saved drafts correctly (see TD26071803 for the
-  process gap this exposed).
+  dashboard loads saved drafts correctly.
+- A merge to `main` that touches `supabase/migrations/` now pushes those
+  migrations to the live Supabase project automatically
+  (`.github/workflows/database.yml`'s `deploy` job), so a merged schema
+  change can no longer sit unapplied against production the way the above
+  fix had to be applied by hand.
 
 ### Security
 

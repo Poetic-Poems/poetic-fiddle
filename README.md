@@ -31,3 +31,9 @@ Variables prefixed `NEXT_PUBLIC_` are inlined into the browser bundle at build
 time, so only values designed to be public — the Supabase URL and anon key,
 guarded by Row-Level Security — may use that prefix. Server-only secrets (such
 as the service-role key) must not.
+
+**CI (GitHub Actions):** `.github/workflows/database.yml`'s `deploy` job
+pushes `supabase/migrations/` to the live project on every merge to `main`,
+authenticating with two repo secrets (Settings → Secrets and variables →
+Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account → Access
+Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
