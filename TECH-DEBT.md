@@ -58,26 +58,6 @@ every checkable configuration and content signal already matches.
 An "I believe the issues found are incorrect" request has been sent to the
 Google verification team.  The estimated time for a response is three days.
 
-## TD26071803 Merged migrations don't reach the live Supabase project on their own
-
-*Noticed 2026-07-18, from issue #45.* M5's schema (PR #35, merged 2026-07-16)
-sat committed under `supabase/migrations/` for two days without ever being
-applied to the live project (`ixerygypaevxzmiknokg.supabase.co`): `.github/
-workflows/database.yml` only applies migrations to a throwaway local Supabase
-instance to run the pgTAP suite (see its own header comment) — it never pushes
-to the deployed project. `docs/IMPLEMENTATION-PLAN.md` §6.2 records `supabase
-db push` as the migrations mechanism but doesn't say who runs it or when, so
-landing a migration PR gives no signal that a manual step still remains.
-Symptom: every REST call against a table added by an unpushed migration
-returns `404 PGRST205` ("Could not find the table ... in the schema cache"),
-which is exactly what broke the "My Poems" dashboard.
-
-Fix: add a step (either to `database.yml` gated on `push: branches: [main]`,
-or a separate workflow) that runs `supabase link` + `supabase db push`
-against the live project after a merge to `main`, using a `SUPABASE_ACCESS_TOKEN`
-repo secret. Until then, whoever merges a PR touching `supabase/migrations/`
-must run `supabase db push` by hand and confirm it against the live project.
-
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -123,4 +103,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071701 | No way to revoke a share link | resolved | 2026-07-17 | https://github.com/Poetic-Poems/poetic-fiddle/pull/39 |
 | TD26071801 | `npm test` fails on Node 26 (26 tests, all localStorage) | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/46 |
 | TD26071802 | poem-title CSS override is a brittle regex against vendored CSS | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/47 |
-| TD26071803 | Merged migrations don't reach the live Supabase project on their own | in-progress | | |
+| TD26071803 | Merged migrations don't reach the live Supabase project on their own | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/49 |

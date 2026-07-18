@@ -2,9 +2,15 @@ name: Database
 
 # CI backstop for the data layer: applies the committed migrations to a
 # throwaway local Supabase and runs the pgTAP suite on every pull request and
-# push to main. RLS is security-critical and fails open silently when
-# misconfigured, so a policy regression must break the build rather than reach
-# production. Mirrors build.yml/codeql.yml's structure and comment style.
+# push to main (job `test`). RLS is security-critical and fails open silently
+# when misconfigured, so a policy regression must break the build rather than
+# reach production. Mirrors build.yml/codeql.yml's structure and comment
+# style.
+#
+# On a push to main (never on a pull request — see `deploy`'s `if`) that
+# clears `test`, job `deploy` pushes the same migrations to the live project
+# (ixerygypaevxzmiknokg.supabase.co), so a merged migration reaches
+# production without a human running `supabase db push` by hand.
 
 on:
   push:
@@ -40,3 +46,27 @@ jobs:
 
       - name: Run pgTAP tests
         run: supabase test db
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link live project
+        run: supabase link --project-ref ixerygypaevxzmiknokg
+
+      # --yes skips the interactive "push these migrations?" confirmation,
+      # which otherwise stalls a non-interactive CI shell.
+      - name: Push migrations to the live project
+        run: supabase db push --yes
