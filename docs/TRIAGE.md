@@ -34,11 +34,16 @@ context:
 
 ### Interactive agent sessions — hosted MCP (preferred)
 
-Add Sentry's hosted MCP server to Claude Code and authorise it once as a
-human:
+Sentry's hosted MCP server is registered project-wide in `.mcp.json`
+(`https://mcp.sentry.dev/mcp`) — no secret in that file, since each
+contributor authorises their own OAuth session:
 
-- Endpoint: `https://mcp.sentry.dev/mcp` (OAuth — the human consents in the
-  browser; nothing is stored in the repo, and access is revocable in Sentry).
+- On first use in a fresh Claude Code session, approve the pending `sentry`
+  server (`claude mcp list` shows its status; `claude` on the command line, in
+  a real terminal, shows the approval prompt — an already-open session with
+  the file added mid-session won't show it, so start fresh if it's not
+  offered), then run `claude mcp login sentry` to complete the OAuth consent
+  in the browser. Access is revocable in Sentry at any time.
 - Gives `search_issues`, `get_issue_details`, `search_events`, docs search,
   and Seer root-cause analysis.
 
@@ -48,26 +53,22 @@ exists to leak.
 ### Headless / CLI agents — scoped read-only token
 
 The hosted MCP is OAuth-only, so a non-interactive agent instead uses an
-**org-owned internal integration** token (a bot credential, **not** a personal
-token — its blast radius is telemetry reads only):
+**org-owned Internal Integration** token (Sentry: **Organization Settings →
+Developer Settings → Custom Integrations → New Internal Integration** — not
+one of the Organization Tokens / Personal Tokens shortcuts on the Developer
+Settings landing page, which are either non-customizable or tied to a human
+account). It's a bot credential, **not** a personal token — its blast radius
+is telemetry reads only:
 
-- Scopes: **`event:read`, `project:read`, `org:read`** — nothing that can
-  write, deploy, or read secrets.
-- Store it **outside the repo** — e.g. an env var in
-  `.claude/settings.local.json` (git-ignored) — never in a tracked file
-  (AC88).
-- Consume it via the stdio MCP server
-  (`npx @sentry/mcp-server --access-token=…`) or Sentry's REST API.
-
-### One-time human setup
-
-Neither path is provisioned yet; both need a human to set them up once:
-
-1. Create the Sentry org/project (EU region) and set `SENTRY_DSN` in Vercel.
-2. For interactive use: add `https://mcp.sentry.dev/mcp` to Claude Code and
-   complete the OAuth consent.
-3. For headless use: mint the internal-integration token with the three read
-   scopes above and place it in `.claude/settings.local.json`.
+- Permissions: **Issue & Event: Read, Project: Read, Organization: Read**
+  only — everything else stays "No Access". Nothing that can write telemetry,
+  deploy, or read secrets.
+- Register it as a local-scoped MCP server, which stores the token in the
+  machine-local Claude config rather than a tracked repo file (AC88):
+  ```
+  claude mcp add sentry-headless -s local -e SENTRY_ACCESS_TOKEN=<token> -- npx -y @sentry/mcp-server
+  ```
+  Each headless/autonomous agent host runs this once with its own token.
 
 ## Doing a triage pass
 
