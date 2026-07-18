@@ -1,6 +1,7 @@
 import { JSDOM } from "jsdom";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
+import { reportSwallowedError } from "@/lib/observability";
 
 /**
  * Hosts poetic's builtin song handlers can point an embed at (see poetic's
@@ -101,7 +102,11 @@ export function renderSharedPoemHtml(source: string): {
 } {
   try {
     return { html: sanitizeSharedPoemHtml(renderPoem(source)), error: false };
-  } catch {
+  } catch (error) {
+    // A poem saved with unparseable source degrades to a friendly message
+    // (AC94); recording the render failure tells triage which poems can't be
+    // shown and why, without shipping the source itself off in the payload.
+    reportSwallowedError(error, "share page: poem render failed");
     return { html: "", error: true };
   }
 }

@@ -1077,11 +1077,14 @@ defaults):**
   required under ePrivacy's essential-cookie exemption.
 - **Sub-processors [my call]** (disclosed in the Privacy Policy): **Supabase**
   (Postgres/Auth/storage), **Vercel** (hosting), **Cloudflare** (domain
-  registrar and DNS), **SMTP2GO** (transactional email — the auth mail carrying
-  magic links, see IMPLEMENTATION-PLAN.md §6.4), and **Google** (as an optional
-  sign-in provider). The Supabase project **region** is chosen deliberately for
-  data-residency and disclosed: **`ap-southeast-1` (Southeast Asia, Singapore)**
-  (see IMPLEMENTATION-PLAN.md §6.3).
+  registrar and DNS), **Sentry** (server-side error telemetry & structured
+  logs — error/stack/route metadata and opaque poem identifiers only, no poem
+  content and no client-side collection; **EU** region; see
+  OBSERVABILITY-PLAN.md), **SMTP2GO** (transactional email — the auth mail
+  carrying magic links, see IMPLEMENTATION-PLAN.md §6.4), and **Google** (as an
+  optional sign-in provider). The Supabase project **region** is chosen
+  deliberately for data-residency and disclosed: **`ap-southeast-1` (Southeast
+  Asia, Singapore)** (see IMPLEMENTATION-PLAN.md §6.3).
 - **User rights (AC92):** signed-in users can delete individual poems, delete
   their whole account, and export their raw `.poem` source; deletion propagates
   to all surfaces.

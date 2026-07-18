@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 // vitest.config.ts doesn't set `test.globals`, so Testing Library's
@@ -8,6 +8,20 @@ import { cleanup } from "@testing-library/react";
 afterEach(() => {
   cleanup();
 });
+
+// The server-side observability layer (src/lib/observability.ts) imports
+// @sentry/nextjs, which transitively pulls the real SDK (@sentry/node,
+// OpenTelemetry) — heavy enough that loading it across the parallel run
+// starves unrelated async assertions of their timeout. Unit tests neither
+// want to initialise Sentry nor to exercise its wire behaviour, so stub it
+// globally: fast to import, inert, and spy-able. observability.test.ts
+// asserts against these same vi.fn()s.
+vi.mock("@sentry/nextjs", () => ({
+  init: vi.fn(),
+  captureException: vi.fn(),
+  captureRequestError: vi.fn(),
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
+}));
 
 // jsdom reflects <dialog>'s `open` attribute but implements neither
 // showModal() nor close(); components using <dialog> need a stub to mount.
