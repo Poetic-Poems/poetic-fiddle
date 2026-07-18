@@ -159,6 +159,7 @@ via `scripts/get-tech-debt-record.pl` and dispatching it to a subagent.
 | `README.md` | Project overview |
 | `docs/REQUIREMENTS.md` | Requirements registry / decision log (living) |
 | `docs/IMPLEMENTATION-PLAN.md` | Milestone sequencing / build plan (living) |
+| `docs/OBSERVABILITY-PLAN.md` | Error-reporting / logging / agent-triage plan (living) |
 | `SECURITY.md` | Vulnerability reporting, CodeQL scanning |
 | `TECH-DEBT.md` | Deferred work register |
 | `CHANGELOG.md` | Notable changes, Keep a Changelog format |
