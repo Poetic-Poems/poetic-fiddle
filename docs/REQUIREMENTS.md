@@ -15,7 +15,7 @@ cross-cutting non-functional requirements (§12) + branding (§13) + domain
 The requirements registry is feature-complete; implementation planning has
 begun in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) (milestones,
 critical path, build decisions — all of which are now resolved).
-**Last updated:** 2026-07-18
+**Last updated:** 2026-07-20
 
 ---
 
@@ -192,7 +192,10 @@ i18n, and offline posture — consolidated across all phases.
 ## 6. Ways of working locked into CLAUDE.md
 
 Governance already in `CLAUDE.md`: protected `main` + PR-only workflow, squash
-merges, Conventional Commits, as-built docs + CHANGELOG, TECH-DEBT register.
+merges, Conventional Commits, as-built docs + CHANGELOG, TECH-DEBT register,
+and the multi-agent working rule (every agent — autonomous or interactive —
+works in its own dedicated fresh clone of `origin/main`, and never assumes
+`origin/main` is unchanged when opening a PR).
 
 Promoted into `CLAUDE.md` from this registry (2026-07-12):
 - **Architecture & stack** (D5–D11): in-browser rendering, TypeScript + Next.js,
