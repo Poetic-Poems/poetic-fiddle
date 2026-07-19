@@ -194,7 +194,7 @@ i18n, and offline posture — consolidated across all phases.
 Governance already in `CLAUDE.md`: protected `main` + PR-only workflow, squash
 merges, Conventional Commits, as-built docs + CHANGELOG, TECH-DEBT register,
 and the multi-agent working rule (every agent — autonomous or interactive —
-works in its own dedicated shallow clone of `origin/main`, and never assumes
+works in its own dedicated fresh clone of `origin/main`, and never assumes
 `origin/main` is unchanged when opening a PR).
 
 Promoted into `CLAUDE.md` from this registry (2026-07-12):
