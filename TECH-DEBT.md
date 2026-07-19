@@ -108,30 +108,6 @@ share-page sanitiser off jsdom onto a bundler-friendly DOM (e.g. linkedom),
 which would remove the constraint but is a change to a security-sensitive
 sanitisation boundary and needs its own careful review.
 
-### TD26071902 `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime
-
-*Filed 2026-07-19, noticed while verifying [[TD26071805]]'s deploy re-run.*
-The `Database` workflow annotates every run with:
-
-```
-Node.js 20 is deprecated. The following actions target Node.js 20 but are
-being forced to run on Node.js 24: supabase/setup-cli@v1.
-```
-
-(see <https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/>).
-`supabase/setup-cli@v1` is pinned at `.github/workflows/database.yml` in both
-the `test` job (line 38) and the `deploy` job (line 62). GitHub is currently
-forcing it onto Node.js 24, so the workflow still passes, but once the Node 20
-fallback is removed the action will fail to start and both jobs — the pgTAP
-suite *and* the live-migration push — break.
-
-Fix: bump `supabase/setup-cli` to a release whose `action.yml` declares a
-`node24` runtime once one is published (check the action's releases), updating
-both `uses:` lines together. If no fixed tag exists yet, this is a wait-on-
-upstream item; keep it open and re-check when the deprecation deadline nears.
-No other workflow action is affected (`actions/checkout@v7`,
-`actions/setup-node@v6`, `supabase/setup-cli` is the only flagged one).
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -163,4 +139,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071804 | npm 12 blocks the `poetic` git dependency by default | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/53 |
 | TD26071805 | `database.yml`'s live-migration push is failing silently | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/70 |
 | TD26071901 | jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require | open | | |
-| TD26071902 | `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime | open | | |
+| TD26071902 | `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/72 |
