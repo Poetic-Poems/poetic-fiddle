@@ -109,6 +109,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reason. The share page now shows its existing "poem not found" state
   instead of an unhandled server error, matching how a genuinely unknown
   share id was already handled.
+- Shared poem links now render for everyone, including signed-out visitors
+  (#52). `/share/<id>` was returning a hard 500 to _every_ visitor because the
+  page's server-side sanitiser loads `jsdom`, whose encoding-detection
+  dependency is ESM-only and cannot be `require()`d on Node 20; the app now
+  runs on Node 22, where that module load succeeds. (The "when not
+  authenticated" framing in the report was incidental — the signed-out SSR
+  path was simply where it was first noticed.)
 
 ### Security
 

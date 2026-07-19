@@ -40,18 +40,22 @@ of a server module, e.g. a failed `import` — is caught by neither
 (the function can terminate before the event flushes). Such a failure produces
 **no error event and no log**.
 
-The live example is **issue #52 itself**. `/share/<id>` returns a 500 because
+The worked example is **issue #52**. `/share/<id>` was returning a 500 because
 [`src/lib/render-share.ts`](../src/lib/render-share.ts)'s top-level
-`import { JSDOM } from "jsdom"` fails at module load: `jsdom` →
+`import { JSDOM } from "jsdom"` failed at module load: `jsdom` →
 `html-encoding-sniffer` does a CommonJS `require()` of the **ESM-only**
-`@exodus/bytes` → `ERR_REQUIRE_ESM`. It is a hard 500 for **every** visitor,
-not just unauthenticated ones (the "when not authenticated" framing is a red
-herring), and it leaves **nothing in Sentry**.
+`@exodus/bytes` → `ERR_REQUIRE_ESM` on Node < 22.12. It was a hard 500 for
+**every** visitor, not just unauthenticated ones (the "when not authenticated"
+framing was a red herring — the signed-out SSR path was just where it first
+showed), and it left **nothing in Sentry**. The fix was to pin Node 22 in
+`package.json` `engines`, where `require(ESM)` is enabled by default (see
+`CHANGELOG.md`); the failure mode below is the lasting lesson.
 
-For this class of failure the evidence is in **Vercel's runtime logs**
+For this class of failure the evidence was in **Vercel's runtime logs**
 (Deployments → the deployment → Logs), not Sentry — that is where the
 `ERR_REQUIRE_ESM` stack was found. Because Vercel Hobby keeps those logs only
-~1 hour, re-trigger the failure live while watching the logs.
+~1 hour, a module-load failure like this has to be caught by re-triggering it
+live while watching the logs.
 
 ## Access model — read-only, revocable, no secrets in the repo
 

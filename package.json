@@ -5,7 +5,7 @@
   "description": "A web-app interface to the Poetic poem-authoring framework.",
   "license": "MIT",
   "engines": {
-    "node": ">=20.9.0"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
