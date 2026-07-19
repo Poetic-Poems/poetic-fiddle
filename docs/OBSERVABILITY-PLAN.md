@@ -32,6 +32,16 @@ incident left no accessible record**:
 - AI agents doing triage have **no read path to production behaviour at
   all** — no logs, no error records, no metrics.
 
+> **Update (2026-07-19).** #52's precise trigger is now identified: the
+> `/share/<id>` route 500s at **module load** — `jsdom` →
+> `html-encoding-sniffer` does a CommonJS `require()` of the ESM-only
+> `@exodus/bytes` → `ERR_REQUIRE_ESM` — for *all* visitors, not only
+> unauthenticated ones. It was found in Vercel's runtime logs, **not** Sentry:
+> a module-instantiation crash escapes both capture hooks (see
+> [TRIAGE.md → What Sentry will not capture](TRIAGE.md#what-sentry-will-not-capture-and-where-to-look-instead)).
+> So this layer does not yet cover the very failure that motivated it — a known
+> limitation, with the bug itself tracked in #52.
+
 Goals, in priority order:
 
 1. **Durable error records.** Every server-side failure that today degrades

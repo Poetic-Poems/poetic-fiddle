@@ -9,12 +9,15 @@ of [`OBSERVABILITY-PLAN.md`](OBSERVABILITY-PLAN.md) and satisfies AC121/AC122
 
 Server-side failures are recorded in **Sentry** (the D42 observability layer):
 
-- **Errors** — grouped, stack-traced exception events. Every *un*handled
-  server error is captured via `onRequestError` (src/instrumentation.ts), and
-  the failures the app deliberately swallows to stay graceful (AC93/AC94) are
-  captured explicitly by `reportSwallowedError` (src/lib/observability.ts) at
-  the share-page read, cached-read, and render paths. Events are tagged with
-  an opaque `share_id`/poem `id` — **never poem content** (AC91).
+- **Errors** — grouped, stack-traced exception events. Unhandled server errors
+  *that reach the request lifecycle* are captured via `onRequestError`
+  (src/instrumentation.ts), and the failures the app deliberately swallows to
+  stay graceful (AC93/AC94) are captured explicitly by `reportSwallowedError`
+  (src/lib/observability.ts) at the share-page read, cached-read, and render
+  paths. Events are tagged with an opaque `share_id`/poem `id` — **never poem
+  content** (AC91). One class of failure escapes both hooks — see
+  [What Sentry will not capture](#what-sentry-will-not-capture-and-where-to-look-instead)
+  below.
 - **Structured logs** — one `Sentry.logger` line per recorded failure,
   searchable alongside the errors.
 
@@ -24,61 +27,74 @@ here comes from a visitor's browser (AC84/AC103). The Sentry project is in the
 Hobby's ~1-hour runtime logs, an incident stays investigable after the fact.
 
 Nothing is collected until `SENTRY_DSN` is set in Vercel (see `.env.example`);
-with it unset the SDK is inert.
+with it unset the SDK is inert. The variable name must be **exactly**
+`SENTRY_DSN` — a `SENTRY_DNS` typo silently disables all collection while
+looking correct at a glance.
+
+## What Sentry will not capture (and where to look instead)
+
+The capture hooks above run *within* the request lifecycle, so a failure that
+happens **before a route's module finishes loading** — a throw at the top level
+of a server module, e.g. a failed `import` — is caught by neither
+`reportSwallowedError` (its `catch` never runs) nor, reliably, `onRequestError`
+(the function can terminate before the event flushes). Such a failure produces
+**no error event and no log**.
+
+The live example is **issue #52 itself**. `/share/<id>` returns a 500 because
+[`src/lib/render-share.ts`](../src/lib/render-share.ts)'s top-level
+`import { JSDOM } from "jsdom"` fails at module load: `jsdom` →
+`html-encoding-sniffer` does a CommonJS `require()` of the **ESM-only**
+`@exodus/bytes` → `ERR_REQUIRE_ESM`. It is a hard 500 for **every** visitor,
+not just unauthenticated ones (the "when not authenticated" framing is a red
+herring), and it leaves **nothing in Sentry**.
+
+For this class of failure the evidence is in **Vercel's runtime logs**
+(Deployments → the deployment → Logs), not Sentry — that is where the
+`ERR_REQUIRE_ESM` stack was found. Because Vercel Hobby keeps those logs only
+~1 hour, re-trigger the failure live while watching the logs.
 
 ## Access model — read-only, revocable, no secrets in the repo
 
 Per AC121, triage reads through a credential that **cannot write telemetry,
-deploy, or read secrets**, and that is never committed (AC88). Two paths, by
-context:
+deploy, or read secrets**, and that is never committed (AC88). Both interactive
+(VS Code-hosted) and autonomous (headless) agents use **one** mechanism: an
+org-owned Internal Integration read token, registered as the user-scope
+`sentry-headless` MCP server. Sentry's hosted OAuth MCP was trialled and
+dropped — it needs interactive browser consent, so it cannot serve autonomous
+agents; a single token-based server covers both contexts. Full rationale and
+setup are in [SENTRY-AGENT-ACCESS.md](SENTRY-AGENT-ACCESS.md).
 
-### Interactive agent sessions — hosted MCP (preferred)
-
-Sentry's hosted MCP server is registered project-wide in `.mcp.json`
-(`https://mcp.sentry.dev/mcp`) — no secret in that file, since each
-contributor authorises their own OAuth session:
-
-- On first use in a fresh Claude Code session, approve the pending `sentry`
-  server (`claude mcp list` shows its status; `claude` on the command line, in
-  a real terminal, shows the approval prompt — an already-open session with
-  the file added mid-session won't show it, so start fresh if it's not
-  offered), then run `claude mcp login sentry` to complete the OAuth consent
-  in the browser. Access is revocable in Sentry at any time.
-- Gives `search_issues`, `get_issue_details`, `search_events`, docs search,
-  and Seer root-cause analysis.
-
-This is the default for an interactive investigation: no long-lived token
-exists to leak.
-
-### Headless / CLI agents — scoped read-only token
-
-The hosted MCP is OAuth-only, so a non-interactive agent instead uses an
-**org-owned Internal Integration** token (Sentry: **Organization Settings →
-Developer Settings → Custom Integrations → New Internal Integration** — not
-one of the Organization Tokens / Personal Tokens shortcuts on the Developer
-Settings landing page, which are either non-customizable or tied to a human
-account). It's a bot credential, **not** a personal token — its blast radius
-is telemetry reads only:
+Mint the token at **Organization Settings → Developer Settings → Custom
+Integrations → New Internal Integration** (not the Organization Tokens /
+Personal Tokens shortcuts on the Developer Settings landing page, which are
+either non-customizable or tied to a human account). It is a bot credential,
+**not** a personal token — its blast radius is telemetry reads only:
 
 - Permissions: **Issue & Event: Read, Project: Read, Organization: Read**
   only — everything else stays "No Access". Nothing that can write telemetry,
   deploy, or read secrets.
-- Register it as a local-scoped MCP server, which stores the token in the
-  machine-local Claude config rather than a tracked repo file (AC88):
+- Register it once per machine as a **user-scope** server, which stores the
+  token in the machine-local Claude config rather than a tracked repo file
+  (AC88):
   ```
-  claude mcp add sentry-headless -s local -e SENTRY_ACCESS_TOKEN=<token> -- npx -y @sentry/mcp-server
+  claude mcp add sentry-headless -s user -e SENTRY_ACCESS_TOKEN=<token> -- npx -y @sentry/mcp-server
   ```
-  Each headless/autonomous agent host runs this once with its own token.
+- It gives `search_issues`, `search_events`, issue details, and Seer
+  root-cause analysis. The token's identity is a synthetic proxy user, so
+  agents must pass `organizationSlug="datum-process"` explicitly (see
+  [SENTRY-AGENT-ACCESS.md](SENTRY-AGENT-ACCESS.md)).
 
 ## Doing a triage pass
 
 1. Start from the **issues** list, newest first, or search by the tag on the
    suspect path — e.g. `share_id:<id>` to find every failure for one permalink.
-2. Open the issue for its **stack trace, route, and tags**. For issue-#52-class
-   faults this is the whole investigation: the exception, where it was thrown,
-   and which share id triggered it.
+2. Open the issue for its **stack trace, route, and tags**. For a captured
+   server fault this is the whole investigation: the exception, where it was
+   thrown, and which share id triggered it. (Exception: a module-load crash
+   such as issue #52 leaves *no* Sentry record — see
+   [What Sentry will not capture](#what-sentry-will-not-capture-and-where-to-look-instead).)
 3. Cross-reference the **structured logs** for the same failure line.
-4. If the trace is unclear, Seer (hosted MCP) can propose a root cause.
+4. If the trace is unclear, Seer can propose a root cause.
 
 ## Security — treat telemetry as untrusted data (AC122)
 
