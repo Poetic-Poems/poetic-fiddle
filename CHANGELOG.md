@@ -111,11 +111,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   share id was already handled.
 - Shared poem links now render for everyone, including signed-out visitors
   (#52). `/share/<id>` was returning a hard 500 to _every_ visitor because the
-  page's server-side sanitiser loads `jsdom`, whose encoding-detection
-  dependency is ESM-only and cannot be `require()`d on Node 20; the app now
-  runs on Node 22, where that module load succeeds. (The "when not
-  authenticated" framing in the report was incidental — the signed-out SSR
-  path was simply where it was first noticed.)
+  page's server-side sanitiser loads `jsdom`, and jsdom 27+ pulls in the
+  ESM-only `@exodus/bytes`; since Vercel `require()`s jsdom rather than bundling
+  it, that CommonJS-`require()`-of-an-ESM-module threw `ERR_REQUIRE_ESM` on the
+  Turbopack server build. Pinning jsdom to 26.x (whose encoding dependencies are
+  all CommonJS) removes the offending package from the tree entirely, so the
+  module load can no longer fail. (The "when not authenticated" framing in the
+  report was incidental — the signed-out SSR path was simply where it was first
+  noticed.)
 
 ### Security
 

@@ -42,20 +42,27 @@ of a server module, e.g. a failed `import` — is caught by neither
 
 The worked example is **issue #52**. `/share/<id>` was returning a 500 because
 [`src/lib/render-share.ts`](../src/lib/render-share.ts)'s top-level
-`import { JSDOM } from "jsdom"` failed at module load: `jsdom` →
-`html-encoding-sniffer` does a CommonJS `require()` of the **ESM-only**
-`@exodus/bytes` → `ERR_REQUIRE_ESM` on Node < 22.12. It was a hard 500 for
-**every** visitor, not just unauthenticated ones (the "when not authenticated"
-framing was a red herring — the signed-out SSR path was just where it first
-showed), and it left **nothing in Sentry**. The fix was to pin Node 22 in
-`package.json` `engines`, where `require(ESM)` is enabled by default (see
-`CHANGELOG.md`); the failure mode below is the lasting lesson.
+`import { JSDOM } from "jsdom"` failed to load: jsdom 27+ depends on the
+**ESM-only** `@exodus/bytes` (both jsdom and `html-encoding-sniffer@6`
+`require()` it), and Vercel `require()`s jsdom rather than bundling it (it is a
+default `serverExternalPackages` entry), so that CommonJS-`require()`-of-an-ESM
+-module threw `ERR_REQUIRE_ESM` under the Turbopack server build. It was a hard
+500 for **every** visitor, not just unauthenticated ones (the "when not
+authenticated" framing was a red herring — the signed-out SSR path was just
+where it first showed). Moving to Node ≥ 22.12 did **not** fix it (PR #65); the
+fix was to pin jsdom to 26.x, whose encoding dependencies are all CommonJS, so
+`@exodus/bytes` leaves the tree entirely (see `CHANGELOG.md` / TECH-DEBT
+`TD26071901`).
 
-For this class of failure the evidence was in **Vercel's runtime logs**
-(Deployments → the deployment → Logs), not Sentry — that is where the
-`ERR_REQUIRE_ESM` stack was found. Because Vercel Hobby keeps those logs only
-~1 hour, a module-load failure like this has to be caught by re-triggering it
-live while watching the logs.
+A cautionary twist on this section's own thesis: #52 looked like a pure
+module-load crash, but Turbopack externalises jsdom behind a **lazy** require
+thunk that first runs _during_ a request, so the throw surfaced through
+`onRequestError` and **was** captured (Sentry issue `POETIC-FIDDLE-1`) — which
+is how it was finally pinned down. It also appeared in **Vercel's runtime logs**
+(Deployments → the deployment → Logs). A throw that runs at true module
+top-level — before any request handler — would still escape both hooks and show
+up only in the Vercel logs, which Hobby keeps ~1 hour, so that stricter class
+still has to be caught by re-triggering it live while watching the logs.
 
 ## Access model — read-only, revocable, no secrets in the repo
 

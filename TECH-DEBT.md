@@ -84,6 +84,31 @@ access token) and `SUPABASE_DB_PASSWORD` (the live project's Postgres
 password) as repo secrets (Settings → Secrets and variables → Actions),
 then re-run the `deploy` job to confirm it links and pushes cleanly.
 
+## TD26071901 jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require
+
+*Filed 2026-07-19, resolving #52.* jsdom 27+ replaced its CommonJS encoding
+dependencies with the **ESM-only** `@exodus/bytes` (`jsdom` and
+`html-encoding-sniffer@6` both `require()` it). jsdom is on Next's default
+`serverExternalPackages` list, so on Vercel it is `require()`d — not bundled —
+at runtime, and that CommonJS-`require()`-of-an-ESM-module throws
+`ERR_REQUIRE_ESM` under the Turbopack server build (it is not fixed by moving to
+Node ≥ 22.12 — see #52 / PR #65). Because the share page imports jsdom at module
+scope (`src/lib/render-share.ts`), the throw hard-500s `/share/[share_id]` for
+every visitor.
+
+Worked around by pinning `jsdom` to `^26.0.0` in `package.json` — jsdom 26.x's
+encoding deps are all CommonJS (`whatwg-encoding`, `html-encoding-sniffer@4`),
+so `@exodus/bytes` leaves the tree entirely and there is no ESM `require` left
+to fail. The pin is referenced from a comment at the jsdom import in
+`src/lib/render-share.ts`.
+
+Fix (to lift the pin): bump jsdom once either Turbopack bundles jsdom rather
+than externalising it, or its ESM deps can be `require()`d in this runtime
+(e.g. jsdom ships a CJS-compatible path again). Alternatively, move the
+share-page sanitiser off jsdom onto a bundler-friendly DOM (e.g. linkedom),
+which would remove the constraint but is a change to a security-sensitive
+sanitisation boundary and needs its own careful review.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -132,3 +157,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071803 | Merged migrations don't reach the live Supabase project on their own | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/49 |
 | TD26071804 | npm 12 blocks the `poetic` git dependency by default | resolved | 2026-07-18 | https://github.com/Poetic-Poems/poetic-fiddle/pull/53 |
 | TD26071805 | `database.yml`'s live-migration push is failing silently | open | | |
+| TD26071901 | jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require | open | | |
