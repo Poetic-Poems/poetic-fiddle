@@ -1,3 +1,11 @@
+// jsdom is a server-external package (Next never bundles it — see its default
+// serverExternalPackages list), so Node itself `require()`s it at runtime. Its
+// encoding-detection dep chain (jsdom → html-encoding-sniffer) does a CommonJS
+// `require()` of the ESM-only `@exodus/bytes`, which throws `ERR_REQUIRE_ESM`
+// on Node < 22.12 — a top-level import failure that hard-500s this whole route
+// for every visitor (issue #52). The app therefore pins Node 22 in
+// package.json `engines`, where `require(ESM)` is enabled by default; do not
+// lower it. See docs/TRIAGE.md.
 import { JSDOM } from "jsdom";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";

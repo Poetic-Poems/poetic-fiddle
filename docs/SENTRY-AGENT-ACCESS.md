@@ -134,14 +134,17 @@ variable name must be **exactly** `SENTRY_DSN` — a `SENTRY_DNS` typo silently
 disables all collection.
 
 **No event has been captured yet** (`firstEvent: null`, as of 2026-07-19). The
-one reliably reproducible production 500 — the `/share/<id>` route — is a
-**module-instantiation crash** (`jsdom` → `html-encoding-sniffer` `require()`s
-the ESM-only `@exodus/bytes` → `ERR_REQUIRE_ESM`; the true root of issue #52).
-It fails at the top-level `import` in `src/lib/render-share.ts`, so it never
-reaches `reportSwallowedError`'s `catch`, and a module-load failure also slips
-past the serverless capture/flush — it produces **no Sentry event** and shows
+`/share/<id>` route was until recently a reliably reproducible production 500,
+but it was a **module-instantiation crash** (`jsdom` → `html-encoding-sniffer`
+`require()`s the ESM-only `@exodus/bytes` → `ERR_REQUIRE_ESM` on Node < 22.12;
+the true root of issue #52, now fixed by pinning Node 22 — see `CHANGELOG.md`).
+It failed at the top-level `import` in `src/lib/render-share.ts`, so it never
+reached `reportSwallowedError`'s `catch`, and a module-load failure also slips
+past the serverless capture/flush — it produced **no Sentry event** and showed
 up only in Vercel's runtime logs. See
 [TRIAGE.md → What Sentry will not capture](TRIAGE.md#what-sentry-will-not-capture-and-where-to-look-instead).
+So even while it was live it could not have served as the end-to-end capture
+proof, and now it no longer reproduces at all.
 
 So the read path and the instrumentation are both confirmed, but **end-to-end
 capture is not yet demonstrated with a live event**. Proving it needs an error
