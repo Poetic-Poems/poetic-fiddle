@@ -1,4 +1,4 @@
-export const POETIC_TAG = "v6.0.1";
+export const POETIC_TAG = "v6.1.1";
 
 export const POEM_SYNTAX_REFERENCE_URL = `https://github.com/Poetic-Poems/poetic/blob/${POETIC_TAG}/docs/POEM-SYNTAX.md`;
 

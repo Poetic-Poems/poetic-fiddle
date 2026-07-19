@@ -30,6 +30,25 @@ A Poet
 Just words, nothing more.
 `;
 
+// poetic's restricted title inline-markup (v6.1.1): *em*, **strong**,
+// ~~struck~~ (double-tilde, corrected from v6.1.0's single-tilde syntax,
+// which this app deliberately never shipped — see the poetic-6.1.1 bump).
+const POEM_WITH_TITLE_MARKUP = `*Em* **Strong** ~~Struck~~ Title
+A Poet
+2026-07-19
+
+{Verse}
+Hello world.
+`;
+
+const POEM_WITH_LITERAL_TILDE_TITLE = `A ~single~ tilde title
+A Poet
+2026-07-19
+
+{Verse}
+Hello world.
+`;
+
 describe("sanitizeSharedPoemHtml", () => {
   it("strips scripts and inline event handlers (poetic performs no sanitisation itself)", () => {
     const html = renderPoem(POEM_WITH_EMBEDS);
@@ -73,6 +92,39 @@ describe("sanitizeSharedPoemHtml", () => {
 
     expect(clean).not.toContain("<iframe");
     expect(clean).toContain("Just words, nothing more.");
+  });
+
+  it("keeps the restricted title inline markup (em/strong/s) through sanitisation", () => {
+    const html = renderPoem(POEM_WITH_TITLE_MARKUP);
+
+    // The renderer itself emits the tags in the visible h2.poem-title heading.
+    expect(html).toContain(
+      '<h2 class="poem-title"><em>Em</em> <strong>Strong</strong> <s>Struck</s> Title</h2>',
+    );
+
+    const clean = sanitizeSharedPoemHtml(html);
+
+    // DOMPurify's default config (used here, and by the live PoemPreview
+    // iframe) keeps these three tags — sanitisation is not what would strip
+    // them, so this asserts the title markup genuinely survives the
+    // untrusted-content boundary, not just the renderer's own output.
+    expect(clean).toContain(
+      '<h2 class="poem-title"><em>Em</em> <strong>Strong</strong> <s>Struck</s> Title</h2>',
+    );
+  });
+
+  it("leaves a single ~tilde~ in a title as literal text (double-tilde only, v6.1.1)", () => {
+    const html = renderPoem(POEM_WITH_LITERAL_TILDE_TITLE);
+
+    expect(html).toContain(
+      '<h2 class="poem-title">A ~single~ tilde title</h2>',
+    );
+    expect(html).not.toContain("<s>single</s>");
+
+    const clean = sanitizeSharedPoemHtml(html);
+    expect(clean).toContain(
+      '<h2 class="poem-title">A ~single~ tilde title</h2>',
+    );
   });
 
   it("never turns an arbitrary data-embed-src into an iframe (host allow-list)", () => {

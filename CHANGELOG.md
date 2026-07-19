@@ -78,6 +78,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Bumped the pinned `poetic` dependency from v6.0.1 to v6.1.1, deliberately
+  skipping v6.1.0. A poem's title can now include restricted inline markup —
+  `*em*`, `**strong**` and `~~struck~~` (Markdown-standard double-tilde
+  strikethrough) — rendered in the visible heading of both the live preview
+  and the share page; a single `~` stays literal. v6.1.0 shipped this feature
+  with a since-corrected single-tilde strikethrough syntax, which the app
+  never ships.
 - The Privacy Policy now discloses **SMTP2GO** as the sub-processor that
   delivers authentication emails (the magic-link and password sign-in
   messages).
