@@ -100,6 +100,10 @@ export default function Editor({
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [unsharing, setUnsharing] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const linkCopiedTimeoutRef = useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined);
   // Null means "inherit the poet's remix_default" (AC114).
   const [allowRemix, setAllowRemix] = useState<boolean | null>(null);
   const [allowRemixSaving, setAllowRemixSaving] = useState(false);
@@ -108,6 +112,8 @@ export default function Editor({
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (linkCopiedTimeoutRef.current)
+        clearTimeout(linkCopiedTimeoutRef.current);
     };
   }, []);
 
@@ -337,6 +343,25 @@ export default function Editor({
       ? `${window.location.origin}/share/${shareId}`
       : null;
 
+  const handleCopyShareLink = useCallback(() => {
+    if (!shareUrl) return;
+    setShareError(null);
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setLinkCopied(true);
+        if (linkCopiedTimeoutRef.current)
+          clearTimeout(linkCopiedTimeoutRef.current);
+        linkCopiedTimeoutRef.current = setTimeout(
+          () => setLinkCopied(false),
+          2000,
+        );
+      })
+      .catch((err) => {
+        setShareError(err instanceof Error ? err.message : String(err));
+      });
+  }, [shareUrl]);
+
   const saveStatus = !session
     ? ""
     : saving
@@ -471,11 +496,18 @@ export default function Editor({
           </a>
           <button
             type="button"
-            onClick={() => navigator.clipboard.writeText(shareUrl)}
+            onClick={handleCopyShareLink}
             className="ml-auto rounded-md border border-black/10 px-2 py-1 text-xs font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
           >
-            Copy
+            {linkCopied ? "Copied!" : "Copy"}
           </button>
+          {linkCopied && (
+            <span
+              role="status"
+              aria-label="Link copied to clipboard"
+              className="sr-only"
+            />
+          )}
           <button
             type="button"
             onClick={handleUnshare}

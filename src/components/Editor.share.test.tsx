@@ -158,6 +158,77 @@ describe("Editor share", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows temporary feedback when the share link is copied (#67)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(loadPoem).mockResolvedValue({
+      id: "poem-1",
+      source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
+      shareId: "abc123",
+      allowRemix: null,
+    });
+    render(<Editor poeticCss="" initialPoemId="poem-1" />);
+
+    await screen.findByRole("link", { name: /\/share\/abc123/ });
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("/share/abc123"),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Copied!" }),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("status", { name: "Link copied to clipboard" }),
+    ).toBeInTheDocument();
+
+    vi.advanceTimersByTime(2000);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument(),
+    );
+
+    vi.useRealTimers();
+  });
+
+  it("surfaces a failed copy without losing the share link", async () => {
+    const writeText = vi
+      .fn()
+      .mockRejectedValue(new Error("Couldn't access the clipboard"));
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(loadPoem).mockResolvedValue({
+      id: "poem-1",
+      source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
+      shareId: "abc123",
+      allowRemix: null,
+    });
+    render(<Editor poeticCss="" initialPoemId="poem-1" />);
+
+    await screen.findByRole("link", { name: /\/share\/abc123/ });
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Couldn't access the clipboard",
+      ),
+    );
+    expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /\/share\/abc123/ }),
+    ).toBeInTheDocument();
+  });
+
   it("surfaces a failed unshare without losing the share link", async () => {
     vi.mocked(useSession).mockReturnValue(SESSION);
     vi.mocked(loadPoem).mockResolvedValue({
