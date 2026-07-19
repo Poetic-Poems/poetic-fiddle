@@ -1,11 +1,12 @@
 // jsdom is a server-external package (Next never bundles it — see its default
-// serverExternalPackages list), so Node itself `require()`s it at runtime. Its
-// encoding-detection dep chain (jsdom → html-encoding-sniffer) does a CommonJS
-// `require()` of the ESM-only `@exodus/bytes`, which throws `ERR_REQUIRE_ESM`
-// on Node < 22.12 — a top-level import failure that hard-500s this whole route
-// for every visitor (issue #52). The app therefore pins Node 22 in
-// package.json `engines`, where `require(ESM)` is enabled by default; do not
-// lower it. See docs/TRIAGE.md.
+// serverExternalPackages list), so it is `require()`d, not bundled, at runtime.
+// jsdom 27+ depends on the ESM-only `@exodus/bytes`; that CommonJS-`require()`-
+// of-an-ESM-module throws `ERR_REQUIRE_ESM` on Vercel's Turbopack server build,
+// a top-level import failure that hard-500s this whole route for every visitor
+// (issue #52). jsdom is therefore pinned to 26.x in package.json, whose
+// encoding deps are all CommonJS (whatwg-encoding). Do not bump it past 26
+// until Turbopack bundles jsdom or jsdom's ESM deps can be required here. See
+// TECH-DEBT.md TD26071901 and docs/TRIAGE.md.
 import { JSDOM } from "jsdom";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";

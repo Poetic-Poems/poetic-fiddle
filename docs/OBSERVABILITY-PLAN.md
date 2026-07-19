@@ -33,16 +33,21 @@ incident left no accessible record**:
   all** — no logs, no error records, no metrics.
 
 > **Update (2026-07-19).** #52's precise trigger was identified and fixed: the
-> `/share/<id>` route 500ed at **module load** — `jsdom` →
-> `html-encoding-sniffer` does a CommonJS `require()` of the ESM-only
-> `@exodus/bytes` → `ERR_REQUIRE_ESM` on Node < 22.12 — for *all* visitors, not
-> only unauthenticated ones. The fix was to pin Node 22 (`package.json`
-> `engines`), where `require(ESM)` is enabled by default (see `CHANGELOG.md`).
-> Notably, the trigger was found in Vercel's runtime logs, **not** Sentry: a
-> module-instantiation crash escapes both capture hooks (see
-> [TRIAGE.md → What Sentry will not capture](TRIAGE.md#what-sentry-will-not-capture-and-where-to-look-instead)).
-> So this layer still does not cover that class of failure — a known
-> limitation the incident exposed, independent of the now-fixed bug.
+> `/share/<id>` route 500ed because loading `jsdom` failed — jsdom 27+ depends
+> on the ESM-only `@exodus/bytes`, and Vercel `require()`s jsdom (a default
+> `serverExternalPackages` entry) rather than bundling it, so the CommonJS
+> `require()` of that ESM module threw `ERR_REQUIRE_ESM` under the Turbopack
+> server build, for *all* visitors, not only unauthenticated ones. Moving to
+> Node ≥ 22.12 did **not** fix it (PR #65); the fix was to pin jsdom to 26.x,
+> whose encoding deps are all CommonJS (see `CHANGELOG.md` / `TD26071901`).
+> Instructively, the incident also **exercised** this layer rather than only
+> exposing its gap: Turbopack defers the externalised `require` behind a lazy
+> thunk that runs during the request, so the throw surfaced through
+> `onRequestError` and was captured as the project's first real Sentry issue.
+> A throw at true module top-level — before any request handler — would still
+> escape both hooks (see
+> [TRIAGE.md → What Sentry will not capture](TRIAGE.md#what-sentry-will-not-capture-and-where-to-look-instead)),
+> so that stricter class remains a known limitation of this layer.
 
 Goals, in priority order:
 

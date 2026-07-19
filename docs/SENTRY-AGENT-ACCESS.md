@@ -133,28 +133,30 @@ unless `SENTRY_DSN` is set for the **Production** environment in Vercel, and the
 variable name must be **exactly** `SENTRY_DSN` — a `SENTRY_DNS` typo silently
 disables all collection.
 
-**No event has been captured yet** (`firstEvent: null`, as of 2026-07-19). The
-`/share/<id>` route was until recently a reliably reproducible production 500,
-but it was a **module-instantiation crash** (`jsdom` → `html-encoding-sniffer`
-`require()`s the ESM-only `@exodus/bytes` → `ERR_REQUIRE_ESM` on Node < 22.12;
-the true root of issue #52, now fixed by pinning Node 22 — see `CHANGELOG.md`).
-It failed at the top-level `import` in `src/lib/render-share.ts`, so it never
-reached `reportSwallowedError`'s `catch`, and a module-load failure also slips
-past the serverless capture/flush — it produced **no Sentry event** and showed
-up only in Vercel's runtime logs. See
-[TRIAGE.md → What Sentry will not capture](TRIAGE.md#what-sentry-will-not-capture-and-where-to-look-instead).
-So even while it was live it could not have served as the end-to-end capture
-proof, and now it no longer reproduces at all.
-
-So the read path and the instrumentation are both confirmed, but **end-to-end
-capture is not yet demonstrated with a live event**. Proving it needs an error
-that throws *inside* a live request handler — a genuine RPC/render failure once
-the share route loads, or a temporary debug route.
+**End-to-end capture is confirmed with a live event.** The first real Sentry
+issue (`POETIC-FIDDLE-1`, environment `vercel-production`) was the `/share/<id>`
+500 — jsdom 27+ depends on the ESM-only `@exodus/bytes`, and Vercel `require()`s
+jsdom rather than bundling it, so that CommonJS `require()` of an ESM module
+threw `ERR_REQUIRE_ESM` under the Turbopack server build (the true root of issue
+#52, now fixed by pinning jsdom to 26.x — see `CHANGELOG.md` / `TD26071901`).
+Although it originated in a failed top-level `import` in
+`src/lib/render-share.ts`, Turbopack externalises jsdom behind a **lazy** require
+thunk that first runs _during_ a request, so it surfaced through
+`onRequestError` (`mechanism: auto.function.nextjs.on_request_error`, `handled:
+no`) and was captured — it also appeared in Vercel's runtime logs. This both
+proves the instrumentation works against a live production error and stands as
+the worked example in
+[TRIAGE.md → What Sentry will not capture](TRIAGE.md#what-sentry-will-not-capture-and-where-to-look-instead)
+of why the _stricter_ class — a throw that runs before any request handler —
+would still escape.
 
 Known limitations of the current implementation:
 
-- **Module-instantiation errors are not captured** (see above) — for those,
-  read Vercel runtime logs.
+- **Errors before the request handler are not captured** — a throw at true
+  module top-level (or process init), before any request runs, escapes both
+  `onRequestError` and `reportSwallowedError`; read Vercel runtime logs for
+  those. (A module-load throw that Turbopack defers into a request via a lazy
+  external `require`, as in #52 above, _is_ captured.)
 - **Server/edge only, by design** — there is no client SDK, so a browser-only
   error never reaches Sentry (AC84).
 - **No source maps / release tagging** — `next.config.ts` does not wrap the
