@@ -2,13 +2,14 @@
 
 Deferred work and known gaps in poetic-fiddle. Record an entry here
 whenever you defer something, rather than leaving it only in a commit message or
-in chat. Keep entries short and dated. Once an issue has been resolved, remove
-its `## <id> <title>` section below — but never remove its row from the
-Ledger table at the bottom of this file; see "Ledger" below.
+in chat. Keep entries short and dated. Live items live under the "Current Items"
+heading as `### <id> <title>` sections. Once an issue has been resolved, remove
+its `### <id> <title>` section from Current Items below — but never remove its
+row from the Ledger table at the bottom of this file; see "Ledger" below.
 
 Format:
 ```
-## <id> <short title>
+### <id> <short title>
 
 A description of what, why it matters, where, and a suggested fix.
 
@@ -22,7 +23,31 @@ so the Ledger (not memory or scrollback) is the source of truth for the next
 free ID. Compute it with `scripts/next-tech-debt-id.pl` rather than counting
 by hand.
 
-## TD26071504 OAuth consent screen App name doesn't match the home page
+## Claiming an item
+
+Before starting work on an open item, confirm nobody else already has:
+check its Ledger row is `open` (not `in-progress`), and skim open pull
+requests for its ID. Then:
+
+1. Flip its Ledger row's Status to `in-progress`.
+2. Push a branch and open a **draft** pull request right away — before the
+   fix is finished — so `gh pr list` shows it's claimed. The first commit
+   can be the Ledger status flip itself.
+3. Do the work, pushing further commits to the same branch/PR.
+4. Once verified, flip the Ledger row to `resolved` (fill in `Resolved` and
+   `Ref`), remove the entry's `### <id>` section from Current Items, and mark
+   the PR ready for review.
+
+If a claim is abandoned (the draft PR is closed without merging), flip the
+row back to `open`.
+
+## Current Items
+
+The open and in-progress items, each as a `### <id> <title>` section. This
+heading is permanent: when there are no current items it stays here (empty), so
+it is always obvious where a new item's body belongs.
+
+### TD26071504 OAuth consent screen App name doesn't match the home page
 
 Google's brand verification for the Poetic Fiddle Google Cloud OAuth client
 is flagging: "The app name 'Poetic Fiddle' configured for your OAuth consent
@@ -58,7 +83,7 @@ every checkable configuration and content signal already matches.
 An "I believe the issues found are incorrect" request has been sent to the
 Google verification team.  The estimated time for a response is three days.
 
-## TD26071805 `database.yml`'s live-migration push is failing silently
+### TD26071805 `database.yml`'s live-migration push is failing silently
 
 *Noticed 2026-07-18, while investigating #52.* [[TD26071803]]'s fix
 (`.github/workflows/database.yml`'s `deploy` job, merged in #49) is not
@@ -84,7 +109,7 @@ access token) and `SUPABASE_DB_PASSWORD` (the live project's Postgres
 password) as repo secrets (Settings → Secrets and variables → Actions),
 then re-run the `deploy` job to confirm it links and pushes cleanly.
 
-## TD26071901 jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require
+### TD26071901 jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require
 
 *Filed 2026-07-19, resolving #52.* jsdom 27+ replaced its CommonJS encoding
 dependencies with the **ESM-only** `@exodus/bytes` (`jsdom` and
@@ -109,24 +134,6 @@ share-page sanitiser off jsdom onto a bundler-friendly DOM (e.g. linkedom),
 which would remove the constraint but is a change to a security-sensitive
 sanitisation boundary and needs its own careful review.
 
-## Claiming an item
-
-Before starting work on an open item, confirm nobody else already has:
-check its Ledger row is `open` (not `in-progress`), and skim open pull
-requests for its ID. Then:
-
-1. Flip its Ledger row's Status to `in-progress`.
-2. Push a branch and open a **draft** pull request right away — before the
-   fix is finished — so `gh pr list` shows it's claimed. The first commit
-   can be the Ledger status flip itself.
-3. Do the work, pushing further commits to the same branch/PR.
-4. Once verified, flip the Ledger row to `resolved` (fill in `Resolved` and
-   `Ref`), remove the entry's `## <id>` section, and mark the PR ready for
-   review.
-
-If a claim is abandoned (the draft PR is closed without merging), flip the
-row back to `open`.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -137,7 +144,7 @@ a body above.
 
 A row can also close as `not-debt`: the item was filed here but turned out, on
 reflection, not to be a deferred cost at all (e.g. deliberately reserved
-syntax awaiting a future feature). Its `## <id>` section is removed like a
+syntax awaiting a future feature). Its `### <id>` section is removed like a
 resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 `Ref` column instead points to wherever the content moved.
 
