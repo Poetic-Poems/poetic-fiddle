@@ -94,8 +94,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- The poem title is now visible in the preview panel. It was previously hidden
-  by the poetic framework's stylesheet; the app now overrides that rule.
+- The poem title is now visible in the preview panel, via poetic's
+  `h2.poem-title` heading.
+- The poem title no longer appears twice in the preview panel. The app had
+  been overriding poetic's stylesheet to unhide a second, redundant copy of
+  the title (the `.poem-info` section's `title` span); poetic's own
+  `display: none` rule for that span is left in place instead.
 - A missing space in the Privacy Policy's "What we collect" list, where
   "Account information." ran into the following sentence with no space
   between them in some rendering paths.
