@@ -27,7 +27,7 @@
     "@uiw/react-codemirror": "^4.25.11",
     "codemirror": "^6.0.2",
     "dompurify": "^3.4.12",
-    "jsdom": "^26.0.0",
+    "jsdom": "^29.1.1",
     "next": "16.2.10",
     "poetic": "https://github.com/Poetic-Poems/poetic/releases/download/v6.1.1/poetic-6.1.1.tgz",
     "react": "19.2.7",
