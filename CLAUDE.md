@@ -52,7 +52,7 @@ is not a poem-collection repo — it does not use `sync-framework.sh` or track a
   **exported by the `poetic` repo**, not a copy. Do not fork or re-implement the
   `.poem` parser/renderer in this repo — changes to `.poem` syntax or rendering
   belong upstream in `poetic` and reach Fiddle through that shared module. That
-  module arrives as a **tag-pinned git dependency** on the `poetic` repo
+  module arrives as a **tag-pinned release-tarball dependency** on the `poetic` repo
   (`docs/IMPLEMENTATION-PLAN.md` §6.1); bumping it is a deliberate
   `package.json` edit, never a silent float.
 
