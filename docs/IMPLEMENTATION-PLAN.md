@@ -256,7 +256,7 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 > highlighting for sections, version labels, emphasis, variables, spans,
 > comments, hashtags. A ~200ms debounced in-browser preview
 > (`src/components/Editor.tsx`) calls `renderPoem` from the §6.1 tag-pinned
-> `poetic` dependency (`github:Poetic-Poems/poetic#v6.0.1` — poetic cut a
+> `poetic` dependency (the `v6.0.1` release tarball — poetic cut a
 > release exposing `poetic/browser` before this milestone landed, so no
 > interim main-HEAD-SHA pin was needed after all); a parse error surfaces a
 > non-blocking message and the last good preview stays visible.
@@ -511,39 +511,48 @@ dashboard task tracked as TD26071601.
 
 ### 6.1 Renderer packaging & versioning *(gates M0 → M2)* — ✅ **DECIDED 2026-07-13**
 
-**Decision: (b) a tag-pinned git dependency.** Fiddle's `package.json` depends
-on `poetic` directly from GitHub, pinned to an exact release tag, e.g.:
+**Decision: a tag-pinned release-tarball dependency.** Fiddle's `package.json`
+depends on `poetic` via the immutable tarball asset attached to an exact
+release tag, e.g.:
 
 ```jsonc
 "dependencies": {
-  "poetic": "github:Poetic-Poems/poetic#v6.0.0"
+  "poetic": "https://github.com/Poetic-Poems/poetic/releases/download/v6.0.1/poetic-6.0.1.tgz"
 }
 ```
 
-`package-lock.json` freezes the resolved commit, satisfying the AC68
-pinned-version pattern; bumping to a newer poetic release is a deliberate,
-reviewable `package.json` edit. `import { renderPoem, renderPoemPage } from
-'poetic/browser'` and `import 'poetic/browser/poetic.css'` resolve through
-poetic's `exports` map (below) — the same mechanism covers the **preview CSS**
-asset (§3.1(4)), so no separate vendoring decision was needed there.
+`package-lock.json` freezes the resolved URL together with an `integrity`
+hash, satisfying the AC68 pinned-version pattern and making the pin
+tamper-evident (the hash does the job a git commit SHA otherwise would);
+bumping to a newer poetic release is a deliberate, reviewable `package.json`
+edit — changing the version in the URL, in both the path and the filename.
+`import { renderPoem, renderPoemPage } from 'poetic/browser'` and `import
+'poetic/browser/poetic.css'` resolve through poetic's `exports` map (below) —
+the same mechanism covers the **preview CSS** asset (§3.1(4)), so no separate
+vendoring decision was needed there.
 
-**Why (b) over the alternatives:** poetic is a public repo with a clean semver
-tag history, so a git dependency needs no deploy keys/PATs and works today.
-(a) a published npm package is the cleaner long-term shape but requires
-flipping `private: true` (or standing up a separate scoped package) plus a
-publish workflow — process overhead not justified for a single consumer yet.
-(c) a submodule or vendored/precompiled bundle reintroduces manual-sync drift
-risk against the single-source-of-truth goal (D6). Re-evaluate towards (a) if
-a second consumer of the renderer appears, or the git-dependency friction
-below becomes a recurring cost.
+**Why a release tarball over the alternatives:** poetic is a public repo, so
+its release assets install with no deploy keys/PATs, no import rename, and no
+new CI/Vercel secrets. A git dependency is refused by npm 11.x/12.x's
+`EALLOWGIT` rule on any fresh, cache-miss install, and its lockfile-resolved
+`git+ssh://` URL needs an SSH key hosted builders lack. A
+published npm package is the cleaner long-term shape but — on npm or GitHub
+Packages — requires flipping `private: true`, an install token, and (for
+GitHub Packages) an `@poetic-poems/poetic` rename across every import; process
+overhead not justified for a single consumer yet. A **release asset** is
+byte-immutable, unlike GitHub's auto-generated source archives whose checksums
+are not guaranteed stable, so the recorded `integrity` hash stays valid.
+Re-evaluate towards a published package if a second consumer of the renderer
+appears.
 
 **What made this decidable now:** poetic PR #33 resolved poetic's own
 tech-debt item TD26071301 by exposing `./browser` and `./browser/poetic.css`
 via poetic's `package.json` `exports` map, and poetic PR #34 added the
 browser-safe aggregate renderers (index/all-poems), completing the browser
-surface. poetic's `package.json` remains `private: true` (no npm-registry
-publish) — irrelevant to a git dependency, which installs straight from the
-tagged commit.
+surface. poetic packages exactly those (a `files` whitelist of `src` +
+`public/poetic.css`) and attaches an `npm pack` tarball to each GitHub
+release; it stays `private: true` (no npm-registry publish), which `npm pack`
+and the tarball dependency do not require.
 
 **Known friction, tracked as Fiddle `TECH-DEBT.md` TD26071301** (a different
 repo's register from poetic's own TD26071301 above — same ID format, distinct
@@ -844,8 +853,8 @@ one column and one click, addable without touching anything else.
    mechanism** decision and the boundary sanitiser (lands in M2/M6).
 2. ~~**Start M1**~~ — **done**: Next.js + TS scaffold, CI (`build.yml` +
    CodeQL js-ts), and the brand shell are in place (see §4).
-3. ~~**Settle the §6.1 packaging decision**~~ — **done**: a tag-pinned git
-   dependency on `poetic` (see §6.1).
+3. ~~**Settle the §6.1 packaging decision**~~ — **done**: a tag-pinned
+   release-tarball dependency on `poetic` (see §6.1).
 4. ~~**Start M2**~~ — **done**: the editor + live preview (see §4).
 5. ~~**Start M3**~~ — **done**: anonymous drafts (see §4).
 6. ~~**Start M4**~~ — **done**: Supabase authentication (see §4).

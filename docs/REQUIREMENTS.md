@@ -177,8 +177,8 @@ i18n, and offline posture — consolidated across all phases.
 
 ### Later rounds (parked)
 - How Fiddle consumes the shared poetic renderer (npm package vs git dependency
-  vs monorepo) — packaging/versioning mechanism — **done: a tag-pinned git
-  dependency, see IMPLEMENTATION-PLAN.md §6.1**.
+  vs monorepo) — packaging/versioning mechanism — **done: a tag-pinned
+  release-tarball dependency, see IMPLEMENTATION-PLAN.md §6.1**.
 - Data model & persistence details; DB schema; RLS policies — **done, see
   IMPLEMENTATION-PLAN.md §6.2** (`poems` + `profiles`, default-deny RLS, and a
   `security definer` RPC for share reads).
