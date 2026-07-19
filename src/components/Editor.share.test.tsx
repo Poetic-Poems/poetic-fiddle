@@ -198,6 +198,37 @@ describe("Editor share", () => {
     vi.useRealTimers();
   });
 
+  it("surfaces a failed copy without losing the share link", async () => {
+    const writeText = vi
+      .fn()
+      .mockRejectedValue(new Error("Couldn't access the clipboard"));
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(loadPoem).mockResolvedValue({
+      id: "poem-1",
+      source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
+      shareId: "abc123",
+      allowRemix: null,
+    });
+    render(<Editor poeticCss="" initialPoemId="poem-1" />);
+
+    await screen.findByRole("link", { name: /\/share\/abc123/ });
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Couldn't access the clipboard",
+      ),
+    );
+    expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /\/share\/abc123/ }),
+    ).toBeInTheDocument();
+  });
+
   it("surfaces a failed unshare without losing the share link", async () => {
     vi.mocked(useSession).mockReturnValue(SESSION);
     vi.mocked(loadPoem).mockResolvedValue({

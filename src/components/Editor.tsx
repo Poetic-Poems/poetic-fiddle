@@ -345,15 +345,21 @@ export default function Editor({
 
   const handleCopyShareLink = useCallback(() => {
     if (!shareUrl) return;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setLinkCopied(true);
-      if (linkCopiedTimeoutRef.current)
-        clearTimeout(linkCopiedTimeoutRef.current);
-      linkCopiedTimeoutRef.current = setTimeout(
-        () => setLinkCopied(false),
-        2000,
-      );
-    });
+    setShareError(null);
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setLinkCopied(true);
+        if (linkCopiedTimeoutRef.current)
+          clearTimeout(linkCopiedTimeoutRef.current);
+        linkCopiedTimeoutRef.current = setTimeout(
+          () => setLinkCopied(false),
+          2000,
+        );
+      })
+      .catch((err) => {
+        setShareError(err instanceof Error ? err.message : String(err));
+      });
   }, [shareUrl]);
 
   const saveStatus = !session
