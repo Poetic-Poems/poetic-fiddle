@@ -75,6 +75,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   durable, searchable record for diagnosis instead of vanishing. Collection is
   server-side only (no browser SDK, the share page stays JS-free), scrubbed of
   poem content and request cookies/headers, and off until configured.
+- Visible `:focus-visible` outlines, in a colour that meets AA non-text
+  contrast in both light and dark, on every focusable control including the
+  CodeMirror editor. A line next to the editor documents its Esc-then-Tab
+  escape hatch (press Esc, then Tab, to move focus out of the editor instead
+  of indenting).
 
 ### Changed
 

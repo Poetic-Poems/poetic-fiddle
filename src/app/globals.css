@@ -5,6 +5,10 @@
   --foreground: #1b1730;
   --brand-primary: #534ab7;
   --brand-accent: #c88a3a;
+  /* Brand-primary purple meets 3:1 contrast against the light background
+     but not against the dark one, so the dark scheme below swaps it for
+     the accent gold, which is the reverse (AC76 non-text contrast). */
+  --focus-ring: var(--brand-primary);
 }
 
 @theme inline {
@@ -20,6 +24,7 @@
   :root {
     --background: #17132a;
     --foreground: #efeaf8;
+    --focus-ring: var(--brand-accent);
   }
 }
 
@@ -27,4 +32,20 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* CodeMirror sets `.cm-content { outline: none }` and instead outlines the
+   `.cm-editor` wrapper whenever it has focus (`.cm-focused`, not just
+   `:focus-visible`) so the ring isn't clipped by the scrollable content
+   box. The `#poem-source` id (set on the wrapping div, see Editor.tsx)
+   raises specificity enough to override that default outline colour. */
+#poem-source .cm-editor.cm-focused {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }

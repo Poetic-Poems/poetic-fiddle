@@ -1,6 +1,24 @@
-import { describe, expect, it } from "vitest";
-import { tryRenderPoem } from "./Editor";
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import Editor, { tryRenderPoem } from "./Editor";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
+
+vi.mock("@/lib/use-session", () => ({
+  useSession: () => null,
+}));
+
+vi.mock("@/lib/supabase-client", () => ({
+  supabase: { auth: { signOut: vi.fn() } },
+}));
+
+describe("Editor keyboard operability (AC75, AC79)", () => {
+  it("documents the Esc-then-Tab escape hatch next to the editor", () => {
+    render(<Editor poeticCss="" />);
+    expect(
+      screen.getByText(/Press Esc, then Tab, to move focus out of it/),
+    ).toBeInTheDocument();
+  });
+});
 
 describe("tryRenderPoem", () => {
   it("renders the example poem", () => {
