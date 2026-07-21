@@ -23,7 +23,7 @@
     "@codemirror/language": "^6.12.4",
     "@lezer/highlight": "^1.2.3",
     "@sentry/nextjs": "^10.66.0",
-    "@supabase/supabase-js": "^2.110.7",
+    "@supabase/supabase-js": "^2.110.8",
     "@uiw/react-codemirror": "^4.25.11",
     "codemirror": "^6.0.2",
     "dompurify": "^3.4.12",
@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^26.1.1",
