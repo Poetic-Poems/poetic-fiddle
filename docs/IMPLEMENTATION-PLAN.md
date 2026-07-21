@@ -518,11 +518,11 @@ public launch, **P2** soon after, **P3** insurance/polish.
 - **W8 (P1, S)** — **Standalone AUP page** (D40, AC111). Acceptable use lives
   only as a section inside Terms; D40 wants a short standalone published
   policy. Extract to `/aup` (or `/acceptable-use`) and link it in the footer.
-- **W9 (P1, S) [human]** — **Takedown address + process** (D40, AC116). No
-  dedicated takedown/abuse contact is published. Warwick picks the mailbox
-  (e.g. `takedown@poeticfiddle.com` forwarding, or the existing address,
-  which requires no new infrastructure); an agent then publishes address +
-  process in the AUP/legal pages.
+- **W9 (P1, S)** — **Takedown address + process** (D40, AC116). No dedicated
+  takedown/abuse contact is published. Mailbox **decided 2026-07-21**:
+  `takedown@poeticfiddle.com` — the domain's existing catch-all already
+  delivers it, so no new infrastructure. Publish the address and a short
+  takedown process in the AUP/legal pages.
 - **W10 (P1, S)** — **Breach-handling statement** (AC118). Nothing user-facing
   today. Add wording to the Privacy Policy per the NZ notifiable-breach
   scheme (REQUIREMENTS.md §15).
@@ -545,10 +545,16 @@ public launch, **P2** soon after, **P3** insurance/polish.
   favicons are a bare `favicon.ico` + `icon.svg`. Make the logo respect
   theme (currentColor or media-query variant), add apple-touch/manifest
   icons. Visual change — flag the PR for Warwick's eye.
-- **W16 (P3, M) [human]** — **Keep-alive cron + O4 monitors** (§6.5, AC93;
+- **W16 (P3, M)** — **Keep-alive cron + O4 monitors** (§6.5, AC93;
   OBSERVABILITY-PLAN O4). Deliberately dormant insurance; nothing built. When
   picked up: heartbeat route + `vercel.json` cron + uptime monitor per the
-  §6.5 decision; Warwick sets the `CRON_SECRET` env var in Vercel.
+  §6.5 decision. `CRON_SECRET` is **already set in Vercel (2026-07-21)** —
+  a value we minted ourselves, not one Vercel issues; Vercel replays it on
+  every cron invocation as `Authorization: Bearer <value>`, and the
+  heartbeat route must reject any request not carrying it, so outsiders
+  cannot trigger the endpoint. Vercel is its only home: the route reads the
+  same env var at runtime, so nothing is added to the repo, GitHub secrets,
+  or Supabase.
 
 **MVP non-goals to verify absent (AC30–AC32, AC48–AC51, AC101–AC103):** no
 publishing/GitHub/Blogger UI, no collections/site-config, no realtime
@@ -948,8 +954,8 @@ one column and one click, addable without touching anything else.
 
 13. **Work through W1–W16** — the M8/M9 remainder, decomposed in §4
     ("M8/M9 — remaining work, decomposed into selectable items") into
-    discrete, one-PR items. All are agent-selectable except the single
-    human step inside each of W9 and W16.
+    discrete, one-PR items. All are agent-selectable; the one human
+    prerequisite (Vercel's `CRON_SECRET`, W16) was set 2026-07-21.
 
 With M0–M7 delivered and §6 resolved, **the W-items of §4 are the immediate
 next step**, P1 items first.
