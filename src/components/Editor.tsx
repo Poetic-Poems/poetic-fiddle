@@ -533,6 +533,10 @@ export default function Editor({
               Syntax reference
             </a>
           </div>
+          <p className="text-xs text-foreground/70">
+            Tab indents inside the editor. Press Esc, then Tab, to move focus
+            out of it instead.
+          </p>
           <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-black/10 dark:border-white/10">
             <CodeMirror
               id="poem-source"
