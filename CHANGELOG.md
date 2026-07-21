@@ -141,3 +141,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   via an `overrides` entry, resolving a medium-severity XSS via unescaped
   `</style>` in CSS Stringify Output
   ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)).
+- Added a site-wide `Content-Security-Policy` header (`next.config.ts`) for
+  the app's own pages (editor, dashboard, legal), restricting scripts,
+  styles, connections, and framing to the app's own origin plus Supabase.
+  The share page's sandboxed iframe keeps its own, separate CSP.
