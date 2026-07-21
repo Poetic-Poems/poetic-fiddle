@@ -160,4 +160,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071805 | `database.yml`'s live-migration push is failing silently | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/70 |
 | TD26071901 | jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require | open | | |
 | TD26071902 | `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/72 |
-| TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | open | | |
+| TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | in-progress | | |
