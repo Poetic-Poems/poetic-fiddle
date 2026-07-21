@@ -86,12 +86,21 @@ so `@exodus/bytes` leaves the tree entirely and there is no ESM `require` left
 to fail. The pin is referenced from a comment at the jsdom import in
 `src/lib/render-share.ts`.
 
+Dependabot PR #79 bumped jsdom 26.1.0 → 29.1.1 anyway — a `^26.0.0` range in
+`package.json` doesn't stop Dependabot from *proposing* a major bump, only
+from a plain `npm update` picking one silently — and merging it regressed
+this exact 500 in production (issue #86). `.github/dependabot.yml` now has an
+`ignore` rule for jsdom `semver-major` updates, so Dependabot itself can no
+longer open that PR; a manual bump remains possible and must not land without
+re-checking this entry first.
+
 Fix (to lift the pin): bump jsdom once either Turbopack bundles jsdom rather
 than externalising it, or its ESM deps can be `require()`d in this runtime
 (e.g. jsdom ships a CJS-compatible path again). Alternatively, move the
 share-page sanitiser off jsdom onto a bundler-friendly DOM (e.g. linkedom),
 which would remove the constraint but is a change to a security-sensitive
-sanitisation boundary and needs its own careful review.
+sanitisation boundary and needs its own careful review. Either way, remove
+the `dependabot.yml` ignore rule in the same change.
 
 ## Ledger
 

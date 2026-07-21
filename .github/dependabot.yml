@@ -10,3 +10,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # jsdom is pinned to 26.x: 27+ pulls in the ESM-only @exodus/bytes via
+      # html-encoding-sniffer@6, which 500s /share/<id> at runtime on Vercel
+      # (ERR_REQUIRE_ESM under Turbopack's server build). See TECH-DEBT.md
+      # TD26071901 and issue #86 before lifting this.
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]
