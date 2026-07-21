@@ -133,6 +133,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   module load can no longer fail. (The "when not authenticated" framing in the
   report was incidental — the signed-out SSR path was simply where it was first
   noticed.)
+- Shared poem links render again after a second regression (#86): a Dependabot
+  PR bumped jsdom past the 26.x pin above, reintroducing the same `/share/<id>`
+  500 in production. The pin is restored, and Dependabot is now configured to
+  ignore jsdom major-version updates so it can't silently propose that bump
+  again.
 
 ### Security
 
