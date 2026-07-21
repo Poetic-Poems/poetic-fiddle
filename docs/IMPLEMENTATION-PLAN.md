@@ -468,9 +468,87 @@ cross-cutting NFRs (§12). Each milestone is independently reviewable/PR-able.
 - Branding assets: logo **light + dark** variants (AC106), favicon set, wordmark;
   warm/literary voice in UI copy (AC107).
 - Domain `www.poeticfiddle.com` over HTTPS (D34, AC108) — **done** (§6.3);
-  **auth-email DNS** (SPF/DKIM/DMARC) so magic links deliver still outstanding
-  (AC109).
+  **auth-email DNS** (AC109) — **done** via TD26071601/§6.4: SMTP2GO CNAMEs are
+  in the zone (link-tracking CNAME and `p=reject` DMARC observable in public
+  DNS), and delivery to a non-team address was confirmed 2026-07-16.
 - **ACs:** AC92, AC104–AC118.
+
+### M8/M9 — remaining work, decomposed into selectable items
+
+An as-built audit (2026-07-21, against `main` @ `10a4167`) found the following
+M8/M9 items already delivered with their surfaces: render-boundary
+sanitisation on both preview and SSR share (AC85's sanitisation half), embed
+allow-list + sandboxed iframes (AC86), secrets server-only (AC88), SSR share
+caching with edit-time invalidation via cache tags (AC81–AC82), no third-party
+analytics (AC91, AC103), observability O1–O3, and the M9 items ToS + Privacy
+published and linked, operator named (AC110), content-licence wording (AC112),
+min-age in legal pages, and domain + auth-email DNS (AC108–AC109).
+
+What follows is the remainder, as discrete items an agent can select and
+finish in one PR each. Items marked **[human]** need Warwick for at least one
+step; everything else is agent-selectable as-is. Priorities: **P1** before
+public launch, **P2** soon after, **P3** insurance/polish.
+
+- **W1 (P1, M)** — **Site-wide CSP headers** (AC85). The only CSP today is the
+  `<meta>` inside the share iframe's srcDoc (`SharedPoemView.tsx`). Add a
+  strict CSP for the app's own pages via `headers()` in `next.config.ts`
+  (App-Router inline-script and CodeMirror inline-style allowances will need
+  care — consider starting `Content-Security-Policy-Report-Only`).
+- **W2 (P1, S)** — **Keyboard operability** (AC75, AC79). CodeMirror captures
+  Tab with no documented escape (`Editor.tsx` mounts `<CodeMirror>` with no
+  keymap config); no visible custom focus styles exist. Add the standard
+  Esc-then-Tab escape hatch, document it in the UI, and add `:focus-visible`
+  styles in `globals.css`.
+- **W3 (P1, S)** — **`prefers-reduced-motion`** (AC78). Zero occurrences in
+  code today. Audit transitions/animations and gate them.
+- **W4 (P1, S)** — **AA contrast verification, light + dark** (AC76). Colour
+  tokens in `globals.css` have never been contrast-checked. Verify all
+  token pairings, fix failures, and add an automated contrast test so
+  regressions fail CI.
+- **W5 (P1, S)** — **320 px / 200 % reflow** (AC77). Responsive utilities
+  exist but nothing targets the AC's 320 px floor. Verify every page at
+  320 px width and 200 % zoom; fix overflow/clipping.
+- **W6 (P1, M)** — **Mobile source/preview toggle** (AC26, AC83). Desktop
+  split-pane is in (`Editor.tsx` `lg:grid-cols-2`) but mobile renders a
+  vertical stack, not the planned toggle. Add a source/preview switch below
+  the `lg` breakpoint.
+- **W7 (P1, S)** — **Terms page stale copy**. `terms/page.tsx` still says
+  Save and Share "aren't available yet" — they shipped (M5/M6). Re-read the
+  whole page against as-built behaviour, not just that line.
+- **W8 (P1, S)** — **Standalone AUP page** (D40, AC111). Acceptable use lives
+  only as a section inside Terms; D40 wants a short standalone published
+  policy. Extract to `/aup` (or `/acceptable-use`) and link it in the footer.
+- **W9 (P1, S) [human]** — **Takedown address + process** (D40, AC116). No
+  dedicated takedown/abuse contact is published. Warwick picks the mailbox
+  (e.g. `takedown@poeticfiddle.com` forwarding, or the existing address,
+  which requires no new infrastructure); an agent then publishes address +
+  process in the AUP/legal pages.
+- **W10 (P1, S)** — **Breach-handling statement** (AC118). Nothing user-facing
+  today. Add wording to the Privacy Policy per the NZ notifiable-breach
+  scheme (REQUIREMENTS.md §15).
+- **W11 (P2, S)** — **Surface min-age 16 at sign-up** (D39, AC115). The age
+  term exists in Terms/Privacy but `SignInPrompt.tsx` never mentions it. Add
+  the one-line prompt wording.
+- **W12 (P1, M)** — **Poem deletion** (AC92, first half). `poems-store.ts` has
+  save/list/load/share/unshare/remix but no delete; the dashboard has no
+  delete control. Add poem deletion that also revokes any share link and
+  invalidates the share cache tag.
+- **W13 (P1, L)** — **Account deletion** (AC92, second half). Today deletion
+  is by email request only. Add self-service account deletion propagating to
+  all surfaces (poems, shares, profile) — needs a server-side route using the
+  service-role key, so treat as a security-sensitive change with its own
+  careful review.
+- **W14 (P2, M)** — **Data export** (AC92). No export flow exists. Add
+  download-my-data (poems + profile as JSON/`.poem` files).
+- **W15 (P2, S–M)** — **Branding: theme-aware logo + favicon set** (AC106).
+  `poetic-fiddle-logo.svg` has hard-coded fills and no dark variant;
+  favicons are a bare `favicon.ico` + `icon.svg`. Make the logo respect
+  theme (currentColor or media-query variant), add apple-touch/manifest
+  icons. Visual change — flag the PR for Warwick's eye.
+- **W16 (P3, M) [human]** — **Keep-alive cron + O4 monitors** (§6.5, AC93;
+  OBSERVABILITY-PLAN O4). Deliberately dormant insurance; nothing built. When
+  picked up: heartbeat route + `vercel.json` cron + uptime monitor per the
+  §6.5 decision; Warwick sets the `CRON_SECRET` env var in Vercel.
 
 **MVP non-goals to verify absent (AC30–AC32, AC48–AC51, AC101–AC103):** no
 publishing/GitHub/Blogger UI, no collections/site-config, no realtime
@@ -868,8 +946,13 @@ one column and one click, addable without touching anything else.
     override (`poems.allow_remix`), with dashboard and editor controls (see
     §4).
 
-With M0–M7 delivered and §6 resolved, **M8/M9's remaining non-functional and
-legal items are the immediate next step**; see §4's M8/M9 entries.
+13. **Work through W1–W16** — the M8/M9 remainder, decomposed in §4
+    ("M8/M9 — remaining work, decomposed into selectable items") into
+    discrete, one-PR items. All are agent-selectable except the single
+    human step inside each of W9 and W16.
+
+With M0–M7 delivered and §6 resolved, **the W-items of §4 are the immediate
+next step**, P1 items first.
 
 ---
 
