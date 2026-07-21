@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import CodeMirror from "@uiw/react-codemirror";
+import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { renderPoem } from "poetic/browser";
 import { poemLanguage, poemSyntaxHighlighting } from "@/lib/poem-syntax";
 import { PoemPreview } from "@/components/PoemPreview";
@@ -19,10 +19,9 @@ import {
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { supabase } from "@/lib/supabase-client";
 import { useSession } from "@/lib/use-session";
+import { useNonce } from "@/lib/nonce-context";
 
 const DEBOUNCE_MS = 200;
-
-const EXTENSIONS = [poemLanguage, poemSyntaxHighlighting];
 
 export function tryRenderPoem(
   text: string,
@@ -88,6 +87,18 @@ export default function Editor({
     undefined,
   );
   const prefersDark = usePrefersDark();
+  // CodeMirror's style-mod injects the editor's styles as an inline <style>
+  // tag; passing the request's CSP nonce here is what lets style-src drop
+  // 'unsafe-inline' (TECH-DEBT.md TD26072101).
+  const nonce = useNonce();
+  const extensions = useMemo(
+    () => [
+      poemLanguage,
+      poemSyntaxHighlighting,
+      EditorView.cspNonce.of(nonce ?? ""),
+    ],
+    [nonce],
+  );
   const session = useSession();
   const [migratedUserId, setMigratedUserId] = useState<string | null>(null);
   const [poemId, setPoemId] = useState<string | null>(null);
@@ -543,7 +554,7 @@ export default function Editor({
               value={source}
               height="100%"
               theme={prefersDark ? "dark" : "light"}
-              extensions={EXTENSIONS}
+              extensions={extensions}
               onChange={handleChange}
             />
           </div>

@@ -155,3 +155,5 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the app's own pages (editor, dashboard, legal), restricting scripts,
   styles, connections, and framing to the app's own origin plus Supabase.
   The share page's sandboxed iframe keeps its own, separate CSP.
+- Tightened that CSP: `script-src` and `style-src` now carry a nonce minted
+  fresh per request (`src/proxy.ts`) instead of `'unsafe-inline'`.
