@@ -31,7 +31,7 @@
     "next": "16.2.10",
     "poetic": "https://github.com/Poetic-Poems/poetic/releases/download/v6.1.1/poetic-6.1.1.tgz",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
