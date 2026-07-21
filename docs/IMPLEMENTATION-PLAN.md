@@ -489,11 +489,6 @@ finish in one PR each. Items marked **[human]** need Warwick for at least one
 step; everything else is agent-selectable as-is. Priorities: **P1** before
 public launch, **P2** soon after, **P3** insurance/polish.
 
-- **W2 (P1, S)** — **Keyboard operability** (AC75, AC79). CodeMirror captures
-  Tab with no documented escape (`Editor.tsx` mounts `<CodeMirror>` with no
-  keymap config); no visible custom focus styles exist. Add the standard
-  Esc-then-Tab escape hatch, document it in the UI, and add `:focus-visible`
-  styles in `globals.css`.
 - **W3 (P1, S)** — **`prefers-reduced-motion`** (AC78). Zero occurrences in
   code today. Audit transitions/animations and gate them.
 - **W4 (P1, S)** — **AA contrast verification, light + dark** (AC76). Colour
