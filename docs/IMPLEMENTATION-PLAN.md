@@ -489,11 +489,6 @@ finish in one PR each. Items marked **[human]** need Warwick for at least one
 step; everything else is agent-selectable as-is. Priorities: **P1** before
 public launch, **P2** soon after, **P3** insurance/polish.
 
-- **W1 (P1, M)** — **Site-wide CSP headers** (AC85). The only CSP today is the
-  `<meta>` inside the share iframe's srcDoc (`SharedPoemView.tsx`). Add a
-  strict CSP for the app's own pages via `headers()` in `next.config.ts`
-  (App-Router inline-script and CodeMirror inline-style allowances will need
-  care — consider starting `Content-Security-Policy-Report-Only`).
 - **W2 (P1, S)** — **Keyboard operability** (AC75, AC79). CodeMirror captures
   Tab with no documented escape (`Editor.tsx` mounts `<CodeMirror>` with no
   keymap config); no visible custom focus styles exist. Add the standard
