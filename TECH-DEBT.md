@@ -102,32 +102,6 @@ which would remove the constraint but is a change to a security-sensitive
 sanitisation boundary and needs its own careful review. Either way, remove
 the `dependabot.yml` ignore rule in the same change.
 
-### TD26072101 Site-wide CSP allows `'unsafe-inline'` for script-src and style-src
-
-*Filed 2026-07-21, scaffolding W1 (site-wide CSP headers, AC85's CSP half).*
-The `Content-Security-Policy` header set in `next.config.ts`'s `headers()`
-carries `script-src 'self' 'unsafe-inline'` and `style-src 'self'
-'unsafe-inline'`. Two independent things need an inline allowance today: the
-App Router embeds its RSC hydration payload as inline `<script>` tags on every
-page, and CodeMirror (via `style-mod`) injects the editor's styles as an
-inline `<style>` tag. Neither can be tightened from `next.config.ts` alone —
-`headers()` returns a static value with no way to mint a fresh nonce per
-request.
-
-Poem content itself never reaches this top-level document unsanitised (it's
-always rendered inside a sandboxed, script-less iframe — `PoemPreview.tsx` /
-`SharedPoemView.tsx`), so this doesn't reopen AC85's actual threat model, but
-it is weaker than a nonce-based policy would be.
-
-Fix: add `middleware.ts` that mints a per-request nonce, sets it on both the
-outgoing `Content-Security-Policy` header (`script-src 'self'
-'nonce-<value>'`) and an `x-nonce` request header, and read that header in
-`src/app/layout.tsx` to pass the nonce through wherever Next.js supports it
-([Next.js CSP docs](https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy)).
-`style-mod`'s `StyleModule.mount` also accepts a `nonce` option (see
-`node_modules/style-mod`) — CodeMirror's mount call in `Editor.tsx` would need
-to pass the same nonce through for `style-src` to drop `'unsafe-inline'` too.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -160,4 +134,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071805 | `database.yml`'s live-migration push is failing silently | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/70 |
 | TD26071901 | jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require | open | | |
 | TD26071902 | `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/72 |
-| TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | in-progress | | |
+| TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | resolved | 2026-07-22 | https://github.com/Poetic-Poems/poetic-fiddle/pull/95 |
