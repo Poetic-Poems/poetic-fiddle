@@ -80,6 +80,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   CodeMirror editor. A line next to the editor documents its Esc-then-Tab
   escape hatch (press Esc, then Tab, to move focus out of the editor instead
   of indenting).
+- A `prefers-reduced-motion: reduce` safety net in `globals.css` that
+  suppresses CSS transitions/animations app-wide for users who request it
+  (AC78).
 
 ### Changed
 
