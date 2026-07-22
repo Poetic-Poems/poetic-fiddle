@@ -49,3 +49,21 @@ body {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
+
+/* AC78: suppress non-essential motion for users with `prefers-reduced-motion`
+   set. No CSS transition/animation exists in the app's own styles today (the
+   editor's blinking text cursor is CodeMirror's default focus indicator, not
+   decorative motion, so AC78's own "non-essential" carve-out doesn't apply to
+   it) — this is a standing safety net so anything added later is gated
+   automatically, and the `motion-safe:`/`motion-reduce:` Tailwind variants
+   remain the way to gate any future component-level animation explicitly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
