@@ -62,6 +62,55 @@ If a claim is abandoned, close the draft PR and delete the `td/<id>` branch —
 that releases the lock. The in-progress flip only ever lived on the branch,
 so `main`'s Ledger still says `open` and nothing needs reverting.
 
+## Review provenance
+
+Where a Current Items entry mirrors the *whole* intended end state of a
+weekly project-review recommendation, that mapping is recorded here so the
+review and the register aren't double-counted — the implementation
+pipeline's Co-Ordinator uses this to know the register entry and the
+recommendation are the same work.
+
+| Recommendation | Ledger ID |
+|----------------|-----------|
+| R-01 — Bump `next` to `16.2.11` | TD26072403 |
+| R-02 — Add an accessible name to the CodeMirror editor | TD26072404 |
+| R-03 — Require CI status checks in the branch-protection ruleset | TD26072405 |
+| R-04 — Correct CLAUDE.md's Status section | TD26072406 |
+| R-05 — Correct the Privacy Policy's "storage isn't available yet" claim | TD26072407 |
+| R-06 — Guard against missing Supabase env vars breaking the editor silently | TD26072408 |
+| R-07 — Align Node version across README/`engines`/`.nvmrc` | TD26072409 |
+| R-08 — Route `SignInPrompt` errors through the safe-message convention | TD26072410 |
+| R-09 — Add timeout/abort handling to outbound Supabase calls | TD26072411 |
+| R-10 — Add tests for `use-session.ts` and `SharedPoemView`'s `escapeHtml` | TD26072412 |
+| R-11 — Capture `revalidateSharedPoem` failures in Sentry | TD26072413 |
+| R-12 — Add a self-service "delete poem" action | TD26072414 |
+| R-13 — Pin exact Supabase CLI / npm versions in CI | TD26072415 |
+| R-14 — Fix parse-error contrast and add a visible share-page heading | TD26072416 |
+| R-15 — Document the local-only Supabase dev workflow in README | TD26072417 |
+| R-16 — Add `CONTRIBUTING.md` and PR/issue templates | TD26072418 |
+| R-17 — Document the CODEOWNERS single-reviewer reality | TD26072419 |
+| R-18 — Trim the historical-narrative blockquote from OBSERVABILITY-PLAN.md | TD26072420 |
+| R-19 — Add a `poetic`-release freshness-check workflow | TD26072421 |
+| R-20 — Reconcile CHANGELOG.md and GitHub release notes at release time | TD26072422 |
+| R-21 — Extract Editor.tsx's persistence/session orchestration into a hook | TD26072423 |
+| R-22 — Add a cross-tool-seam test for the Analysis-toggle DOM wiring | TD26072424 |
+| R-23 — Debounce draft-autosave localStorage writes | TD26072425 |
+| R-24 — Code-quality quick wins | TD26072426 |
+| R-25 — Security polish | TD26072427 |
+| R-26 — Add test coverage tooling and a watch-mode script | TD26072428 |
+| R-27 — Document the undocumented TypeScript/ESLint major-version holds | TD26072429 |
+| R-28 — README/tooling polish | TD26072430 |
+| R-29 — Editor/dashboard loading & feedback polish | TD26072431 |
+| R-30 — Doc polish | TD26072432 |
+| R-31 — Document backup/restore and export/delete runbooks | TD26072433 |
+| R-32 — Shared sanitisation-policy constant between preview and share pipelines | TD26072434 |
+| R-33 — Add automated accessibility testing (axe smoke test) | TD26072435 |
+
+Full evidence, impact, and rationale for each item live in
+`reviews/project-review-2026-07-23/02-findings.md` and
+`03-recommendations.md`; the entries below summarise them for readers who
+only have this file.
+
 ## Current Items
 
 The open and in-progress items, each as a `### <id> <title>` section. This
@@ -102,6 +151,384 @@ which would remove the constraint but is a change to a security-sensitive
 sanitisation boundary and needs its own careful review. Either way, remove
 the `dependabot.yml` ignore rule in the same change.
 
+### TD26072403 `next` is one patch behind on advisories affecting Server Actions
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-01, F-SEC-01, F-DEPS-01).*
+`package.json` pins `next@16.2.10`; `npm audit` reports 3 high-severity
+advisories fixed in `16.2.11`, several scoped to Server Actions handling and
+the proxy/middleware layer. `src/lib/revalidate-share.ts` has a live `"use
+server"` export called from `Editor.tsx` on every save of a shared poem, so
+this is reachable, not dormant. Neither a Dependabot PR nor a Dependabot
+alert has surfaced it yet — `eslint-config-next` was bumped in lockstep in
+PR #94, `next` itself was not.
+
+Fix: `npm install next@16.2.11` (or later), run the full check suite, and
+confirm `npm audit` no longer reports the three advisories.
+
+### TD26072404 CodeMirror editor has no accessible name for screen readers
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-02, F-UX-01).*
+`Editor.tsx`'s `<label htmlFor="poem-source">` targets an `id` that
+CodeMirror's React wrapper places on the outer `<div>`, not on the actual
+`role="textbox"` editable element, which has no `aria-label`.
+`docs/REQUIREMENTS.md` AC79 requires the editor be labelled; PR #89 closed
+that backlog entry without fixing the labelling.
+
+Fix: add `EditorView.contentAttributes.of({ "aria-label": "Your poem" })` to
+the CodeMirror `extensions` array; add a `getByRole`/`getByLabelText`
+assertion to `Editor.test.tsx`.
+
+### TD26072405 Branch protection doesn't require CI to pass before merge
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-03, F-CI-01).* The
+active ruleset (`rulesets/18828479`) requires code-owner review, CodeQL, and
+Copilot code-quality, but has no `required_status_checks` rule — so
+`build.yml`, `commit-format.yml`, and `database.yml`'s `test` job can all be
+red and a PR is still mergeable, contradicting CLAUDE.md's own description
+of the gate ("gated by a PR and CI").
+
+Fix: add a `required_status_checks` rule to the ruleset naming `build`,
+`commit-format`, and `database.yml`'s `test` job.
+
+### TD26072406 CLAUDE.md's Status section understates what's built
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-04, F-DOC-01).*
+CLAUDE.md's Status section says the data layer (save, dashboard, share) "is
+not yet" built. It is — `poems-store.ts`, `PoemsDashboard.tsx`, and the
+share/remix routes are all implemented, tested, and live, and
+`docs/IMPLEMENTATION-PLAN.md` (which CLAUDE.md itself cites) already marks
+those milestones done. An agent trusting CLAUDE.md's line could duplicate
+shipped work or misjudge project maturity.
+
+Fix: rewrite the Status section to name the current milestone and the
+actual remaining ("not yet") hardening work.
+
+### TD26072407 Privacy Policy says poem storage "isn't available yet," but it's live
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-05, F-DATA-01).*
+`src/app/privacy/page.tsx`'s "Saving and sharing poems" section tells
+visitors poem/account storage isn't available yet. `poems-store.ts` has a
+fully wired, unflagged save/share/list/load flow against live tables,
+exercised in production. Rated above what the project's maturity alone
+would suggest, since the harm (a false statement about whether creative
+writing is persisted) reaches the user's actual expectations.
+
+Fix: update the section to present-tense, accurate language; cross-check
+the "delete at any time" promise against actual capability (TD26072414).
+
+### TD26072408 Missing `.env.local` breaks the editor silently, client-side only
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-06, F-TOOL-01).*
+`src/lib/supabase-client.ts` throws at module-evaluation time if the
+`NEXT_PUBLIC_SUPABASE_*` vars are unset. Because `Editor` loads via
+`next/dynamic(..., { ssr: false })`, `npm run dev` starts cleanly and serves
+HTTP 200 with no visible error — the throw only fires in the browser
+console. README sequences env setup after the commands table, not before
+it.
+
+Fix: add a `src/app/error.tsx` recognising this specific error with an
+actionable message; reorder README so env setup precedes `npm run dev`.
+
+### TD26072409 Node version guidance disagrees across README/`engines`/no `.nvmrc`
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-07, F-DEPS-03,
+F-DOC-02, F-TOOL-05).* `package.json` pins `engines.node: "22.x"` (required
+by the jsdom `ERR_REQUIRE_ESM` issue below Node 22.12, TD26071901);
+README still says "Requires Node.js >=20.9"; no `.nvmrc` exists for version
+managers to auto-select the right version; no `engine-strict` in `.npmrc`.
+
+Fix: update README to `Requires Node.js 22.x`; add a one-line `.nvmrc`
+(`22`); adjust `scripts/setup-linux.sh`'s `nvm use node` to plain `nvm use`.
+
+### TD26072410 `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-08, F-CODE-02).*
+`poems-store.ts` wraps every Supabase-backed operation in a typed `Error`
+subclass with a message documented as safe to show a poet as-is.
+`SignInPrompt.tsx` shows raw `error.message` from Supabase Auth calls
+directly instead.
+
+Fix: route auth errors through the same safe-message pattern
+`poems-store.ts` uses.
+
+### TD26072411 No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-09, F-PERF-02,
+F-OPS-03).* No Supabase client configures a request timeout or
+`AbortController`, and `@supabase/postgrest-js`'s retry logic excludes
+non-idempotent methods (inserts/updates). A hung save leaves the UI stuck
+in "Saving…" until the hosting platform's own function timeout fires,
+bypassing the app's own typed-error recovery messaging.
+
+Fix: wrap the Supabase client's `fetch` (or individual `poems-store.ts`
+calls) with an `AbortController`-based timeout, translated into the
+existing typed error classes.
+
+### TD26072412 `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-10, F-TEST-01,
+F-TEST-02).* Every consumer mocks `useSession` entirely, so the hook
+gating all owner-scoped, RLS-backed operations is never exercised directly.
+`SharedPoemView.tsx`'s hand-rolled `escapeHtml`, which interpolates a
+poet-controlled title into a CSP-bearing HTML template, has zero coverage.
+
+Fix: add `src/lib/use-session.test.ts` and `SharedPoemView.test.tsx`
+covering both, per the review's recommendation for concrete test cases.
+
+### TD26072413 `revalidateSharedPoem` failures are silently swallowed with no Sentry capture
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-11, F-OPS-01).*
+Three call sites in `Editor.tsx` do
+`revalidateSharedPoem(...).catch(() => {})`. `docs/OBSERVABILITY-PLAN.md`
+already flags this exact gap as an open `[flag]` that was never resolved in
+code — a failed cache-tag invalidation can leave the share page stale for
+up to 5 minutes with zero record anywhere.
+
+Fix: wrap the call sites with the existing `reportSwallowedError` helper,
+resolving the plan's own open flag.
+
+### TD26072414 No self-service delete path for a poem, though the schema already supports it
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-12, F-DATA-02).*
+`poems-store.ts` exports no delete function, though the `poems_delete_own`
+RLS policy and grant already exist in the migration. Deletion today is
+manual, by emailing the maintainer.
+
+Fix: add a `deletePoem(id)` function and a confirmed delete action in
+`PoemsDashboard.tsx`.
+
+### TD26072415 CI floats the Supabase CLI and npm versions instead of pinning them
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-13, F-CI-03,
+F-CI-04).* `database.yml` installs the Supabase CLI via `version: latest`;
+`build.yml` installs npm via the floating `npm@12`. Both are the
+least-pinned parts of an otherwise carefully version-pinned pipeline, and
+this project already hit an npm-version-specific bug once (TD26071804).
+
+Fix: pin an exact Supabase CLI release in `database.yml`; pin an exact npm
+version (or record the verified major in `package.json`'s `engines.npm`).
+
+### TD26072416 Parse-error text fails AA contrast; share page has no visible heading
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-14, F-UX-02,
+F-UX-03).* `Editor.tsx`'s parse-error status text uses `text-amber-600`
+(≈3.18:1 on white, below the 4.5:1 AA threshold). `src/app/share/[share_id]/page.tsx`
+has no visible `<h1>` outside the sandboxed iframe. **Note:** open PR #99
+already fixes the contrast half (amber-600 → amber-700); check its status
+before starting — this item's remaining scope may be just the share-page
+heading.
+
+Fix: replace the contrast-failing colour with a checked token; render the
+poem title as a visible `<h1>` in the share page's own DOM.
+
+### TD26072417 README doesn't document the local-only Supabase dev workflow
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-15, F-TOOL-02).*
+README's "Environment & secrets" section only describes provisioning a live
+Supabase cloud project, though `supabase start` (already used by
+`database.yml`'s `test` job and the `test:db` script) gives a fully local,
+zero-cloud dev loop.
+
+Fix: add a short "Local-only Supabase" note to README.
+
+### TD26072418 No CONTRIBUTING file or PR/issue templates
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-16, F-GOV-01,
+F-GOV-02).* The project's contribution workflow (branch naming, commit
+format, PR-only changes) lives only in CLAUDE.md, framed as agent operating
+instructions rather than a human-facing guide, and isn't picked up by
+GitHub's own contribution-guide UI affordances.
+
+Fix: add a short root `CONTRIBUTING.md` pointing to CLAUDE.md's relevant
+sections, plus a minimal `.github/PULL_REQUEST_TEMPLATE.md`.
+
+### TD26072419 CODEOWNERS' two reviewer accounts appear to be the same person
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-17, F-GOV-03).*
+`@warwickallen` and `@Warwick-Allen` both satisfy the branch-protection
+rule's code-owner-review requirement, but review authorship, `mergedBy`,
+and LICENCE/CLAUDE.md's git user all point to the same individual — so the
+"independent review" the ruleset implies is procedurally self-approval
+through an alternate account.
+
+Fix: document explicitly that review is currently a single-human checkpoint
+under two accounts, or add a second genuine reviewer as the project grows.
+
+### TD26072420 OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-18, F-DOC-03).*
+A dated "Update (2026-07-19)" blockquote in `docs/OBSERVABILITY-PLAN.md`
+narrates the jsdom incident's resolution in past tense — the
+"previously.../fixed by..." phrasing CLAUDE.md's documentation principles
+reserve for `CHANGELOG.md`. The same incident is already narrated there and
+in `TD26071901`.
+
+Fix: trim the blockquote to a one-line as-built statement linking to
+TD26071901.
+
+### TD26072421 No mechanism detects a new `poetic` release
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-19, F-DEPS-02).*
+`poetic` installs from a pinned GitHub release-tarball URL, which
+Dependabot's npm updater can't track. No script/workflow polls
+`Poetic-Poems/poetic`'s releases for a newer tag than the one pinned.
+Currently up to date, so this is latent, not active.
+
+Fix: a scheduled workflow comparing the pinned version against `poetic`'s
+latest release, mirroring the existing `td-tooling-drift.yml` pattern.
+
+### TD26072422 CHANGELOG.md and GitHub release notes are unreconciled
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-20, F-CI-02).*
+`release.yml` creates releases with `--generate-notes` (PR-title bullets),
+independent of `CHANGELOG.md`'s manually curated `[Unreleased]` section.
+Nothing keeps the two in sync; they've already begun to diverge in spirit.
+
+Fix: have `release.yml` pull its body from `CHANGELOG.md`'s section for the
+version being tagged, or add a check that a version-bump PR renames
+`[Unreleased]`.
+
+### TD26072423 `Editor.tsx` mixes five concerns in one 581-line component
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-21, F-ARCH-02,
+F-CODE-01).* `Editor.tsx` owns 13 state/ref hooks, session-migration logic,
+draft persistence, debounced rendering, and four independent Supabase-backed
+save/share/unshare/allow-remix flows. Currently proportionate (thoroughly
+tested, well-commented) but a real god-object risk as Phase 2 features land.
+
+Fix: extract the non-presentational state machine into one or more hooks
+(e.g. `usePoemPersistence`), incrementally and test-driven.
+
+### TD26072424 Analysis-toggle DOM wiring is tested only against a hand-authored fixture
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-22, F-ARCH-01).*
+`PoemPreview.tsx`'s `wireAnalysisToggles`, shared by the live preview and
+the share page, is tested only against a hand-copied fixture string, never
+real `poetic` output — the same cross-tool-seam gap that already caused two
+resolved incidents (TD26071401, TD26071602).
+
+Fix: add a test piping real `.poem` source with an `{Analysis}` block
+through `renderPoem()` and `wireAnalysisToggles`, mirroring
+`render-share.test.ts`'s pattern.
+
+### TD26072425 Draft autosave writes to localStorage synchronously on every keystroke
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-23, F-PERF-01).*
+`saveDraft` runs on every `onChange` event with no debounce, while the more
+expensive `renderPoem()` call one line below is debounced to 200ms. Not
+currently user-visible, but the asymmetry is real.
+
+Fix: fold `saveDraft` into the same or a shorter debounce as the render
+call.
+
+### TD26072426 Code-quality quick wins (test boilerplate, error-message helper, PageHeader)
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-24, F-CODE-03,
+F-CODE-04, F-CODE-05).* Six `Editor.*.test.tsx` files repeat identical
+mock/fixture boilerplate; `err instanceof Error ? err.message : String(err)`
+is duplicated 10 times; three route components inline the same page-header
+JSX.
+
+Fix: factor shared test mocks into `editor-test-support.ts`; extract an
+`errorMessage()` helper; extract a `PageHeader` component if a fourth route
+needs it.
+
+### TD26072427 Unauthenticated cache-bust action; weak minimum password length
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-25, F-SEC-02,
+F-SEC-03).* `revalidateSharedPoem` has no authorization check before
+invalidating a share page's cache tag (low-impact given the token's
+entropy). `SignInPrompt.tsx` allows 6-character passwords with no strength
+guidance.
+
+Fix: no change needed to `revalidateSharedPoem` unless this pattern is
+reused for a less entropy-rich identifier; raise password `minLength` to
+~8-10.
+
+### TD26072428 No test coverage tooling or watch-mode script
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-26, F-TEST-03,
+F-TEST-04).* No coverage tool is configured anywhere; `package.json`'s only
+test script is a single-shot `vitest run`.
+
+Fix: add `@vitest/coverage-v8` and a `coverage` script; add a `test:watch`
+script.
+
+### TD26072429 Undocumented TypeScript/ESLint major-version holds
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-27, F-DEPS-04).*
+`typescript` (two majors behind) and `eslint` (one major behind) both had
+Dependabot bump PRs closed unmerged with no recorded reason, unlike
+jsdom's well-documented TD26071901 hold.
+
+Fix: trial each bump; merge if clean, or record the specific breakage as a
+dated entry matching jsdom's style.
+
+### TD26072430 README/tooling polish (missing scripts, WSL pointer, postinstall error message)
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-28, F-TOOL-03,
+F-TOOL-04, F-TOOL-06).* README's commands table omits `start`/`test:db`;
+the WSL npm-shadowing workaround (`scripts/setup-linux.sh`) is undocumented
+outside its own header and an agent-only skill file;
+`sync-poetic-css.mjs`'s postinstall step fails with a raw stack trace
+instead of an actionable message.
+
+Fix: add the missing README rows; add a WSL pointer; wrap
+`sync-poetic-css.mjs`'s `require.resolve` in `try`/`catch`.
+
+### TD26072431 Editor/dashboard loading & feedback polish
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-29, F-UX-05,
+F-UX-06, F-UX-07).* `EditorClient`/`PoemsDashboardClient` render a blank
+gap until client JS hydrates (no `loading` fallback); `useSession()`'s
+async initial resolution can briefly show a false sign-in prompt to an
+already-signed-in poet; `SignInPrompt.tsx` gives no "in progress" feedback.
+
+Fix: pass a `loading` fallback to the `next/dynamic` calls; add a loading
+state to `useSession()`; add pending-state button text to `SignInPrompt.tsx`.
+
+### TD26072432 Doc polish (rejected-alternative narration, missing live-app link)
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-30, F-DOC-04,
+F-DOC-05).* `docs/TRIAGE.md` and `docs/SENTRY-AGENT-ACCESS.md` narrate
+rejected alternatives ("was trialled and dropped") with no as-built
+exemption. README never links the live app despite CHANGELOG.md
+documenting it as deployed.
+
+Fix: trim the rejected-alternative narration to one-liners; add a "Live
+at..." link to README.
+
+### TD26072433 No documented backup/restore or export/delete runbooks
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-31, F-OPS-02,
+F-DATA-03).* No document states the Supabase Pro project's actual
+backup/PITR coverage or restore steps, or the operational steps for
+fulfilling a privacy export/delete request.
+
+Fix: add a short paragraph on the actual backup/PITR guarantee; add a short
+internal runbook for export/delete requests, mirroring TRIAGE.md's style.
+
+### TD26072434 Two independently-maintained sanitisation pipelines, no shared policy constant
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-32, F-ARCH-03).*
+The live preview (`PoemPreview.tsx`) and the share page (`render-share.ts`)
+each independently configure DOMPurify and embed-activation logic for the
+same class of untrusted content, each commented with its own rationale but
+with no shared allow-list or config object between them.
+
+Fix: not urgent; when next touching either pipeline, factor the common
+baseline into a shared module.
+
+### TD26072435 No automated accessibility testing
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-33, F-UX-04).* No
+`axe-core`/`jest-axe`/`pa11y` tooling exists anywhere in the repo. Manual
+review already found real labelling and contrast defects (TD26072404,
+TD26072416) that green CI didn't catch.
+
+Fix: add a `vitest-axe` (or equivalent) smoke test over the Editor and
+Dashboard component trees.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -135,3 +562,36 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071901 | jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require | open | | |
 | TD26071902 | `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/72 |
 | TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | resolved | 2026-07-22 | https://github.com/Poetic-Poems/poetic-fiddle/pull/95 |
+| TD26072403 | `next` is one patch behind on advisories affecting Server Actions | open | | |
+| TD26072404 | CodeMirror editor has no accessible name for screen readers | open | | |
+| TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
+| TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
+| TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | open | | |
+| TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | open | | |
+| TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | open | | |
+| TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | open | | |
+| TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
+| TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
+| TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | open | | |
+| TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
+| TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | open | | |
+| TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | open | | |
+| TD26072417 | README doesn't document the local-only Supabase dev workflow | open | | |
+| TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
+| TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
+| TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | open | | |
+| TD26072421 | No mechanism detects a new `poetic` release | open | | |
+| TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
+| TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
+| TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
+| TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | open | | |
+| TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | open | | |
+| TD26072427 | Unauthenticated cache-bust action; weak minimum password length | open | | |
+| TD26072428 | No test coverage tooling or watch-mode script | open | | |
+| TD26072429 | Undocumented TypeScript/ESLint major-version holds | open | | |
+| TD26072430 | README/tooling polish (missing scripts, WSL pointer, postinstall error message) | open | | |
+| TD26072431 | Editor/dashboard loading & feedback polish | open | | |
+| TD26072432 | Doc polish (rejected-alternative narration, missing live-app link) | open | | |
+| TD26072433 | No documented backup/restore or export/delete runbooks | open | | |
+| TD26072434 | Two independently-maintained sanitisation pipelines, no shared policy constant | open | | |
+| TD26072435 | No automated accessibility testing | open | | |
