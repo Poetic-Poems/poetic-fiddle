@@ -10,10 +10,7 @@ export default function RemixNotFound() {
         Its poet hasn&rsquo;t enabled remixing — or the link is mistyped, or the
         poem is no longer shared. You can still write a poem of your own.
       </p>
-      <Link
-        href="/"
-        className="text-sm text-primary underline underline-offset-2"
-      >
+      <Link href="/" className="text-sm text-link underline underline-offset-2">
         Go to Poetic Fiddle
       </Link>
     </main>

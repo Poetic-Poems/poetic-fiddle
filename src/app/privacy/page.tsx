@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
             policy or your data, contact{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
             </a>
@@ -145,7 +145,7 @@ export default function PrivacyPolicy() {
             entirely, at any time by emailing{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
             </a>
@@ -184,7 +184,7 @@ export default function PrivacyPolicy() {
       </div>
 
       <p className="text-sm">
-        <Link href="/" className="text-primary underline underline-offset-2">
+        <Link href="/" className="text-link underline underline-offset-2">
           Back to the editor
         </Link>
       </p>

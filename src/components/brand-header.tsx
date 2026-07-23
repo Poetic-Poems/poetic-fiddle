@@ -10,7 +10,7 @@ export function BrandHeader() {
         height={34}
         priority
       />
-      <span className="font-serif text-xl font-semibold tracking-tight text-primary">
+      <span className="font-serif text-xl font-semibold tracking-tight text-link">
         Poetic Fiddle
       </span>
     </header>
