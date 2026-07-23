@@ -28,7 +28,7 @@ export default function TermsOfService() {
             terms, contact{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
             </a>
@@ -45,7 +45,7 @@ export default function TermsOfService() {
             agree to them, please don&rsquo;t use the service. See also our{" "}
             <Link
               href="/privacy"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Privacy Policy
             </Link>
@@ -88,7 +88,7 @@ export default function TermsOfService() {
               and for what happens under your account. Tell us at{" "}
               <a
                 href="mailto:warwick@datumprocess.co.nz"
-                className="text-primary underline underline-offset-2"
+                className="text-link underline underline-offset-2"
               >
                 warwick@datumprocess.co.nz
               </a>{" "}
@@ -151,14 +151,14 @@ export default function TermsOfService() {
             You can delete your account and its data at any time by emailing{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
             </a>
             , as set out in our{" "}
             <Link
               href="/privacy"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Privacy Policy
             </Link>
@@ -183,7 +183,7 @@ export default function TermsOfService() {
             These terms are governed by New Zealand law, consistent with our{" "}
             <Link
               href="/privacy"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Privacy Policy
             </Link>
@@ -193,7 +193,7 @@ export default function TermsOfService() {
       </div>
 
       <p className="text-sm">
-        <Link href="/" className="text-primary underline underline-offset-2">
+        <Link href="/" className="text-link underline underline-offset-2">
           Back to the editor
         </Link>
       </p>

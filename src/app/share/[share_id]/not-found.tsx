@@ -9,10 +9,7 @@ export default function ShareNotFound() {
       <p className="text-sm text-foreground/70">
         This link may be mistyped, or the poem is no longer shared.
       </p>
-      <Link
-        href="/"
-        className="text-sm text-primary underline underline-offset-2"
-      >
+      <Link href="/" className="text-sm text-link underline underline-offset-2">
         Go to Poetic Fiddle
       </Link>
     </main>

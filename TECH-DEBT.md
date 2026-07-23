@@ -151,6 +151,53 @@ which would remove the constraint but is a change to a security-sensitive
 sanitisation boundary and needs its own careful review. Either way, remove
 the `dependabot.yml` ignore rule in the same change.
 
+### TD26072401 Vendored poetic.css fails WCAG AA contrast for byline/footer/link text
+
+*Filed 2026-07-24, discovered while verifying AA contrast for W4
+(`IMPLEMENTATION-PLAN.md` §M8/M9).* The poem-preview/share stylesheet at
+`src/lib/poetic-css.generated.ts` (regenerated on every `npm install` by
+`scripts/sync-poetic-css.mjs` from the pinned `poetic` package's
+`browser/poetic.css`, itself a copy of `public/poetic.css` in
+`Poetic-Poems/poetic`) sets several text colours below the 4.5:1 AA threshold
+for normal text: `.poem-info` (the byline) and `.song-segment`/`.song-link`/
+`.postscript` use `color: gray` (#808080, 3.95:1 on white); `.no-content` and
+`.poetic-footer` (the injected site footer, every page) use `#999`
+(2.85:1); `.audio-indicator`, `.links a`, and several other link/text roles
+use `#007AFF` (4.02:1). This affects every published poem page and share
+page.
+
+This is **not** fixable in poetic-fiddle: per `CLAUDE.md`'s single-source-of-
+truth rule and `IMPLEMENTATION-PLAN.md` §6.1, `poetic.css` is consumed as-is
+from the `poetic` package export, not forked or hand-edited here (the
+generated file's own header says so, and a hand-edit would be silently
+overwritten by the next `npm install`).
+
+Fix: darken `gray`, `#999`, and `#007AFF` to AA-passing shades in
+`Poetic-Poems/poetic`'s `public/poetic.css`, cut a new poetic release, and
+bump the tag-pinned dependency in this repo's `package.json` (re-running
+`npm install` regenerates `src/lib/poetic-css.generated.ts` from the patched
+CSS automatically). `src/lib/contrast.test.ts` (added resolving W4) has the
+reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
+list to also cover the generated poetic.css's tokens would give this
+regression the same CI coverage globals.css now has.
+
+### TD26072402 CodeMirror `.poem` syntax-highlight colours not contrast-verified
+
+*Filed 2026-07-24, discovered while verifying AA contrast for W4
+(`IMPLEMENTATION-PLAN.md` §M8/M9).* `src/lib/poem-syntax.ts`'s
+`poemHighlightStyle` hardcodes syntax colours (comment `#8a8a8a`, meta gold
+`#c88a3a`, string `#5f6368`, etc.) that were never checked against the
+`@uiw/react-codemirror` `"light"`/`"dark"` theme backgrounds the editor
+switches between (`Editor.tsx`'s `theme={prefersDark ? "dark" : "light"}`).
+At least the comment (3.45:1) and meta (2.94:1) colours fail 4.5:1 against a
+plain white background; the actual built-in dark theme's background hasn't
+been measured at all.
+
+Fix: read the actual background colours the `"light"`/`"dark"` presets
+render (or switch to an explicit custom `EditorView.theme` so the
+background is known), then pick syntax colours that meet AA against both,
+and add them to the contrast test suite alongside `globals.css`'s tokens.
+
 ### TD26072403 `next` is one patch behind on advisories affecting Server Actions
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-01, F-SEC-01, F-DEPS-01).*
@@ -562,6 +609,8 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071901 | jsdom pinned to 26.x — 27+ pulls an ESM-only dep Turbopack can't require | open | | |
 | TD26071902 | `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/72 |
 | TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | resolved | 2026-07-22 | https://github.com/Poetic-Poems/poetic-fiddle/pull/95 |
+| TD26072401 | Vendored poetic.css fails WCAG AA contrast for byline/footer/link text | open | | |
+| TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | open | | |
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | open | | |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | open | | |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |

@@ -83,6 +83,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A `prefers-reduced-motion: reduce` safety net in `globals.css` that
   suppresses CSS transitions/animations app-wide for users who request it
   (AC78).
+- An automated WCAG AA contrast test (`src/lib/contrast.test.ts`) covering
+  every `globals.css` colour-token pairing, in both light and dark, so a
+  future token change that drops below 4.5:1 (or 3:1 for non-text UI like the
+  focus ring) fails CI (AC76).
 
 ### Changed
 
@@ -102,6 +106,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Link text (`text-link`, e.g. the legal-page and editor share links) only
+  met AA contrast in light mode — 2.61:1 against the dark background, well
+  below the 4.5:1 threshold. Dark mode now uses a lighter tint of the same
+  brand purple; the button background it's derived from (`brand-primary`) is
+  unchanged so white button text stays AA in both schemes (AC76).
+- The editor's "Couldn't parse the poem yet" status message used
+  `text-amber-600` in light mode, at 3.19:1 — now `text-amber-700` (5.02:1)
+  (AC76).
 - The poem title is now visible in the preview panel, via poetic's
   `h2.poem-title` heading.
 - The poem title no longer appears twice in the preview panel. The app had

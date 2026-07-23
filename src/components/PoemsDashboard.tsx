@@ -146,7 +146,7 @@ export function PoemsDashboard() {
           </p>
           <Link
             href="/"
-            className="text-sm text-primary underline underline-offset-2"
+            className="text-sm text-link underline underline-offset-2"
           >
             Start writing
           </Link>

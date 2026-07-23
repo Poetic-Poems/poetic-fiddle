@@ -9,6 +9,13 @@
      but not against the dark one, so the dark scheme below swaps it for
      the accent gold, which is the reverse (AC76 non-text contrast). */
   --focus-ring: var(--brand-primary);
+  /* Text/link colour: brand-primary itself is kept dark enough for white
+     button text (bg-primary) to stay AA in both schemes, so it can't also
+     lighten for dark-mode body text without breaking that pairing (AC76).
+     --link tracks brand-primary in light mode and swaps to a lighter tint
+     of the same hue in dark mode, where bare brand-primary text only
+     reaches 2.6:1 against the dark background. */
+  --link: var(--brand-primary);
 }
 
 @theme inline {
@@ -16,6 +23,7 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--brand-primary);
   --color-accent: var(--brand-accent);
+  --color-link: var(--link);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-fraunces);
 }
@@ -25,6 +33,7 @@
     --background: #17132a;
     --foreground: #efeaf8;
     --focus-ring: var(--brand-accent);
+    --link: #8983ce;
   }
 }
 
