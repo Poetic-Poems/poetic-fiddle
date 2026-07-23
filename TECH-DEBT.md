@@ -575,22 +575,6 @@ TD26072416) that green CI didn't catch.
 Fix: add a `vitest-axe` (or equivalent) smoke test over the Editor and
 Dashboard component trees.
 
-### TD26072436 `fast-uri` high-severity advisory, transitive via `@sentry/nextjs`
-
-*Filed 2026-07-24, discovered while resolving TD26072403.* `npm audit`
-reports a high-severity advisory in `fast-uri@3.0.0 - 3.1.3` (host confusion
-via a literal backslash authority delimiter,
-[GHSA-v2hh-gcrm-f6hx](https://github.com/advisories/GHSA-v2hh-gcrm-f6hx)).
-It isn't traceable to `next`: the chain is
-`@sentry/nextjs` → `@sentry/webpack-plugin` → `webpack` → `schema-utils` →
-`ajv`/`ajv-formats` → `fast-uri`, a build-time tool dependency, not part of
-the app's runtime bundle. `npm audit fix` (non-force) reports a fix
-available.
-
-Fix: run `npm audit fix`, confirm it resolves cleanly against
-`@sentry/nextjs`'s current version without a forced/breaking change, and
-verify the check suite still passes.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -659,4 +643,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072433 | No documented backup/restore or export/delete runbooks | open | | |
 | TD26072434 | Two independently-maintained sanitisation pipelines, no shared policy constant | open | | |
 | TD26072435 | No automated accessibility testing | open | | |
-| TD26072436 | `fast-uri` high-severity advisory, transitive via `@sentry/nextjs` | open | | |
+| TD26072436 | `fast-uri` high-severity advisory, transitive via `@sentry/nextjs` | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/103 |
