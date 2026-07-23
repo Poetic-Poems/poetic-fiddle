@@ -611,7 +611,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | resolved | 2026-07-22 | https://github.com/Poetic-Poems/poetic-fiddle/pull/95 |
 | TD26072401 | Vendored poetic.css fails WCAG AA contrast for byline/footer/link text | open | | |
 | TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | open | | |
-| TD26072403 | `next` is one patch behind on advisories affecting Server Actions | open | | |
+| TD26072403 | `next` is one patch behind on advisories affecting Server Actions | in-progress | | |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | open | | |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
 | TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
