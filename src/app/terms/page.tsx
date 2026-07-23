@@ -14,7 +14,7 @@ export default function TermsOfService() {
           Terms of Service
         </h1>
         <p className="mt-1 text-sm text-foreground/70">
-          Last updated 15 July 2026
+          Last updated 23 July 2026
         </p>
       </div>
 
@@ -113,9 +113,14 @@ export default function TermsOfService() {
         <section>
           <h2 className="font-serif text-lg font-semibold">Acceptable use</h2>
           <p>
-            Please don&rsquo;t use Poetic Fiddle to store or share unlawful
-            content, or to abuse, disrupt, or attempt to gain unauthorised
-            access to the service.
+            Using Poetic Fiddle is subject to our{" "}
+            <Link
+              href="/aup"
+              className="text-primary underline underline-offset-2"
+            >
+              Acceptable Use Policy
+            </Link>
+            , which sets out what content and behaviour aren&rsquo;t allowed.
           </p>
         </section>
 
