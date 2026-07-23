@@ -389,7 +389,7 @@ export default function Editor({
         </p>
         <Link
           href="/poems"
-          className="text-sm text-primary underline underline-offset-2"
+          className="text-sm text-link underline underline-offset-2"
         >
           Back to My poems
         </Link>
@@ -501,7 +501,7 @@ export default function Editor({
             href={shareUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-primary underline underline-offset-2"
+            className="text-link underline underline-offset-2"
           >
             {shareUrl}
           </a>
@@ -539,7 +539,7 @@ export default function Editor({
               href={POEM_SYNTAX_REFERENCE_URL}
               target="_blank"
               rel="noreferrer"
-              className="text-sm text-primary underline underline-offset-2"
+              className="text-sm text-link underline underline-offset-2"
             >
               Syntax reference
             </a>
@@ -560,7 +560,7 @@ export default function Editor({
           </div>
           <p
             role="status"
-            className="min-h-5 text-sm text-amber-600 dark:text-amber-400"
+            className="min-h-5 text-sm text-amber-700 dark:text-amber-400"
           >
             {rendered.error
               ? `Couldn't parse the poem yet: ${rendered.error}`
