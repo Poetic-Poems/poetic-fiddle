@@ -166,6 +166,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- Bumped `next` to `16.2.11`, fixing several high-severity advisories in
+  Server Actions and proxy/middleware handling — a live code path, since
+  `src/lib/revalidate-share.ts`'s `"use server"` export runs on every save
+  of a shared poem. Also forced `sharp` (an optional dependency of `next`'s
+  image optimisation, still pinned to a vulnerable `^0.34.5` by `next`
+  16.2.11 itself) to `0.35.3` via an `overrides` entry, resolving inherited
+  `libvips` CVEs
+  ([GHSA-f88m-g3jw-g9cj](https://github.com/advisories/GHSA-f88m-g3jw-g9cj)).
 - Bumped `postcss` (a transitive dependency, pulled in both via
   `tailwindcss`/`vitest` and, separately, bundled inside `next`) to 8.5.19
   via an `overrides` entry, resolving a medium-severity XSS via unescaped

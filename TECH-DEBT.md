@@ -211,6 +211,18 @@ PR #94, `next` itself was not.
 
 Fix: `npm install next@16.2.11` (or later), run the full check suite, and
 confirm `npm audit` no longer reports the three advisories.
+### TD26072404 CodeMirror editor has no accessible name for screen readers
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-02, F-UX-01).*
+`Editor.tsx`'s `<label htmlFor="poem-source">` targets an `id` that
+CodeMirror's React wrapper places on the outer `<div>`, not on the actual
+`role="textbox"` editable element, which has no `aria-label`.
+`docs/REQUIREMENTS.md` AC79 requires the editor be labelled; PR #89 closed
+that backlog entry without fixing the labelling.
+
+Fix: add `EditorView.contentAttributes.of({ "aria-label": "Your poem" })` to
+the CodeMirror `extensions` array; add a `getByRole`/`getByLabelText`
+assertion to `Editor.test.tsx`.
 
 ### TD26072405 Branch protection doesn't require CI to pass before merge
 
@@ -563,6 +575,22 @@ TD26072416) that green CI didn't catch.
 Fix: add a `vitest-axe` (or equivalent) smoke test over the Editor and
 Dashboard component trees.
 
+### TD26072436 `fast-uri` high-severity advisory, transitive via `@sentry/nextjs`
+
+*Filed 2026-07-24, discovered while resolving TD26072403.* `npm audit`
+reports a high-severity advisory in `fast-uri@3.0.0 - 3.1.3` (host confusion
+via a literal backslash authority delimiter,
+[GHSA-v2hh-gcrm-f6hx](https://github.com/advisories/GHSA-v2hh-gcrm-f6hx)).
+It isn't traceable to `next`: the chain is
+`@sentry/nextjs` → `@sentry/webpack-plugin` → `webpack` → `schema-utils` →
+`ajv`/`ajv-formats` → `fast-uri`, a build-time tool dependency, not part of
+the app's runtime bundle. `npm audit fix` (non-force) reports a fix
+available.
+
+Fix: run `npm audit fix`, confirm it resolves cleanly against
+`@sentry/nextjs`'s current version without a forced/breaking change, and
+verify the check suite still passes.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -598,7 +626,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | resolved | 2026-07-22 | https://github.com/Poetic-Poems/poetic-fiddle/pull/95 |
 | TD26072401 | Vendored poetic.css fails WCAG AA contrast for byline/footer/link text | open | | |
 | TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | open | | |
-| TD26072403 | `next` is one patch behind on advisories affecting Server Actions | open | | |
+| TD26072403 | `next` is one patch behind on advisories affecting Server Actions | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/102 |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
 | TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
@@ -631,3 +659,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072433 | No documented backup/restore or export/delete runbooks | open | | |
 | TD26072434 | Two independently-maintained sanitisation pipelines, no shared policy constant | open | | |
 | TD26072435 | No automated accessibility testing | open | | |
+| TD26072436 | `fast-uri` high-severity advisory, transitive via `@sentry/nextjs` | open | | |
