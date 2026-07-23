@@ -643,4 +643,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072433 | No documented backup/restore or export/delete runbooks | open | | |
 | TD26072434 | Two independently-maintained sanitisation pipelines, no shared policy constant | open | | |
 | TD26072435 | No automated accessibility testing | open | | |
-| TD26072436 | `fast-uri` high-severity advisory, transitive via `@sentry/nextjs` | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/PENDING |
+| TD26072436 | `fast-uri` high-severity advisory, transitive via `@sentry/nextjs` | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/103 |
