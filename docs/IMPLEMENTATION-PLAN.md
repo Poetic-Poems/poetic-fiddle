@@ -489,10 +489,6 @@ finish in one PR each. Items marked **[human]** need Warwick for at least one
 step; everything else is agent-selectable as-is. Priorities: **P1** before
 public launch, **P2** soon after, **P3** insurance/polish.
 
-- **W4 (P1, S)** — **AA contrast verification, light + dark** (AC76). Colour
-  tokens in `globals.css` have never been contrast-checked. Verify all
-  token pairings, fix failures, and add an automated contrast test so
-  regressions fail CI.
 - **W5 (P1, S)** — **320 px / 200 % reflow** (AC77). Responsive utilities
   exist but nothing targets the AC's 320 px floor. Verify every page at
   320 px width and 200 % zoom; fix overflow/clipping.
