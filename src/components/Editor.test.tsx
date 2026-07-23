@@ -18,6 +18,13 @@ describe("Editor keyboard operability (AC75, AC79)", () => {
       screen.getByText(/Press Esc, then Tab, to move focus out of it/),
     ).toBeInTheDocument();
   });
+
+  it("gives the editor's content-editable element an accessible name (AC79)", () => {
+    render(<Editor poeticCss="" />);
+    expect(
+      screen.getByRole("textbox", { name: /your poem/i }),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("tryRenderPoem", () => {

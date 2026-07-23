@@ -198,6 +198,19 @@ render (or switch to an explicit custom `EditorView.theme` so the
 background is known), then pick syntax colours that meet AA against both,
 and add them to the contrast test suite alongside `globals.css`'s tokens.
 
+### TD26072403 `next` is one patch behind on advisories affecting Server Actions
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-01, F-SEC-01, F-DEPS-01).*
+`package.json` pins `next@16.2.10`; `npm audit` reports 3 high-severity
+advisories fixed in `16.2.11`, several scoped to Server Actions handling and
+the proxy/middleware layer. `src/lib/revalidate-share.ts` has a live `"use
+server"` export called from `Editor.tsx` on every save of a shared poem, so
+this is reachable, not dormant. Neither a Dependabot PR nor a Dependabot
+alert has surfaced it yet — `eslint-config-next` was bumped in lockstep in
+PR #94, `next` itself was not.
+
+Fix: `npm install next@16.2.11` (or later), run the full check suite, and
+confirm `npm audit` no longer reports the three advisories.
 ### TD26072404 CodeMirror editor has no accessible name for screen readers
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-02, F-UX-01).*
@@ -614,7 +627,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072401 | Vendored poetic.css fails WCAG AA contrast for byline/footer/link text | open | | |
 | TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | open | | |
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/102 |
-| TD26072404 | CodeMirror editor has no accessible name for screen readers | open | | |
+| TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
 | TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | open | | |
