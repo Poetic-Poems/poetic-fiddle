@@ -185,3 +185,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The share page's sandboxed iframe keeps its own, separate CSP.
 - Tightened that CSP: `script-src` and `style-src` now carry a nonce minted
   fresh per request (`src/proxy.ts`) instead of `'unsafe-inline'`.
+- Bumped `fast-uri` (a transitive dependency, pulled in via `@sentry/nextjs`'s
+  webpack toolchain — `@sentry/webpack-plugin` → `webpack` → `schema-utils`
+  → `ajv`/`ajv-formats` → `fast-uri` — not part of the app's runtime bundle)
+  to 3.1.4, resolving a high-severity host confusion via a literal backslash
+  authority delimiter
+  ([GHSA-v2hh-gcrm-f6hx](https://github.com/advisories/GHSA-v2hh-gcrm-f6hx)).
