@@ -158,6 +158,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   500 in production. The pin is restored, and Dependabot is now configured to
   ignore jsdom major-version updates so it can't silently propose that bump
   again.
+- The CodeMirror editor's content-editable element now has an accessible
+  name for screen readers. Its visible `<label>` targets an `id` that
+  CodeMirror's React wrapper places on the outer wrapper `<div>`, not on the
+  `role="textbox"` element itself, so the editor was announced with no name;
+  it now also carries an `aria-label` set directly on that element (AC79).
 
 ### Security
 

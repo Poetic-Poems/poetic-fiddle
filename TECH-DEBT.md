@@ -212,19 +212,6 @@ PR #94, `next` itself was not.
 Fix: `npm install next@16.2.11` (or later), run the full check suite, and
 confirm `npm audit` no longer reports the three advisories.
 
-### TD26072404 CodeMirror editor has no accessible name for screen readers
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-02, F-UX-01).*
-`Editor.tsx`'s `<label htmlFor="poem-source">` targets an `id` that
-CodeMirror's React wrapper places on the outer `<div>`, not on the actual
-`role="textbox"` editable element, which has no `aria-label`.
-`docs/REQUIREMENTS.md` AC79 requires the editor be labelled; PR #89 closed
-that backlog entry without fixing the labelling.
-
-Fix: add `EditorView.contentAttributes.of({ "aria-label": "Your poem" })` to
-the CodeMirror `extensions` array; add a `getByRole`/`getByLabelText`
-assertion to `Editor.test.tsx`.
-
 ### TD26072405 Branch protection doesn't require CI to pass before merge
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-03, F-CI-01).* The
@@ -612,7 +599,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072401 | Vendored poetic.css fails WCAG AA contrast for byline/footer/link text | open | | |
 | TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | open | | |
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | open | | |
-| TD26072404 | CodeMirror editor has no accessible name for screen readers | in-progress | | |
+| TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
 | TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | open | | |

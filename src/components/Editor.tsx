@@ -96,6 +96,11 @@ export default function Editor({
       poemLanguage,
       poemSyntaxHighlighting,
       EditorView.cspNonce.of(nonce ?? ""),
+      // CodeMirror's React wrapper puts the `id="poem-source"` (below) on the
+      // outer wrapper div, not on this content-editable element (role="textbox"),
+      // so the visible <label>'s htmlFor never reaches it — an aria-label here
+      // is what actually gives screen readers an accessible name (AC79).
+      EditorView.contentAttributes.of({ "aria-label": "Your poem" }),
     ],
     [nonce],
   );
