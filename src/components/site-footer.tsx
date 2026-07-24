@@ -16,6 +16,13 @@ export function SiteFooter() {
       >
         Terms of Service
       </Link>
+      <span aria-hidden="true">·</span>
+      <Link
+        href="/aup"
+        className="underline underline-offset-2 hover:text-foreground"
+      >
+        Acceptable Use Policy
+      </Link>
     </footer>
   );
 }

@@ -87,9 +87,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   every `globals.css` colour-token pairing, in both light and dark, so a
   future token change that drops below 4.5:1 (or 3:1 for non-text UI like the
   focus ring) fails CI (AC76).
+- A standalone Acceptable Use Policy page (`/aup`), linked from the site
+  footer and from the Terms of Service, so the AUP is a published policy in
+  its own right rather than a section inside Terms (D40, AC111).
 
 ### Changed
 
+- The Terms of Service's "Acceptable use" section now links to the
+  standalone Acceptable Use Policy (`/aup`) instead of restating it.
 - Bumped the pinned `poetic` dependency from v6.0.1 to v6.1.1, deliberately
   skipping v6.1.0. A poem's title can now include restricted inline markup —
   `*em*`, `**strong**` and `~~struck~~` (Markdown-standard double-tilde

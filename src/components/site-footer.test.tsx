@@ -16,4 +16,11 @@ describe("SiteFooter", () => {
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/terms");
   });
+
+  it("links to the acceptable use policy", () => {
+    render(<SiteFooter />);
+    const link = screen.getByRole("link", { name: /acceptable use policy/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/aup");
+  });
 });

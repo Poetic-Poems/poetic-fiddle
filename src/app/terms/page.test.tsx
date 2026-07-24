@@ -11,4 +11,10 @@ describe("TermsOfService", () => {
     const backLink = screen.getByRole("link", { name: /back to the editor/i });
     expect(backLink).toHaveAttribute("href", "/");
   });
+
+  it("links to the acceptable use policy", () => {
+    render(<TermsOfService />);
+    const link = screen.getByRole("link", { name: /acceptable use policy/i });
+    expect(link).toHaveAttribute("href", "/aup");
+  });
 });

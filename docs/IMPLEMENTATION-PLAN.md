@@ -499,9 +499,6 @@ public launch, **P2** soon after, **P3** insurance/polish.
 - **W7 (P1, S)** — **Terms page stale copy**. `terms/page.tsx` still says
   Save and Share "aren't available yet" — they shipped (M5/M6). Re-read the
   whole page against as-built behaviour, not just that line.
-- **W8 (P1, S)** — **Standalone AUP page** (D40, AC111). Acceptable use lives
-  only as a section inside Terms; D40 wants a short standalone published
-  policy. Extract to `/aup` (or `/acceptable-use`) and link it in the footer.
 - **W9 (P1, S)** — **Takedown address + process** (D40, AC116). No dedicated
   takedown/abuse contact is published. Mailbox **decided 2026-07-21**:
   `takedown@poeticfiddle.com` — the domain's existing catch-all already
