@@ -286,17 +286,6 @@ managers to auto-select the right version; no `engine-strict` in `.npmrc`.
 Fix: update README to `Requires Node.js 22.x`; add a one-line `.nvmrc`
 (`22`); adjust `scripts/setup-linux.sh`'s `nvm use node` to plain `nvm use`.
 
-### TD26072410 `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-08, F-CODE-02).*
-`poems-store.ts` wraps every Supabase-backed operation in a typed `Error`
-subclass with a message documented as safe to show a poet as-is.
-`SignInPrompt.tsx` shows raw `error.message` from Supabase Auth calls
-directly instead.
-
-Fix: route auth errors through the same safe-message pattern
-`poems-store.ts` uses.
-
 ### TD26072411 No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-09, F-PERF-02,
@@ -617,7 +606,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | open | | |
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | open | | |
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | open | | |
-| TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | in-progress | | |
+| TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
 | TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | open | | |

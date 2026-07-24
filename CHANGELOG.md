@@ -168,6 +168,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   CodeMirror's React wrapper places on the outer wrapper `<div>`, not on the
   `role="textbox"` element itself, so the editor was announced with no name;
   it now also carries an `aria-label` set directly on that element (AC79).
+- The sign-in dialog no longer shows raw Supabase Auth error text. Magic-link,
+  Google, and password sign-in/sign-up failures now show a safe, mapped
+  message (falling back to a generic one for unrecognised error codes),
+  matching the safe-message convention `poems-store.ts` already used for
+  saved-poem errors.
 
 ### Security
 
