@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
           Privacy Policy
         </h1>
         <p className="mt-1 text-sm text-foreground/70">
-          Last updated 16 July 2026
+          Last updated 24 July 2026
         </p>
       </div>
 
@@ -80,12 +80,24 @@ export default function PrivacyPolicy() {
             Saving and sharing poems
           </h2>
           <p>
-            Poetic Fiddle&rsquo;s Save and Share actions are designed to store a
-            signed-in poet&rsquo;s poem content in our database and let it be
-            shared via a link. As of this policy&rsquo;s last update, that
-            storage isn&rsquo;t available yet — this section will be updated
-            once it is, and you&rsquo;ll be able to delete an individual poem or
-            your whole account (and everything in it) at any time.
+            Poetic Fiddle&rsquo;s Save and Share actions store a signed-in poet&rsquo;s poem
+            content in our Supabase database. Each poem is stored with its text, title,
+            and metadata, and is only readable by the poet who wrote it (enforced by
+            row-level security). Poems can be shared via a unique link that allows
+            anyone with the link to read the poem; the sharer can revoke the share
+            at any time.
+          </p>
+          <p>
+            You can delete an individual poem from your dashboard at any time. You can
+            also delete your entire account — which removes your email address, all
+            poems you wrote, and all share links you created — by emailing{" "}
+            <a
+              href="mailto:warwick@datumprocess.co.nz"
+              className="text-link underline underline-offset-2"
+            >
+              warwick@datumprocess.co.nz
+            </a>
+            . We delete data permanently as soon as your deletion request is processed.
           </p>
         </section>
 

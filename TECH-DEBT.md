@@ -614,7 +614,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
 | TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
-| TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | open | | |
+| TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | in-progress | | |
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | open | | |
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | open | | |
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | open | | |
