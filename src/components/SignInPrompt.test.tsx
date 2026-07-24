@@ -92,10 +92,13 @@ describe("SignInPrompt", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
-  it("shows an error when password sign-in fails", async () => {
+  it("shows a safe message when password sign-in fails, not the raw Supabase error", async () => {
     authMock.signInWithPassword.mockResolvedValue({
       data: { session: null },
-      error: { message: "Invalid login credentials" },
+      error: {
+        message: "Invalid login credentials",
+        code: "invalid_credentials",
+      },
     });
     render(<SignInPrompt action="save" onClose={() => {}} />);
 
@@ -108,9 +111,25 @@ describe("SignInPrompt", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /invalid login credentials/i,
-    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/that email or password isn't right/i);
+    expect(alert).not.toHaveTextContent(/invalid login credentials/i);
+  });
+
+  it("falls back to a generic safe message for an unrecognised error code", async () => {
+    authMock.signInWithOtp.mockResolvedValue({
+      error: { message: "some internal detail", code: "unexpected_failure" },
+    });
+    render(<SignInPrompt action="save" onClose={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "poet@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send magic link/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/something went wrong signing you in/i);
+    expect(alert).not.toHaveTextContent(/some internal detail/i);
   });
 
   it("switches to sign-up and shows a confirmation message when no session is returned", async () => {
