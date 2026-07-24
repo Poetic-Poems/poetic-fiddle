@@ -88,10 +88,9 @@ export default function PrivacyPolicy() {
             the poem; the sharer can revoke the share at any time.
           </p>
           <p>
-            You can delete an individual poem from your dashboard at any time.
-            You can also delete your entire account — which removes your email
-            address, all poems you wrote, and all share links you created — by
-            emailing{" "}
+            You can ask us to delete an individual poem, or your entire account
+            — which removes your email address, all poems you wrote, and all
+            share links you created — by emailing{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
               className="text-link underline underline-offset-2"
