@@ -116,7 +116,7 @@ export default function TermsOfService() {
             Using Poetic Fiddle is subject to our{" "}
             <Link
               href="/aup"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Acceptable Use Policy
             </Link>

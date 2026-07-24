@@ -28,7 +28,7 @@ export default function AcceptableUsePolicy() {
             policy, contact{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
             </a>
@@ -44,7 +44,7 @@ export default function AcceptableUsePolicy() {
             works alongside our{" "}
             <Link
               href="/terms"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Terms of Service
             </Link>
@@ -70,7 +70,7 @@ export default function AcceptableUsePolicy() {
             set out in our Terms of Service&rsquo;s{" "}
             <Link
               href="/terms"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Termination
             </Link>{" "}
@@ -84,14 +84,14 @@ export default function AcceptableUsePolicy() {
             See also our{" "}
             <Link
               href="/terms"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
               href="/privacy"
-              className="text-primary underline underline-offset-2"
+              className="text-link underline underline-offset-2"
             >
               Privacy Policy
             </Link>
@@ -101,7 +101,7 @@ export default function AcceptableUsePolicy() {
       </div>
 
       <p className="text-sm">
-        <Link href="/" className="text-primary underline underline-offset-2">
+        <Link href="/" className="text-link underline underline-offset-2">
           Back to the editor
         </Link>
       </p>
