@@ -173,6 +173,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   message (falling back to a generic one for unrecognised error codes),
   matching the safe-message convention `poems-store.ts` already used for
   saved-poem errors.
+- A missing `.env.local` no longer breaks the editor silently. Because the
+  editor loads via `next/dynamic(..., { ssr: false })`,
+  `src/lib/supabase-client.ts`'s missing-env-var throw only fired in the
+  browser console — `npm run dev` still started cleanly and served HTTP 200
+  with a blank editor pane. A root `src/app/error.tsx` boundary now catches
+  it and shows an actionable message pointing at `.env.example`; the README
+  also sequences environment setup before the commands table.
 
 ### Security
 

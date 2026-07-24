@@ -249,19 +249,6 @@ writing is persisted) reaches the user's actual expectations.
 Fix: update the section to present-tense, accurate language; cross-check
 the "delete at any time" promise against actual capability (TD26072414).
 
-### TD26072408 Missing `.env.local` breaks the editor silently, client-side only
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-06, F-TOOL-01).*
-`src/lib/supabase-client.ts` throws at module-evaluation time if the
-`NEXT_PUBLIC_SUPABASE_*` vars are unset. Because `Editor` loads via
-`next/dynamic(..., { ssr: false })`, `npm run dev` starts cleanly and serves
-HTTP 200 with no visible error — the throw only fires in the browser
-console. README sequences env setup after the commands table, not before
-it.
-
-Fix: add a `src/app/error.tsx` recognising this specific error with an
-actionable message; reorder README so env setup precedes `npm run dev`.
-
 ### TD26072409 Node version guidance disagrees across README/`engines`/no `.nvmrc`
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-07, F-DEPS-03,
@@ -591,7 +578,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
 | TD26072406 | CLAUDE.md's Status section understates what's built | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/104 |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | open | | |
-| TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | in-progress | | |
+| TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | open | | |
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
 | TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
