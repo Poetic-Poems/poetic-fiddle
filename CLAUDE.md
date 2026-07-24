@@ -9,15 +9,20 @@ web application that talks to the poetic framework's output/format.
 
 ## Status
 
-The app is scaffolded: a Next.js (App Router) + TypeScript app lives under
-`src/`, with ESLint, Prettier, Vitest, and the brand shell (logo, palette,
-light/dark) in place. `.github/workflows/build.yml` (lint, typecheck, format
-check, test, build) and CodeQL's `javascript-typescript` scan
-(`.github/workflows/codeql.yml`) run on every pull request and push to
-`main`. The editor, live preview, anonymous drafts (autosaved to
-`localStorage`) and Supabase authentication are built; the data layer
-(save, dashboard, share) is not yet — see `docs/IMPLEMENTATION-PLAN.md` for
-the milestone sequence.
+**M7 delivered** (2026-07-18): The MVP is complete. A Next.js (App Router)
++ TypeScript app lives under `src/`, with ESLint, Prettier, Vitest, and the
+brand shell (logo, palette, light/dark) in place. `.github/workflows/build.yml`
+(lint, typecheck, format check, test, build) and CodeQL's `javascript-typescript`
+scan (`.github/workflows/codeql.yml`) run on every pull request and push to
+`main`. The editor, live preview, anonymous drafts (autosaved to `localStorage`),
+Supabase authentication, and the data layer (save, dashboard, share, remix with
+permission controls) are all built and live.
+
+**M8/M9 in progress:** Non-functional hardening (accessibility, responsive,
+security polish, observability) and legal/branding surface, decomposed into
+discrete W-series items (W5–W16, priorities P1–P3). See
+`docs/IMPLEMENTATION-PLAN.md` §4 ("M8/M9 — remaining work") for the full
+sequencing and milestone dependency map.
 
 Requirements gathering is complete; `docs/REQUIREMENTS.md` is the
 authoritative, living registry of decisions, rationale, and open questions.

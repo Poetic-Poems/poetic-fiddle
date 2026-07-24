@@ -236,19 +236,6 @@ of the gate ("gated by a PR and CI").
 Fix: add a `required_status_checks` rule to the ruleset naming `build`,
 `commit-format`, and `database.yml`'s `test` job.
 
-### TD26072406 CLAUDE.md's Status section understates what's built
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-04, F-DOC-01).*
-CLAUDE.md's Status section says the data layer (save, dashboard, share) "is
-not yet" built. It is — `poems-store.ts`, `PoemsDashboard.tsx`, and the
-share/remix routes are all implemented, tested, and live, and
-`docs/IMPLEMENTATION-PLAN.md` (which CLAUDE.md itself cites) already marks
-those milestones done. An agent trusting CLAUDE.md's line could duplicate
-shipped work or misjudge project maturity.
-
-Fix: rewrite the Status section to name the current milestone and the
-actual remaining ("not yet") hardening work.
-
 ### TD26072407 Privacy Policy says poem storage "isn't available yet," but it's live
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-05, F-DATA-01).*
@@ -602,7 +589,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/102 |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
-| TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
+| TD26072406 | CLAUDE.md's Status section understates what's built | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/104 |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | open | | |
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | open | | |
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | open | | |
