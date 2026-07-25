@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AuthError } from "@/lib/auth-error";
 import { supabase } from "@/lib/supabase-client";
 
 interface SignInPromptProps {
@@ -67,7 +68,7 @@ function SignInForm({ action, onClose }: SignInFormProps) {
     });
     setStatus(
       error
-        ? { kind: "error", message: error.message }
+        ? { kind: "error", message: new AuthError(error).message }
         : { kind: "info", message: "Check your inbox for a sign-in link." },
     );
   }
@@ -78,7 +79,8 @@ function SignInForm({ action, onClose }: SignInFormProps) {
       provider: "google",
       options: { redirectTo: window.location.origin },
     });
-    if (error) setStatus({ kind: "error", message: error.message });
+    if (error)
+      setStatus({ kind: "error", message: new AuthError(error).message });
   }
 
   async function handlePassword(event: FormEvent) {
@@ -89,7 +91,10 @@ function SignInForm({ action, onClose }: SignInFormProps) {
         ? await supabase.auth.signInWithPassword({ email, password })
         : await supabase.auth.signUp({ email, password });
     if (result.error) {
-      setStatus({ kind: "error", message: result.error.message });
+      setStatus({
+        kind: "error",
+        message: new AuthError(result.error).message,
+      });
       return;
     }
     if (result.data.session) {

@@ -249,19 +249,18 @@ shipped work or misjudge project maturity.
 Fix: rewrite the Status section to name the current milestone and the
 actual remaining ("not yet") hardening work.
 
+### TD26072407 Privacy Policy says poem storage "isn't available yet," but it's live
 
-### TD26072408 Missing `.env.local` breaks the editor silently, client-side only
+*Filed 2026-07-24, from the 2026-07-23 project review (R-05, F-DATA-01).*
+`src/app/privacy/page.tsx`'s "Saving and sharing poems" section tells
+visitors poem/account storage isn't available yet. `poems-store.ts` has a
+fully wired, unflagged save/share/list/load flow against live tables,
+exercised in production. Rated above what the project's maturity alone
+would suggest, since the harm (a false statement about whether creative
+writing is persisted) reaches the user's actual expectations.
 
-*Filed 2026-07-24, from the 2026-07-23 project review (R-06, F-TOOL-01).*
-`src/lib/supabase-client.ts` throws at module-evaluation time if the
-`NEXT_PUBLIC_SUPABASE_*` vars are unset. Because `Editor` loads via
-`next/dynamic(..., { ssr: false })`, `npm run dev` starts cleanly and serves
-HTTP 200 with no visible error — the throw only fires in the browser
-console. README sequences env setup after the commands table, not before
-it.
-
-Fix: add a `src/app/error.tsx` recognising this specific error with an
-actionable message; reorder README so env setup precedes `npm run dev`.
+Fix: update the section to present-tense, accurate language; cross-check
+the "delete at any time" promise against actual capability (TD26072414).
 
 ### TD26072409 Node version guidance disagrees across README/`engines`/no `.nvmrc`
 
@@ -273,17 +272,6 @@ managers to auto-select the right version; no `engine-strict` in `.npmrc`.
 
 Fix: update README to `Requires Node.js 22.x`; add a one-line `.nvmrc`
 (`22`); adjust `scripts/setup-linux.sh`'s `nvm use node` to plain `nvm use`.
-
-### TD26072410 `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-08, F-CODE-02).*
-`poems-store.ts` wraps every Supabase-backed operation in a typed `Error`
-subclass with a message documented as safe to show a poet as-is.
-`SignInPrompt.tsx` shows raw `error.message` from Supabase Auth calls
-directly instead.
-
-Fix: route auth errors through the same safe-message pattern
-`poems-store.ts` uses.
 
 ### TD26072411 No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely
 
@@ -601,11 +589,11 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/102 |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
-| TD26072406 | CLAUDE.md's Status section understates what's built | open | | |
+| TD26072406 | CLAUDE.md's Status section understates what's built | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/104 |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/105 |
-| TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | open | | |
+| TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | open | | |
-| TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | open | | |
+| TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
 | TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | open | | |
