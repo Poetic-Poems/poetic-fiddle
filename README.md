@@ -29,7 +29,7 @@ Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
 
 ## Development
 
-Requires Node.js >=20.9. Install dependencies with `npm install`, then:
+Requires Node.js 22.x. Install dependencies with `npm install`, then:
 
 | Command | Purpose |
 |---------|---------|
