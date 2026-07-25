@@ -184,6 +184,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with a blank editor pane. A root `src/app/error.tsx` boundary now catches
   it and shows an actionable message pointing at `.env.example`; the README
   also sequences environment setup before the commands table.
+- The `.poem` editor's syntax-highlight colours (comments, section markers,
+  headings, variables, links, etc.) now meet AA contrast in both light and
+  dark mode. They previously used one fixed colour per token, which could
+  only ever pass against one of the two backgrounds the editor actually
+  renders (`#fff` in light mode, one-dark's `#282c34` in dark mode) — the
+  editor now switches between a light-tuned and a dark-tuned colour set
+  along with the rest of the theme.
 
 ### Security
 

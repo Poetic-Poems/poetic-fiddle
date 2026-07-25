@@ -94,7 +94,7 @@ export default function Editor({
   const extensions = useMemo(
     () => [
       poemLanguage,
-      poemSyntaxHighlighting,
+      poemSyntaxHighlighting(prefersDark),
       EditorView.cspNonce.of(nonce ?? ""),
       // CodeMirror's React wrapper puts the `id="poem-source"` (below) on the
       // outer wrapper div, not on this content-editable element (role="textbox"),
@@ -102,7 +102,7 @@ export default function Editor({
       // is what actually gives screen readers an accessible name (AC79).
       EditorView.contentAttributes.of({ "aria-label": "Your poem" }),
     ],
-    [nonce],
+    [nonce, prefersDark],
   );
   const session = useSession();
   const [migratedUserId, setMigratedUserId] = useState<string | null>(null);

@@ -181,23 +181,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072402 CodeMirror `.poem` syntax-highlight colours not contrast-verified
-
-*Filed 2026-07-24, discovered while verifying AA contrast for W4
-(`IMPLEMENTATION-PLAN.md` §M8/M9).* `src/lib/poem-syntax.ts`'s
-`poemHighlightStyle` hardcodes syntax colours (comment `#8a8a8a`, meta gold
-`#c88a3a`, string `#5f6368`, etc.) that were never checked against the
-`@uiw/react-codemirror` `"light"`/`"dark"` theme backgrounds the editor
-switches between (`Editor.tsx`'s `theme={prefersDark ? "dark" : "light"}`).
-At least the comment (3.45:1) and meta (2.94:1) colours fail 4.5:1 against a
-plain white background; the actual built-in dark theme's background hasn't
-been measured at all.
-
-Fix: read the actual background colours the `"light"`/`"dark"` presets
-render (or switch to an explicit custom `EditorView.theme` so the
-background is known), then pick syntax colours that meet AA against both,
-and add them to the contrast test suite alongside `globals.css`'s tokens.
-
 ### TD26072403 `next` is one patch behind on advisories affecting Server Actions
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-01, F-SEC-01, F-DEPS-01).*
@@ -574,7 +557,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071902 | `supabase/setup-cli@v1` targets the deprecated Node.js 20 runtime | resolved | 2026-07-19 | https://github.com/Poetic-Poems/poetic-fiddle/pull/72 |
 | TD26072101 | Site-wide CSP allows `'unsafe-inline'` for script-src and style-src | resolved | 2026-07-22 | https://github.com/Poetic-Poems/poetic-fiddle/pull/95 |
 | TD26072401 | Vendored poetic.css fails WCAG AA contrast for byline/footer/link text | open | | |
-| TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | open | | |
+| TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | resolved | 2026-07-25 | https://github.com/Poetic-Poems/poetic-fiddle/pull/110 |
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/102 |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
 | TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
