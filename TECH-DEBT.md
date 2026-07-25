@@ -560,7 +560,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | resolved | 2026-07-25 | https://github.com/Poetic-Poems/poetic-fiddle/pull/110 |
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/102 |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
-| TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
+| TD26072405 | Branch protection doesn't require CI to pass before merge | in-progress | | |
 | TD26072406 | CLAUDE.md's Status section understates what's built | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/104 |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/105 |
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
