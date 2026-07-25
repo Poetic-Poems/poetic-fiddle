@@ -108,6 +108,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The Privacy Policy now discloses **Sentry** as the sub-processor that
   records server-side errors and diagnostic logs, hosted in the EU region and
   receiving no poem content.
+- The Privacy Policy's "Saving and sharing poems" section now describes the
+  live Save/Share feature (Supabase storage, row-level security, share-link
+  revocation, and deletion by request) instead of saying storage "isn't
+  available yet".
 
 ### Fixed
 
