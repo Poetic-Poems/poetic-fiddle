@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createTimeoutFetch } from "@/lib/supabase-fetch";
 
 let cached: SupabaseClient | undefined;
 
@@ -29,6 +30,7 @@ export function getSupabaseServer(): SupabaseClient {
 
   cached = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: createTimeoutFetch() },
   });
   return cached;
 }
