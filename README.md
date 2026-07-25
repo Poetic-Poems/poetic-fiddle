@@ -39,3 +39,4 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | `npm run typecheck` | TypeScript, no emit |
 | `npm run format` / `format:check` | Prettier |
 | `npm test` | Vitest |
+verification probe
