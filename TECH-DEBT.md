@@ -207,18 +207,6 @@ Fix: add `EditorView.contentAttributes.of({ "aria-label": "Your poem" })` to
 the CodeMirror `extensions` array; add a `getByRole`/`getByLabelText`
 assertion to `Editor.test.tsx`.
 
-### TD26072405 Branch protection doesn't require CI to pass before merge
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-03, F-CI-01).* The
-active ruleset (`rulesets/18828479`) requires code-owner review, CodeQL, and
-Copilot code-quality, but has no `required_status_checks` rule — so
-`build.yml`, `commit-format.yml`, and `database.yml`'s `test` job can all be
-red and a PR is still mergeable, contradicting CLAUDE.md's own description
-of the gate ("gated by a PR and CI").
-
-Fix: add a `required_status_checks` rule to the ruleset naming `build`,
-`commit-format`, and `database.yml`'s `test` job.
-
 ### TD26072406 CLAUDE.md's Status section understates what's built
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-04, F-DOC-01).*
@@ -560,7 +548,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072402 | CodeMirror `.poem` syntax-highlight colours not contrast-verified | resolved | 2026-07-25 | https://github.com/Poetic-Poems/poetic-fiddle/pull/110 |
 | TD26072403 | `next` is one patch behind on advisories affecting Server Actions | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/102 |
 | TD26072404 | CodeMirror editor has no accessible name for screen readers | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/101 |
-| TD26072405 | Branch protection doesn't require CI to pass before merge | open | | |
+| TD26072405 | Branch protection doesn't require CI to pass before merge | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/111 |
 | TD26072406 | CLAUDE.md's Status section understates what's built | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/104 |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/105 |
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
