@@ -555,7 +555,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | resolved | 2026-07-25 | https://github.com/Poetic-Poems/poetic-fiddle/pull/108 |
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
-| TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
+| TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | in-progress | | |
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | open | | |
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
