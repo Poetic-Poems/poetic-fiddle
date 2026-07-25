@@ -97,9 +97,17 @@ const poemStreamParser = {
 
 export const poemLanguage = StreamLanguage.define(poemStreamParser);
 
-export const poemHighlightStyle = HighlightStyle.define([
-  { tag: t.comment, color: "#8a8a8a", fontStyle: "italic" },
-  { tag: t.meta, color: "#c88a3a", fontWeight: "600" },
+/**
+ * Two colour sets, not one: the editor's "light" preset renders on a white
+ * (`#fff`) background and "dark" on one-dark's `#282c34`
+ * (`@codemirror/theme-one-dark`) — see Editor.tsx's `theme={prefersDark ?
+ * "dark" : "light"}`. No single hex clears WCAG AA 4.5:1 against both a
+ * near-white and a near-black background at once, so each tag needs a light
+ * value and a dark value (verified in contrast.test.ts).
+ */
+export const poemHighlightStyleLight = HighlightStyle.define([
+  { tag: t.comment, color: "#5c5c5c", fontStyle: "italic" },
+  { tag: t.meta, color: "#8a5a12", fontWeight: "600" },
   { tag: t.heading, color: "#534ab7", fontWeight: "700" },
   { tag: t.heading2, color: "#534ab7", fontWeight: "600" },
   { tag: t.keyword, color: "#0b6e99" },
@@ -113,4 +121,25 @@ export const poemHighlightStyle = HighlightStyle.define([
   { tag: t.string, color: "#5f6368" },
 ]);
 
-export const poemSyntaxHighlighting = syntaxHighlighting(poemHighlightStyle);
+export const poemHighlightStyleDark = HighlightStyle.define([
+  { tag: t.comment, color: "#929cad", fontStyle: "italic" },
+  { tag: t.meta, color: "#e5c07b", fontWeight: "600" },
+  { tag: t.heading, color: "#d38ee6", fontWeight: "700" },
+  { tag: t.heading2, color: "#d38ee6", fontWeight: "600" },
+  { tag: t.keyword, color: "#61afef" },
+  { tag: t.labelName, color: "#98c379" },
+  { tag: t.definition(t.variableName), color: "#d19a66" },
+  { tag: t.variableName, color: "#d19a66" },
+  { tag: t.className, color: "#61afef" },
+  { tag: t.strong, fontWeight: "700" },
+  { tag: t.emphasis, fontStyle: "italic" },
+  { tag: t.link, color: "#61afef", textDecoration: "underline" },
+  { tag: t.string, color: "#7ec6d6" },
+]);
+
+const poemSyntaxHighlightingLight = syntaxHighlighting(poemHighlightStyleLight);
+const poemSyntaxHighlightingDark = syntaxHighlighting(poemHighlightStyleDark);
+
+export function poemSyntaxHighlighting(prefersDark: boolean) {
+  return prefersDark ? poemSyntaxHighlightingDark : poemSyntaxHighlightingLight;
+}

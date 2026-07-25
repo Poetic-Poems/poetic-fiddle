@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { blendOver, contrastRatio } from "./contrast";
+import { poemHighlightStyleDark, poemHighlightStyleLight } from "./poem-syntax";
 
 // WCAG 2.x AA thresholds (SC 1.4.3 / 1.4.11).
 const AA_NORMAL_TEXT = 4.5;
@@ -149,4 +150,48 @@ describe("status-text colour pairings meet WCAG AA (>= 4.5:1)", () => {
   it.each(statusTextPairs)("%s", (_label, fg, bg) => {
     expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
   });
+});
+
+/**
+ * The backgrounds the CodeMirror editor actually renders, per Editor.tsx's
+ * `theme={prefersDark ? "dark" : "light"}`: `@uiw/react-codemirror`'s
+ * built-in light preset paints `#fff`, and its dark preset is
+ * `@codemirror/theme-one-dark`, whose background is `#282c34`. Neither is a
+ * `globals.css` token, so these are literal, not extracted.
+ */
+const CODEMIRROR_LIGHT_BG = "#ffffff";
+const CODEMIRROR_DARK_BG = "#282c34";
+
+function extractHighlightColors(specs: readonly Record<string, unknown>[]) {
+  return specs
+    .map((spec) => spec.color)
+    .filter((color): color is string => typeof color === "string");
+}
+
+describe(".poem syntax-highlight colours meet WCAG AA (>= 4.5:1)", () => {
+  const lightColors = extractHighlightColors(poemHighlightStyleLight.specs);
+  const darkColors = extractHighlightColors(poemHighlightStyleDark.specs);
+
+  it("found colours to check in both highlight styles", () => {
+    expect(lightColors.length).toBeGreaterThan(0);
+    expect(darkColors.length).toBeGreaterThan(0);
+  });
+
+  it.each(lightColors)(
+    "light colour %s on the light editor background",
+    (color) => {
+      expect(contrastRatio(color, CODEMIRROR_LIGHT_BG)).toBeGreaterThanOrEqual(
+        AA_NORMAL_TEXT,
+      );
+    },
+  );
+
+  it.each(darkColors)(
+    "dark colour %s on the dark editor background",
+    (color) => {
+      expect(contrastRatio(color, CODEMIRROR_DARK_BG)).toBeGreaterThanOrEqual(
+        AA_NORMAL_TEXT,
+      );
+    },
+  );
 });
