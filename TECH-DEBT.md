@@ -592,7 +592,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072406 | CLAUDE.md's Status section understates what's built | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/104 |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/105 |
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
-| TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | open | | |
+| TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | in-progress | | |
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
 | TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
