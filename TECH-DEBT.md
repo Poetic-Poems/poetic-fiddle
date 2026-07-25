@@ -262,17 +262,6 @@ writing is persisted) reaches the user's actual expectations.
 Fix: update the section to present-tense, accurate language; cross-check
 the "delete at any time" promise against actual capability (TD26072414).
 
-### TD26072409 Node version guidance disagrees across README/`engines`/no `.nvmrc`
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-07, F-DEPS-03,
-F-DOC-02, F-TOOL-05).* `package.json` pins `engines.node: "22.x"` (required
-by the jsdom `ERR_REQUIRE_ESM` issue below Node 22.12, TD26071901);
-README still says "Requires Node.js >=20.9"; no `.nvmrc` exists for version
-managers to auto-select the right version; no `engine-strict` in `.npmrc`.
-
-Fix: update README to `Requires Node.js 22.x`; add a one-line `.nvmrc`
-(`22`); adjust `scripts/setup-linux.sh`'s `nvm use node` to plain `nvm use`.
-
 ### TD26072411 No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-09, F-PERF-02,
@@ -592,7 +581,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072406 | CLAUDE.md's Status section understates what's built | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/104 |
 | TD26072407 | Privacy Policy says poem storage "isn't available yet," but it's live | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/105 |
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
-| TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | in-progress | | |
+| TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | resolved | 2026-07-25 | https://github.com/Poetic-Poems/poetic-fiddle/pull/108 |
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
 | TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
