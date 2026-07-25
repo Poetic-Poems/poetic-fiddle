@@ -11,10 +11,13 @@ web application that talks to the poetic framework's output/format.
 
 **M7 delivered** (2026-07-18): The MVP is complete. A Next.js (App Router)
 + TypeScript app lives under `src/`, with ESLint, Prettier, Vitest, and the
-brand shell (logo, palette, light/dark) in place. `.github/workflows/build.yml`
-(lint, typecheck, format check, test, build) and CodeQL's `javascript-typescript`
-scan (`.github/workflows/codeql.yml`) run on every pull request and push to
-`main`. The editor, live preview, anonymous drafts (autosaved to `localStorage`),
+brand shell (logo, palette, light/dark) in place. `.github/workflows/ci.yml`
+(lint, typecheck, format check, test, build, plus the pgTAP data-layer suite)
+and CodeQL's `javascript-typescript` scan (`.github/workflows/codeql.yml`) run
+on every pull request and push to `main`. `ci.yml`'s jobs are conditional on
+what the diff touches, and its `CI` job — the single required status check —
+is what asserts that none of them failed; see the comment at the top of that
+file before adding a job to it. The editor, live preview, anonymous drafts (autosaved to `localStorage`),
 Supabase authentication, and the data layer (save, dashboard, share, remix with
 permission controls) are all built and live.
 

@@ -282,12 +282,13 @@ Fix: add a `deletePoem(id)` function and a confirmed delete action in
 ### TD26072415 CI floats the Supabase CLI and npm versions instead of pinning them
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-13, F-CI-03,
-F-CI-04).* `database.yml` installs the Supabase CLI via `version: latest`;
-`build.yml` installs npm via the floating `npm@12`. Both are the
-least-pinned parts of an otherwise carefully version-pinned pipeline, and
-this project already hit an npm-version-specific bug once (TD26071804).
+F-CI-04).* `ci.yml`'s `database` and `deploy` jobs install the Supabase CLI
+via `version: latest`; its `build` job installs npm via the floating
+`npm@12`. Both are the least-pinned parts of an otherwise carefully
+version-pinned pipeline, and this project already hit an npm-version-specific
+bug once (TD26071804).
 
-Fix: pin an exact Supabase CLI release in `database.yml`; pin an exact npm
+Fix: pin an exact Supabase CLI release in `ci.yml`; pin an exact npm
 version (or record the verified major in `package.json`'s `engines.npm`).
 
 ### TD26072416 Parse-error text fails AA contrast; share page has no visible heading
@@ -307,8 +308,8 @@ poem title as a visible `<h1>` in the share page's own DOM.
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-15, F-TOOL-02).*
 README's "Environment & secrets" section only describes provisioning a live
-Supabase cloud project, though `supabase start` (already used by
-`database.yml`'s `test` job and the `test:db` script) gives a fully local,
+Supabase cloud project, though `supabase start` (already used by `ci.yml`'s
+`database` job and the `test:db` script) gives a fully local,
 zero-cloud dev loop.
 
 Fix: add a short "Local-only Supabase" note to README.

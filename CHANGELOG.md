@@ -93,6 +93,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **CI is one workflow (`.github/workflows/ci.yml`) behind one required
+  status check (`CI`).** `build.yml` and `database.yml` are merged into it.
+  The app build and the pgTAP data-layer suite are now conditional on what
+  the diff touches, and the always-running `CI` job asserts that none of them
+  failed — a skipped job counts as a pass, a failed or cancelled one does
+  not. This is what lets the data layer become a *required* check for the
+  first time: `database.yml`'s trigger-level `paths: supabase/**` filter meant
+  the job simply did not report on a pull request that touched nothing under
+  `supabase/`, and a required check that never reports blocks the merge
+  rather than passing it. A pull request that changes only prose now starts
+  no Postgres and runs no `next build`, while one that touches migrations
+  must get them past pgTAP before it can merge.
 - The Terms of Service's "Acceptable use" section now links to the
   standalone Acceptable Use Policy (`/aup`) instead of restating it.
 - Bumped the pinned `poetic` dependency from v6.0.1 to v6.1.1, deliberately
