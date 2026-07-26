@@ -244,18 +244,6 @@ poet-controlled title into a CSP-bearing HTML template, has zero coverage.
 Fix: add `src/lib/use-session.test.ts` and `SharedPoemView.test.tsx`
 covering both, per the review's recommendation for concrete test cases.
 
-### TD26072413 `revalidateSharedPoem` failures are silently swallowed with no Sentry capture
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-11, F-OPS-01).*
-Three call sites in `Editor.tsx` do
-`revalidateSharedPoem(...).catch(() => {})`. `docs/OBSERVABILITY-PLAN.md`
-already flags this exact gap as an open `[flag]` that was never resolved in
-code — a failed cache-tag invalidation can leave the share page stale for
-up to 5 minutes with zero record anywhere.
-
-Fix: wrap the call sites with the existing `reportSwallowedError` helper,
-resolving the plan's own open flag.
-
 ### TD26072414 No self-service delete path for a poem, though the schema already supports it
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-12, F-DATA-02).*
@@ -544,7 +532,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
 | TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/113 |
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
-| TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | in-progress | | |
+| TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/118 |
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
 | TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | open | | |
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | open | | |
