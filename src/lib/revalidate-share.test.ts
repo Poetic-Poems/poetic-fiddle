@@ -17,6 +17,9 @@ describe("revalidateSharedPoem", () => {
     await revalidateSharedPoem("abc123");
 
     expect(updateTag).toHaveBeenCalledWith(sharedPoemCacheTag("abc123"));
+    // A successful invalidation is not an incident — nothing is reported.
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.logger.error).not.toHaveBeenCalled();
   });
 
   it("reports a failed invalidation to Sentry instead of throwing (this call is best-effort from Editor.tsx)", async () => {
