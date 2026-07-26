@@ -220,6 +220,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The site-wide CSP also grants `frame-src` to the shared-poem view's
   song-embed hosts (`mega.nz`, `audiomack.com`), for the same
   inherits-the-parent-policy reason.
+- A failed cache-tag invalidation after saving, sharing, or unsharing a poem
+  is now captured in Sentry instead of disappearing silently. The share page
+  could previously go stale for up to the 5-minute cache expiry with no
+  record anywhere that the invalidation had failed.
 
 ### Security
 

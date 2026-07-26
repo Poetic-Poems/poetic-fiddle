@@ -225,9 +225,12 @@ guard PR #54 adds to `getCachedSharedPoem`, so it lands after that PR.
 - **[my call]** Skip `withSentryConfig`/source-map upload and any
   `SENTRY_AUTH_TOKEN` initially — server stack traces are useful unminified,
   and it keeps the build free of a second secret. Adopt later only if traces
-  prove hard to read. **[flag]** Server Actions are not auto-instrumented
-  (`withServerActionInstrumentation` is manual) — wrap
-  `revalidateSharedPoem` if its failures matter in practice.
+  prove hard to read. Server Actions are not auto-instrumented
+  (`withServerActionInstrumentation` is manual), so `revalidateSharedPoem`
+  wraps its own `updateTag` call in a try/catch and reports a failure via
+  `reportSwallowedError` — inside the action itself, not at its call sites in
+  `Editor.tsx`, since those run client-side where there's no Sentry
+  collection (§O2) and a report there would silently do nothing.
 - Structured logs (goal 3): enable Sentry's logger
   (`Sentry.logger`/`enableLogs`) and emit one structured line per
   share-page read failure and per save failure — searchable, 5 GB/month
