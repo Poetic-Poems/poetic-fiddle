@@ -40,7 +40,15 @@ const EMBED_FRAME_SRC = "https://mega.nz https://audiomack.com";
  * this has to be its own directive (issue #119). The relaxation is narrow —
  * `<style>` elements stay nonce-gated, so TD26072101 isn't reverted — and a
  * style attribute cannot execute script; the content carrying them is
- * DOMPurify-sanitised and confined to sandboxed, script-less iframes.
+ * DOMPurify-sanitised and confined to sandboxed, script-less iframes. Any
+ * exfiltration channel a style attribute could open is closed separately by
+ * `img-src`/`font-src`, which allow only `'self'` and `data:`.
+ *
+ * Every engine the app targets honours `style-src-attr` (Chrome 75, Firefox
+ * 108, Safari 15.4). An older one ignores the unrecognised directive and
+ * falls back to `style-src`, so it fails closed — the attributes stay
+ * dropped there, exactly as they are everywhere without this directive —
+ * rather than the relaxation applying where it wasn't understood.
  */
 export function buildContentSecurityPolicy(nonce: string): string {
   return [
