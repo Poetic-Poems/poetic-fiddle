@@ -51,6 +51,22 @@ describe("SharePage", () => {
     ).rejects.toThrow();
   });
 
+  it("renders the poem title as a visible heading outside the iframe (F-UX-03)", async () => {
+    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(renderSharedPoemHtml).mockReturnValue({
+      html: "<p>Hi</p>",
+      error: false,
+    });
+
+    render(
+      await SharePage({ params: Promise.resolve({ share_id: "abc123" }) }),
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "A Shared Poem" }),
+    ).toBeInTheDocument();
+  });
+
   it("offers no Remix action by default (AC113)", async () => {
     vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
     vi.mocked(renderSharedPoemHtml).mockReturnValue({

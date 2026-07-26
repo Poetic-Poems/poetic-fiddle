@@ -54,6 +54,9 @@ export default async function SharePage({ params }: SharePageProps) {
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-6">
+      <h1 className="font-serif text-2xl font-semibold tracking-tight">
+        {title}
+      </h1>
       {error ? (
         <p role="alert" className="text-sm text-red-700 dark:text-red-400">
           This poem couldn&rsquo;t be displayed right now.
