@@ -224,6 +224,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   is now captured in Sentry instead of disappearing silently. The share page
   could previously go stale for up to the 5-minute cache expiry with no
   record anywhere that the invalidation had failed.
+- The share page now has a visible `<h1>` with the poem's title in its own
+  DOM, not only inside the sandboxed preview iframe (which a screen reader
+  outside the frame couldn't reach).
 
 ### Security
 

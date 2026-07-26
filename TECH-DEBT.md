@@ -266,19 +266,6 @@ bug once (TD26071804).
 Fix: pin an exact Supabase CLI release in `ci.yml`; pin an exact npm
 version (or record the verified major in `package.json`'s `engines.npm`).
 
-### TD26072416 Parse-error text fails AA contrast; share page has no visible heading
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-14, F-UX-02,
-F-UX-03).* `Editor.tsx`'s parse-error status text uses `text-amber-600`
-(≈3.18:1 on white, below the 4.5:1 AA threshold). `src/app/share/[share_id]/page.tsx`
-has no visible `<h1>` outside the sandboxed iframe. **Note:** open PR #99
-already fixes the contrast half (amber-600 → amber-700); check its status
-before starting — this item's remaining scope may be just the share-page
-heading.
-
-Fix: replace the contrast-failing colour with a checked token; render the
-poem title as a visible `<h1>` in the share page's own DOM.
-
 ### TD26072417 README doesn't document the local-only Supabase dev workflow
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-15, F-TOOL-02).*
@@ -535,7 +522,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/118 |
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
 | TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | open | | |
-| TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | in-progress | | |
+| TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
 | TD26072417 | README doesn't document the local-only Supabase dev workflow | open | | |
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
