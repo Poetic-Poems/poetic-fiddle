@@ -1,0 +1,231 @@
+name: CI
+
+# One workflow, one required status check: `CI`.
+#
+# The expensive halves of this repository's CI are conditional — the Next.js
+# build and the Supabase pgTAP suite each run only when something they depend
+# on actually changed. A conditional job cannot itself be a required status
+# check: a skipped job never reports, and a required check that never reports
+# sits at "Expected" forever and blocks the merge. See GitHub's "Handling
+# skipped but required checks":
+# https://docs.github.com/en/actions/using-workflows/using-conditions-to-control-job-execution#handling-skipped-but-required-checks
+#
+# So the required check is the `ci` job at the bottom, which always runs and
+# whose only work is to assert that nothing it depended on failed. A `skipped`
+# result counts as a pass; `failure`, `cancelled` and `timed_out` do not. That
+# indirection is what buys both halves of the requirement at once: a merge can
+# never land on a red build, and a pull request that changes only prose never
+# starts a Postgres.
+#
+# Adding a conditional job later means adding it to `ci`'s `needs` list. The
+# ruleset keeps requiring `CI` and does not need editing.
+#
+# `changes` classifies the diff once, here, so there is no second path list
+# anywhere to keep in sync by hand. It names what is *inert* rather than what
+# is relevant: because passing this gate is what unblocks a merge, the failure
+# mode of an allow-list is a path nobody remembered to add silently skipping
+# CI forever, whereas the failure mode of this deny-list is a wasted runner
+# minute. Unknown paths therefore default to running the build.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Classify the diff
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.classify.outputs.app }}
+      database: ${{ steps.classify.outputs.database }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # The merge base has to be reachable for the three-dot diff below.
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          else
+            # workflow_dispatch (or any other event): no meaningful diff to
+            # compute, so run everything.
+            base=""
+            head=""
+          fi
+
+          app=true
+          database=true
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            app=false
+            database=false
+            # Three-dot (merge-base..head), not two-dot: `base` is the base
+            # branch's tip at event time, so on a branch behind main a two-dot
+            # diff also reports files main changed and this branch did not.
+            while IFS= read -r file; do
+              case "$file" in
+                # Prose and repository metadata. Nothing `npm run lint`,
+                # `typecheck`, `format:check`, `test` or `build` does reads any
+                # of it: .prettierignore excludes *.md outright, ESLint and
+                # Vitest only see TS/JS, and Next builds from src/ and public/.
+                *.md|docs/*|reviews/*|LICENCE|LICENSE|.gitignore|.gitattributes)
+                  continue
+                  ;;
+              esac
+
+              # Anything not named above is treated as app-relevant, migrations
+              # included: the data-access layer under src/ is written against
+              # the schema, so a migration is exactly the kind of change whose
+              # effect on the app is worth compiling.
+              app=true
+
+              case "$file" in
+                supabase/*|.github/workflows/ci.yml)
+                  database=true
+                  ;;
+              esac
+            done < <(git diff --name-only "$base...$head")
+          fi
+
+          echo "app=$app  database=$database"
+          {
+            echo "app=$app"
+            echo "database=$database"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build the app
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Update npm
+        run: npm install -g npm@12
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  database:
+    name: Test the data layer
+    needs: changes
+    if: needs.changes.outputs.database == 'true'
+    runs-on: ubuntu-latest
+
+    # Applies the committed migrations to a throwaway local Supabase and runs
+    # the pgTAP suite. RLS is security-critical and fails open silently when
+    # misconfigured, so a policy regression must break the build rather than
+    # reach production.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      # Starts Postgres and applies supabase/migrations in order, so a migration
+      # that does not apply cleanly from scratch fails here.
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Run pgTAP tests
+        run: supabase test db
+
+  deploy:
+    # On a push to main (never on a pull request) that clears `database`, push
+    # the same migrations to the live project, so a merged migration reaches
+    # production without a human running `supabase db push` by hand.
+    needs: [changes, database]
+    if: github.event_name == 'push' && needs.changes.outputs.database == 'true'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Link live project
+        run: supabase link --project-ref ixerygypaevxzmiknokg
+
+      # --yes skips the interactive "push these migrations?" confirmation,
+      # which otherwise stalls a non-interactive CI shell.
+      - name: Push migrations to the live project
+        run: supabase db push --yes
+
+  ci:
+    name: CI
+    # The required status check. `always()` is what makes it report at all:
+    # without it, a skipped dependency would skip this job too, and a required
+    # check that never reports blocks the merge instead of passing it.
+    if: always()
+    needs: [changes, build, database, deploy]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Assert every job passed or was skipped as not applicable
+        env:
+          # Read through the environment rather than interpolated into the
+          # script, so nothing from the workflow context is ever parsed as
+          # shell.
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          jq . <<<"$NEEDS"
+
+          if ! jq -e 'all(.[]; .result == "success" or .result == "skipped")' \
+            >/dev/null <<<"$NEEDS"; then
+            echo "::error::A job this check depends on did not pass — see the results above."
+            exit 1
+          fi
+
+          echo "Every job either passed or was skipped as not applicable to this change."
