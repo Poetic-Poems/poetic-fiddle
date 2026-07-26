@@ -254,18 +254,6 @@ manual, by emailing the maintainer.
 Fix: add a `deletePoem(id)` function and a confirmed delete action in
 `PoemsDashboard.tsx`.
 
-### TD26072415 CI floats the Supabase CLI and npm versions instead of pinning them
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-13, F-CI-03,
-F-CI-04).* `ci.yml`'s `database` and `deploy` jobs install the Supabase CLI
-via `version: latest`; its `build` job installs npm via the floating
-`npm@12`. Both are the least-pinned parts of an otherwise carefully
-version-pinned pipeline, and this project already hit an npm-version-specific
-bug once (TD26071804).
-
-Fix: pin an exact Supabase CLI release in `ci.yml`; pin an exact npm
-version (or record the verified major in `package.json`'s `engines.npm`).
-
 ### TD26072418 No CONTRIBUTING file or PR/issue templates
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-16, F-GOV-01,
@@ -584,7 +572,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/118 |
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
-| TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | in-progress | | |
+| TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/127 |
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
 | TD26072417 | README doesn't document the local-only Supabase dev workflow | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/123 |
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
