@@ -256,3 +256,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `package.json`) to 5.2.2, resolving a high-severity denial of service via
   exponential parsing time in flow collections
   ([GHSA-pm4m-ph32-ghv5](https://github.com/advisories/GHSA-pm4m-ph32-ghv5)).
+- Bumped `brace-expansion` (a transitive dependency pulled in via `minimatch`
+  10.x, used by `glob`, `typescript-eslint`, and `poetic`'s own `js-beautify`
+  toolchain) to 5.0.8, resolving a high-severity denial of service via
+  unbounded expansion result length
+  ([GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg)).
