@@ -474,6 +474,79 @@ TD26072416) that green CI didn't catch.
 Fix: add a `vitest-axe` (or equivalent) smoke test over the Editor and
 Dashboard component trees.
 
+### TD26072601 Song-embed host allow-list now lives in three places
+
+*Filed 2026-07-26, from PR #117's review notes.* PR #117 added a third
+independently-maintained copy of the embed-host allow-list:
+`render-share.ts`'s `EMBED_ALLOWED_HOSTS` (the sanitiser's activation gate),
+`SharedPoemView.tsx`'s `EMBED_HOSTS` (the share srcdoc's `<meta>`
+`frame-src`), and now `csp.ts`'s `EMBED_FRAME_SRC` (the site-wide
+`frame-src` both srcdoc iframes inherit). The first two are commented as a
+deliberate restatement — a second, browser-enforced line of defence — but
+with three copies drift is silent and security-relevant in both directions:
+a host present in the sanitiser but missing from either `frame-src` silently
+blocks that service's embeds, while a host present in a `frame-src` but not
+the sanitiser is a dormant allowance waiting for the sanitiser to catch up.
+
+Fix: derive all three from one shared constant (e.g. `src/lib/embed-hosts.ts`
+exporting the host list; the sanitiser takes a `Set`, the two CSP strings a
+space-joined `https://` origin list), keeping each site's rationale comment —
+or, if the deliberate-restatement stance is kept, add a test asserting the
+three lists agree. While in `csp.ts`, extend `EMBED_FRAME_SRC`'s comment to
+record that `frame-src` deliberately omits `'self'` (PR #117 narrowed it
+from the previous `default-src 'self'` fallback; nothing same-origin is
+framed — `srcdoc` iframes aren't governed by `frame-src`, as issue #97
+itself demonstrated). Related: TD26072434 — a shared policy module from
+that item is the natural home for this constant.
+
+### TD26072602 CSP-governed rendering has no runtime verification
+
+*Filed 2026-07-26, from PR #117's review notes and issue #119.* The tests
+around the CSP assert emitted *strings* — the srcDoc carries the nonce, the
+header contains `frame-src …` — never that a browser then accepts the
+content. Twice in one week a CSP change shipped with green CI and broke
+rendering in ways only observable in a live browser: TD26072101's nonce
+policy silently dropped the preview/share stylesheets (issue #97 → PR #117),
+and the same inherited policy still blocks poetic's inline `style`
+*attributes* (issue #119) — near-invisible today only because the blocked
+values happen to match poetic.css's `var()` fallbacks, and visibly
+mis-sizing aspect-ratio embeds, which have none. PR #117 itself merged with
+its runtime acceptance criteria (styled preview, working toggles, clean
+console, live embeds) verified only by inspection, with implementor and
+reviewer both flagging the gap.
+
+Fix: a browser-level smoke test (e.g. Playwright against a production build
+with `src/proxy.ts`'s real header live) that loads the editor with a poem
+containing an Analysis block and a song embed, plus a share page, asserting
+the preview is styled, the toggles act, and no `securitypolicyviolation`
+events fire in the top document or either srcdoc iframe. Until that exists,
+a documented checklist (styled preview; Analysis show/hide; syno/full;
+console free of CSP reports; embed loads on a preview deployment) for any
+PR touching `csp.ts`, `proxy.ts`, or either srcDoc.
+
+### TD26072603 Editor preview's song-embed button looks clickable but was never wired
+
+*Filed 2026-07-26, split out of issue #119.* poetic's markup renders each
+song embed as a click-to-load `button.song-embed-btn`, activated on poetic's
+own site by poetic.js — which Fiddle deliberately never loads. The share
+page activates embeds server-side instead (`render-share.ts`, AC25's "full
+player"), but nothing does so for the editor preview: `PoemPreview.tsx`
+wires only the Analysis toggles, so the button renders styled as clickable
+and does nothing when clicked — and always has (unchanged since M6,
+e6bd29a). AC25 only promises a "best-effort representation" in the editor,
+but a dead button styled as live reads as a bug — it was reported as one
+(issue #119) before diagnosis separated it from the CSP defect there.
+
+Fix: note the constraint first — the preview iframe's sandbox is
+`allow-same-origin` only, and a nested embed iframe inherits those
+restrictions, so a player loaded inside it could not run its scripts; a
+working in-preview player would need `allow-scripts` on the preview sandbox
+(a deliberate security decision to weigh against AC86, not just wiring).
+Cheaper best-effort options: restyle the button in the preview as an inert
+placeholder ("player available on the shared page"), or have a parent-side
+click handler open the embed URL in a new tab. Whichever is chosen, validate
+the URL against the shared host allow-list (TD26072601).
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -543,3 +616,6 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072434 | Two independently-maintained sanitisation pipelines, no shared policy constant | open | | |
 | TD26072435 | No automated accessibility testing | open | | |
 | TD26072436 | `fast-uri` high-severity advisory, transitive via `@sentry/nextjs` | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/103 |
+| TD26072601 | Song-embed host allow-list now lives in three places | open | | |
+| TD26072602 | CSP-governed rendering has no runtime verification | open | | |
+| TD26072603 | Editor preview's song-embed button looks clickable but was never wired | open | | |
