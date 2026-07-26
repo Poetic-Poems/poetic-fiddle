@@ -266,16 +266,6 @@ bug once (TD26071804).
 Fix: pin an exact Supabase CLI release in `ci.yml`; pin an exact npm
 version (or record the verified major in `package.json`'s `engines.npm`).
 
-### TD26072417 README doesn't document the local-only Supabase dev workflow
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-15, F-TOOL-02).*
-README's "Environment & secrets" section only describes provisioning a live
-Supabase cloud project, though `supabase start` (already used by `ci.yml`'s
-`database` job and the `test:db` script) gives a fully local,
-zero-cloud dev loop.
-
-Fix: add a short "Local-only Supabase" note to README.
-
 ### TD26072418 No CONTRIBUTING file or PR/issue templates
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-16, F-GOV-01,
@@ -596,7 +586,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
 | TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | open | | |
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
-| TD26072417 | README doesn't document the local-only Supabase dev workflow | in-progress | | |
+| TD26072417 | README doesn't document the local-only Supabase dev workflow | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/123 |
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | open | | |
