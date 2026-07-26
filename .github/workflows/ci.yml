@@ -164,7 +164,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
-          version: 1.181.0
+          version: 2.109.1
 
       # Starts Postgres and applies supabase/migrations in order, so a migration
       # that does not apply cleanly from scratch fails here.
@@ -192,7 +192,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
-          version: 1.181.0
+          version: 2.109.1
 
       - name: Link live project
         run: supabase link --project-ref ixerygypaevxzmiknokg
