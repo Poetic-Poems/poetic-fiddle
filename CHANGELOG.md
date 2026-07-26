@@ -227,6 +227,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The share page now has a visible `<h1>` with the poem's title in its own
   DOM, not only inside the sandboxed preview iframe (which a screen reader
   outside the frame couldn't reach).
+- The editor preview and share page now apply poetic's inline `style`
+  attributes (a song embed's height/aspect-ratio, a postscript's
+  `preview-lines` clamp) instead of silently dropping them. The site-wide CSP
+  (see Security, below) governs the `srcdoc` iframes' inherited policy too; a
+  nonce satisfies `style-src` for the `<style>` *element* (#97/PR #117) but
+  can never satisfy an attribute-level check, so every `style="…"` attribute
+  in the rendered poem was still being dropped. Affected values happened to
+  match poetic.css's `var()` fallback for a default-sized embed, which is why
+  this was previously invisible; a non-default `preview-lines` or an
+  aspect-ratio embed (no fallback) rendered wrong.
 
 ### Security
 
@@ -249,6 +259,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The share page's sandboxed iframe keeps its own, separate CSP.
 - Tightened that CSP: `script-src` and `style-src` now carry a nonce minted
   fresh per request (`src/proxy.ts`) instead of `'unsafe-inline'`.
+- That CSP now also declares `style-src-attr 'unsafe-inline'`, as its own
+  directive separate from the nonce-carrying `style-src` (#119). Style
+  *attributes* can't be satisfied by a nonce (an element-level source), and
+  poetic's rendered markup relies on them for per-instance sizing; `<style>`
+  elements stay nonce-gated, so this doesn't reopen the surface `script-src`/
+  `style-src`'s nonce closed.
 - Bumped `fast-uri` (a transitive dependency, pulled in via `@sentry/nextjs`'s
   webpack toolchain — `@sentry/webpack-plugin` → `webpack` → `schema-utils`
   → `ajv`/`ajv-formats` → `fast-uri` — not part of the app's runtime bundle)

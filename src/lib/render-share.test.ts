@@ -30,6 +30,21 @@ A Poet
 Just words, nothing more.
 `;
 
+const POEM_WITH_NON_DEFAULT_PREVIEW_LINES = `Postscript Test
+A Poet
+2026-07-17
+
+{Verse}
+Hello world.
+
+====
+
+{My Postscript}(preview-lines=3)
+Some postscript text.
+
+====
+`;
+
 // poetic's restricted title inline-markup (v6.1.1): *em*, **strong**,
 // ~~struck~~ (double-tilde, corrected from v6.1.0's single-tilde syntax,
 // which this app deliberately never shipped — see the poetic-6.1.1 bump).
@@ -125,6 +140,24 @@ describe("sanitizeSharedPoemHtml", () => {
     expect(clean).toContain(
       '<h2 class="poem-title">A ~single~ tilde title</h2>',
     );
+  });
+
+  it("keeps the song-embed-player's inline sizing style attributes through sanitisation (issue #119)", () => {
+    const html = renderPoem(POEM_WITH_EMBEDS);
+    const clean = sanitizeSharedPoemHtml(html);
+
+    // Audiomack's handler declares a fixed embed_height.
+    expect(clean).toContain('style="--song-embed-height: 252px"');
+    // Mega's audio media_sizes declares an aspect_ratio instead.
+    expect(clean).toContain('style="--song-embed-aspect-ratio: 1 / 1"');
+  });
+
+  it("keeps a non-default preview-lines value as an inline style attribute (issue #119)", () => {
+    const html = renderPoem(POEM_WITH_NON_DEFAULT_PREVIEW_LINES);
+    const clean = sanitizeSharedPoemHtml(html);
+
+    expect(clean).toContain('style="--preview-lines: 3"');
+    expect(clean).toContain('data-preview-lines="3"');
   });
 
   it("never turns an arbitrary data-embed-src into an iframe (host allow-list)", () => {

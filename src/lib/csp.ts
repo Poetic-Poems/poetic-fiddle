@@ -28,12 +28,26 @@ const EMBED_FRAME_SRC = "https://mega.nz https://audiomack.com";
  * it instead of `'unsafe-inline'`. Poem content itself never reaches this
  * top-level document unsanitised — it's always rendered inside a sandboxed,
  * script-less iframe (PoemPreview.tsx / SharedPoemView.tsx).
+ *
+ * `style-src-attr` is separate from `style-src` because a nonce is an
+ * element-level source — it can never satisfy an attribute-level check — and
+ * poetic's rendered markup carries per-instance sizing as inline `style`
+ * attributes (`.song-embed-player`'s `--song-embed-height`/
+ * `--song-embed-aspect-ratio`, `.postscript-content`'s `--preview-lines`;
+ * see poetic's `_poem-content.pug` and `song-handlers.js`). Adding
+ * `'unsafe-inline'` to the nonce-carrying `style-src` instead would be
+ * ignored (a nonce voids `'unsafe-inline'` within the same directive), so
+ * this has to be its own directive (issue #119). The relaxation is narrow —
+ * `<style>` elements stay nonce-gated, so TD26072101 isn't reverted — and a
+ * style attribute cannot execute script; the content carrying them is
+ * DOMPurify-sanitised and confined to sandboxed, script-less iframes.
  */
 export function buildContentSecurityPolicy(nonce: string): string {
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'`,
     `style-src 'self' 'nonce-${nonce}'`,
+    "style-src-attr 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self' data:",
     `connect-src 'self' ${SUPABASE_CONNECT_SRC}`,
