@@ -596,7 +596,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
 | TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | open | | |
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
-| TD26072417 | README doesn't document the local-only Supabase dev workflow | open | | |
+| TD26072417 | README doesn't document the local-only Supabase dev workflow | in-progress | | |
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | open | | |
