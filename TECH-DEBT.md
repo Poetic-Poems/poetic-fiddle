@@ -233,17 +233,6 @@ writing is persisted) reaches the user's actual expectations.
 Fix: update the section to present-tense, accurate language; cross-check
 the "delete at any time" promise against actual capability (TD26072414).
 
-### TD26072412 `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-10, F-TEST-01,
-F-TEST-02).* Every consumer mocks `useSession` entirely, so the hook
-gating all owner-scoped, RLS-backed operations is never exercised directly.
-`SharedPoemView.tsx`'s hand-rolled `escapeHtml`, which interpolates a
-poet-controlled title into a CSP-bearing HTML template, has zero coverage.
-
-Fix: add `src/lib/use-session.test.ts` and `SharedPoemView.test.tsx`
-covering both, per the review's recommendation for concrete test cases.
-
 ### TD26072414 No self-service delete path for a poem, though the schema already supports it
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-12, F-DATA-02).*
@@ -581,7 +570,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | resolved | 2026-07-25 | https://github.com/Poetic-Poems/poetic-fiddle/pull/108 |
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
 | TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/113 |
-| TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | in-progress | | |
+| TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/126 |
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/118 |
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
 | TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | open | | |
