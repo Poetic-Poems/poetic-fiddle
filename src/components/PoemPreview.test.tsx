@@ -161,6 +161,23 @@ describe("PoemPreview srcDoc nonce", () => {
     expect(srcDoc).not.toContain("null");
   });
 
+  // poetic's rendered markup carries per-instance sizing as inline `style`
+  // attributes (issue #119) — DOMPurify's default config (used here) keeps
+  // them, so this asserts the value genuinely survives the sanitisation
+  // step, not just that the site CSP (unexercised by jsdom) would allow it.
+  it("keeps an inline style attribute through DOMPurify sanitisation", () => {
+    const { container } = render(
+      <NonceProvider nonce="test-nonce-123">
+        <PoemPreview
+          html='<div class="song-embed-player" style="--song-embed-height: 252px"></div>'
+          css=""
+        />
+      </NonceProvider>,
+    );
+
+    expect(srcDocOf(container)).toContain('style="--song-embed-height: 252px"');
+  });
+
   // The nonce arrives as a request header, and src/proxy.ts only overwrites
   // that header on the paths its matcher covers — so this string reaches raw
   // markup and has to be treated as a value that might not be one of ours.

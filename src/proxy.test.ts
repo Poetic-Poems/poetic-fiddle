@@ -24,6 +24,14 @@ describe("proxy's Content-Security-Policy", () => {
     expect(styleSrc).not.toContain("unsafe-inline");
   });
 
+  it("allows inline style attributes without weakening style-src's nonce", () => {
+    const value = getCsp(run());
+    const styleSrcAttr = value.match(/style-src-attr ([^;]+);/)?.[1];
+    expect(styleSrcAttr).toBe("'unsafe-inline'");
+    const styleSrc = value.match(/style-src ([^;]+);/)?.[1];
+    expect(styleSrc).not.toContain("unsafe-inline");
+  });
+
   it("carries the same nonce in script-src and style-src", () => {
     const value = getCsp(run());
     const scriptNonce = value.match(/script-src 'self' 'nonce-([^']+)'/)?.[1];
