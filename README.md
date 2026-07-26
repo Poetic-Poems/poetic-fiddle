@@ -9,7 +9,16 @@ which are server-only secrets — it is the contract to code against and holds
 no real values.
 
 - **Local development:** copy `.env.example` to `.env.local` (git-ignored) and
-  fill in real values from the Supabase dashboard (Project Settings → API).
+  fill in real values. You can either use a live Supabase cloud project
+  (described below), or run a fully local dev database with `supabase start`.
+- **Local-only Supabase (zero-cloud dev loop):** run `supabase start` to spin
+  up a local Postgres database with migrations applied. `supabase start` prints
+  the local Supabase URL and anon key to your terminal — copy these into
+  `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+  then `npm run dev`. This dev loop is fully local and does not require a live
+  Supabase account.
+- **Cloud Supabase project (for testing against production schema):** fill in
+  `.env.local` from your project's Supabase dashboard (Project Settings → API).
   Do this before running `npm run dev` — without it, the editor pane fails to
   load in the browser (an on-screen message explains what to do).
 - **Deployed app (Vercel):** set the same variables under the project's
