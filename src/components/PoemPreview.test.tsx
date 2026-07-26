@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { wireAnalysisToggles } from "./PoemPreview";
+import { render } from "@testing-library/react";
+import { PoemPreview, wireAnalysisToggles } from "./PoemPreview";
+import { NonceProvider } from "@/lib/nonce-context";
 
 // Mirrors the markup poetic's _poem-content.pug emits for an Analysis
 // section (github.com/Poetic-Poems/poetic src/templates/_poem-content.pug)
@@ -122,5 +124,40 @@ describe("wireAnalysisToggles", () => {
     expect(fullPanel.classList.contains("hidden")).toBe(true);
     expect(synoButton.classList.contains("selected")).toBe(true);
     expect(fullButton.classList.contains("selected")).toBe(false);
+  });
+});
+
+// A srcdoc iframe inherits the parent document's CSP (issue #97), whose
+// style-src requires a nonce — these assert the <style> tag PoemPreview
+// writes into srcDoc carries the one src/proxy.ts minted for this request,
+// not that the browser actually enforces the policy (jsdom doesn't).
+describe("PoemPreview srcDoc nonce", () => {
+  function srcDocOf(container: HTMLElement): string {
+    const iframe = container.querySelector("iframe")!;
+    return iframe.getAttribute("srcdoc")!;
+  }
+
+  it("carries the request nonce on the inline <style> element", () => {
+    const { container } = render(
+      <NonceProvider nonce="test-nonce-123">
+        <PoemPreview html="<p>A poem.</p>" css="p { color: red; }" />
+      </NonceProvider>,
+    );
+
+    expect(srcDocOf(container)).toContain(
+      '<style nonce="test-nonce-123">p { color: red; }</style>',
+    );
+  });
+
+  it('omits the nonce attribute rather than rendering nonce="null" when there is no nonce', () => {
+    const { container } = render(
+      <NonceProvider nonce={null}>
+        <PoemPreview html="<p>A poem.</p>" css="p { color: red; }" />
+      </NonceProvider>,
+    );
+
+    const srcDoc = srcDocOf(container);
+    expect(srcDoc).toContain("<style>p { color: red; }</style>");
+    expect(srcDoc).not.toContain("null");
   });
 });

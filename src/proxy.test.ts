@@ -52,6 +52,13 @@ describe("proxy's Content-Security-Policy", () => {
     expect(connectSrc).toContain("https://*.supabase.co");
   });
 
+  it("allows framing the song-embed hosts, so a shared poem's inherited policy doesn't override its own <meta> frame-src allow-list", () => {
+    const value = getCsp(run());
+    const frameSrc = value.match(/frame-src ([^;]+);/)?.[1];
+    expect(frameSrc).toContain("https://mega.nz");
+    expect(frameSrc).toContain("https://audiomack.com");
+  });
+
   it("forwards the same nonce to the app via the x-nonce request header", () => {
     const response = run();
     const nonce = getCsp(response).match(

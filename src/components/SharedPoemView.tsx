@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef } from "react";
 import { wireAnalysisToggles } from "@/components/PoemPreview";
+import { useNonce } from "@/lib/nonce-context";
 
 interface SharedPoemViewProps {
   /**
@@ -58,12 +59,19 @@ function escapeHtml(value: string): string {
  */
 export function SharedPoemView({ html, css, title }: SharedPoemViewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // This document's own <meta> CSP grants style-src 'unsafe-inline', but a
+  // srcdoc iframe also inherits the parent document's CSP, whose style-src
+  // requires a nonce (CSP policies are additive — content must satisfy every
+  // applicable one). Without a matching nonce here the inherited policy
+  // drops this <style> regardless of what the <meta> tag allows (issue #97).
+  const nonce = useNonce();
 
-  const srcDoc = useMemo(
-    () =>
-      `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" /><title>${escapeHtml(title)}</title><style>${css}</style></head><body><div class="container">${html}</div></body></html>`,
-    [html, css, title],
-  );
+  const srcDoc = useMemo(() => {
+    const styleTag = nonce
+      ? `<style nonce="${nonce}">${css}</style>`
+      : `<style>${css}</style>`;
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" /><title>${escapeHtml(title)}</title>${styleTag}</head><body><div class="container">${html}</div></body></html>`;
+  }, [html, css, title, nonce]);
 
   const handleLoad = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;

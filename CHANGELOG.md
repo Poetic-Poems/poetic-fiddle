@@ -209,6 +209,17 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   existing typed error (e.g. `PoemSaveError`) instead of hanging until the
   hosting platform's own function timeout. Reads are bounded as well, though
   over several attempts, since postgrest-js retries idempotent requests.
+- The editor preview and shared-poem view now render fully styled again, and
+  their Analysis toggles work again. The site-wide nonce-based CSP (above)
+  also governs a `srcdoc` iframe's document, since such an iframe has no
+  response of its own to carry a policy and so inherits its parent's; the
+  preview and shared-poem iframes' inline `<style>` carried no nonce, so
+  `style-src` silently dropped poetic's entire stylesheet, which also broke
+  the Analysis show/hide and syno/full toggles (they depend on that CSS).
+  Both components now thread the request's nonce onto their inline `<style>`.
+  The site-wide CSP also grants `frame-src` to the shared-poem view's
+  song-embed hosts (`mega.nz`, `audiomack.com`), for the same
+  inherits-the-parent-policy reason.
 
 ### Security
 

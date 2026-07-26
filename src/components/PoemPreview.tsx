@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef } from "react";
 import DOMPurify from "dompurify";
+import { useNonce } from "@/lib/nonce-context";
 
 interface PoemPreviewProps {
   html: string;
@@ -68,11 +69,19 @@ export function wireAnalysisToggles(doc: Document) {
  */
 export function PoemPreview({ html, css }: PoemPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // A srcdoc iframe has no response of its own to carry a CSP, so it
+  // inherits the parent document's — including its style-src nonce
+  // requirement. Without a matching nonce here, the inherited policy drops
+  // this <style> and poetic's entire stylesheet along with it (issue #97).
+  const nonce = useNonce();
 
   const srcDoc = useMemo(() => {
     const sanitised = DOMPurify.sanitize(html);
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><style>${css}</style></head><body><div class="container">${sanitised}</div></body></html>`;
-  }, [html, css]);
+    const styleTag = nonce
+      ? `<style nonce="${nonce}">${css}</style>`
+      : `<style>${css}</style>`;
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" />${styleTag}</head><body><div class="container">${sanitised}</div></body></html>`;
+  }, [html, css, nonce]);
 
   const handleLoad = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
