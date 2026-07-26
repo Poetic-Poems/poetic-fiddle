@@ -231,3 +231,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   to 3.1.4, resolving a high-severity host confusion via a literal backslash
   authority delimiter
   ([GHSA-v2hh-gcrm-f6hx](https://github.com/advisories/GHSA-v2hh-gcrm-f6hx)).
+- Bumped `js-yaml` (a transitive dependency pulled in by `poetic`'s own
+  `package.json`) to 5.2.2, resolving a high-severity denial of service via
+  exponential parsing time in flow collections
+  ([GHSA-pm4m-ph32-ghv5](https://github.com/advisories/GHSA-pm4m-ph32-ghv5)).
