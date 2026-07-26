@@ -203,6 +203,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   renders (`#fff` in light mode, one-dark's `#282c34` in dark mode) — the
   editor now switches between a light-tuned and a dark-tuned colour set
   along with the rest of the theme.
+- A stalled Supabase write (save, share, unshare, remix-default, allow-remix)
+  no longer leaves the UI stuck in "Saving…" indefinitely. Every Supabase
+  request now carries a 12s timeout, so a hung write fails with the app's
+  existing typed error (e.g. `PoemSaveError`) instead of hanging until the
+  hosting platform's own function timeout. Reads are bounded as well, though
+  over several attempts, since postgrest-js retries idempotent requests.
 
 ### Security
 

@@ -233,19 +233,6 @@ writing is persisted) reaches the user's actual expectations.
 Fix: update the section to present-tense, accurate language; cross-check
 the "delete at any time" promise against actual capability (TD26072414).
 
-### TD26072411 No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-09, F-PERF-02,
-F-OPS-03).* No Supabase client configures a request timeout or
-`AbortController`, and `@supabase/postgrest-js`'s retry logic excludes
-non-idempotent methods (inserts/updates). A hung save leaves the UI stuck
-in "Saving…" until the hosting platform's own function timeout fires,
-bypassing the app's own typed-error recovery messaging.
-
-Fix: wrap the Supabase client's `fetch` (or individual `poems-store.ts`
-calls) with an `AbortController`-based timeout, translated into the
-existing typed error classes.
-
 ### TD26072412 `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-10, F-TEST-01,
@@ -555,7 +542,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072408 | Missing `.env.local` breaks the editor silently, client-side only | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/107 |
 | TD26072409 | Node version guidance disagrees across README/`engines`/no `.nvmrc` | resolved | 2026-07-25 | https://github.com/Poetic-Poems/poetic-fiddle/pull/108 |
 | TD26072410 | `SignInPrompt` leaks raw Supabase Auth errors, bypassing the app's safe-message convention | resolved | 2026-07-24 | https://github.com/Poetic-Poems/poetic-fiddle/pull/106 |
-| TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | open | | |
+| TD26072411 | No timeout on outbound Supabase calls; a stalled request hangs the UI indefinitely | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/113 |
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | open | | |
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | open | | |
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | open | | |
