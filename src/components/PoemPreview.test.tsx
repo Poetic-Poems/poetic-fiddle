@@ -160,4 +160,19 @@ describe("PoemPreview srcDoc nonce", () => {
     expect(srcDoc).toContain("<style>p { color: red; }</style>");
     expect(srcDoc).not.toContain("null");
   });
+
+  // The nonce arrives as a request header, and src/proxy.ts only overwrites
+  // that header on the paths its matcher covers — so this string reaches raw
+  // markup and has to be treated as a value that might not be one of ours.
+  it("ignores a nonce that isn't shaped like one, rather than writing it into the markup", () => {
+    const { container } = render(
+      <NonceProvider nonce={'x"><script>alert(1)</script>'}>
+        <PoemPreview html="<p>A poem.</p>" css="p { color: red; }" />
+      </NonceProvider>,
+    );
+
+    const srcDoc = srcDocOf(container);
+    expect(srcDoc).toContain("<style>p { color: red; }</style>");
+    expect(srcDoc).not.toContain("<script>");
+  });
 });

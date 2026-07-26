@@ -17,11 +17,12 @@ const EMBED_FRAME_SRC = "https://mega.nz https://audiomack.com";
  * A strict, site-wide CSP for the app's own pages (editor, dashboard, legal) —
  * AC85's CSP half (REQUIREMENTS.md §12.4; the sanitisation half shipped in
  * M6). A srcdoc iframe has no response of its own to carry a CSP, so it
- * inherits this policy alongside its own <meta> CSP (the tag inside
- * PoemPreview.tsx's / SharedPoemView.tsx's srcDoc) — CSP is additive, so
- * content must satisfy both. Both components thread this policy's nonce
- * into their inline <style> to satisfy this policy's style-src as well as
- * their own (issue #97).
+ * inherits this policy too — alongside, not instead of, any <meta> CSP of its
+ * own (the tag inside SharedPoemView.tsx's srcDoc; PoemPreview.tsx's has
+ * none). CSP is additive, so content must satisfy every policy that applies.
+ * Both components therefore thread this policy's nonce into their inline
+ * <style>, which its style-src requires regardless of what a <meta> CSP
+ * allows (issue #97).
  *
  * `nonce` is minted per-request by `src/proxy.ts` — script-src/style-src carry
  * it instead of `'unsafe-inline'`. Poem content itself never reaches this

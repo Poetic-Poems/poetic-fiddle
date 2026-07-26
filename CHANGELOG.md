@@ -210,8 +210,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   hosting platform's own function timeout. Reads are bounded as well, though
   over several attempts, since postgrest-js retries idempotent requests.
 - The editor preview and shared-poem view now render fully styled again, and
-  their Analysis toggles work again. The site-wide nonce-based CSP (above)
-  also governs a `srcdoc` iframe's document, since such an iframe has no
+  their Analysis toggles work again. The site-wide nonce-based CSP (see
+  Security, below) also governs a `srcdoc` iframe's document, since it has no
   response of its own to carry a policy and so inherits its parent's; the
   preview and shared-poem iframes' inline `<style>` carried no nonce, so
   `style-src` silently dropped poetic's entire stylesheet, which also broke
