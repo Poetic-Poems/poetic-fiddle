@@ -23,7 +23,7 @@
   "dependencies": {
     "@codemirror/language": "^6.12.4",
     "@lezer/highlight": "^1.2.3",
-    "@sentry/nextjs": "^10.66.0",
+    "@sentry/nextjs": "^10.68.0",
     "@supabase/supabase-js": "^2.110.8",
     "@uiw/react-codemirror": "^4.25.11",
     "codemirror": "^6.0.2",
