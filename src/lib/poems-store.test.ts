@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  PoemDeleteError,
   PoemListError,
   PoemLoadError,
   PoemRemixOverrideError,
@@ -8,6 +9,7 @@ import {
   PoemUnshareError,
   RemixDefaultLoadError,
   RemixDefaultSaveError,
+  deletePoem,
   getRemixDefault,
   listPoems,
   loadPoem,
@@ -34,6 +36,7 @@ function mockQuery(result: QueryResult) {
   const query = {
     insert: vi.fn(() => query),
     update: vi.fn(() => query),
+    delete: vi.fn(() => query),
     eq: vi.fn(() => query),
     select: vi.fn(() => query),
     order: vi.fn(() => query),
@@ -295,6 +298,37 @@ describe("unsharePoem", () => {
 
     await expect(unshare).rejects.toBeInstanceOf(PoemUnshareError);
     await expect(unshare).rejects.toThrow(/Couldn't remove the share link/);
+  });
+});
+
+describe("deletePoem", () => {
+  it("deletes the caller's own poem by id", async () => {
+    const query = mockQuery({ data: { id: "poem-1" }, error: null });
+
+    await deletePoem("poem-1");
+
+    expect(query.delete).toHaveBeenCalled();
+    expect(query.eq).toHaveBeenCalledWith("id", "poem-1");
+  });
+
+  it("throws when the row doesn't come back (not the caller's, or already gone)", async () => {
+    mockQuery({ data: null, error: null });
+
+    const remove = deletePoem("poem-1");
+
+    await expect(remove).rejects.toBeInstanceOf(PoemDeleteError);
+    await expect(remove).rejects.toThrow(/Couldn't delete your poem/);
+  });
+
+  it("throws a readable error, keeping the cause, when the delete fails", async () => {
+    mockQuery({ data: null, error: { message: "network error" } });
+
+    const remove = deletePoem("poem-1");
+
+    await expect(remove).rejects.toBeInstanceOf(PoemDeleteError);
+    await expect(remove).rejects.toMatchObject({
+      cause: { message: "network error" },
+    });
   });
 });
 

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Session } from "@supabase/supabase-js";
 import { PoemsDashboard } from "./PoemsDashboard";
 import {
+  deletePoem,
   getRemixDefault,
   listPoems,
   updateRemixDefault,
@@ -10,6 +11,7 @@ import {
 import { useSession } from "@/lib/use-session";
 
 vi.mock("@/lib/poems-store", () => ({
+  deletePoem: vi.fn(),
   getRemixDefault: vi.fn(),
   listPoems: vi.fn(),
   updateRemixDefault: vi.fn(),
@@ -181,6 +183,92 @@ describe("PoemsDashboard", () => {
           "Couldn't save your remix setting — please try again.",
         ),
       );
+    });
+  });
+
+  describe("delete (TD26072414)", () => {
+    beforeEach(() => {
+      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(listPoems).mockResolvedValue([
+        {
+          id: "poem-1",
+          title: "Ode to a Fiddle",
+          updatedAt: "2026-07-16T00:00:00Z",
+          shareId: null,
+        },
+      ]);
+    });
+
+    it("asks for confirmation before deleting, without deleting on the first click", async () => {
+      render(<PoemsDashboard />);
+
+      const deleteButton = await screen.findByRole("button", {
+        name: /delete "ode to a fiddle"/i,
+      });
+      fireEvent.click(deleteButton);
+
+      expect(screen.getByText(/delete this poem\?/i)).toBeInTheDocument();
+      expect(deletePoem).not.toHaveBeenCalled();
+    });
+
+    it("cancels a delete without removing the poem", async () => {
+      render(<PoemsDashboard />);
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "ode to a fiddle"/i,
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+      expect(deletePoem).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole("link", { name: /ode to a fiddle/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("deletes a poem after confirming, removing it from the list", async () => {
+      vi.mocked(deletePoem).mockResolvedValue(undefined);
+
+      render(<PoemsDashboard />);
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "ode to a fiddle"/i,
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /delete forever/i }));
+
+      await waitFor(() => expect(deletePoem).toHaveBeenCalledWith("poem-1"));
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("link", { name: /ode to a fiddle/i }),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it("surfaces an error without crashing when the delete fails", async () => {
+      vi.mocked(deletePoem).mockRejectedValue(
+        new Error("Couldn't delete your poem — please try again."),
+      );
+
+      render(<PoemsDashboard />);
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "ode to a fiddle"/i,
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /delete forever/i }));
+
+      await waitFor(() =>
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "Couldn't delete your poem — please try again.",
+        ),
+      );
+      expect(
+        screen.getByRole("link", { name: /ode to a fiddle/i }),
+      ).toBeInTheDocument();
     });
   });
 });
