@@ -181,17 +181,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072422 CHANGELOG.md and GitHub release notes are unreconciled
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-20, F-CI-02).*
-`release.yml` creates releases with `--generate-notes` (PR-title bullets),
-independent of `CHANGELOG.md`'s manually curated `[Unreleased]` section.
-Nothing keeps the two in sync; they've already begun to diverge in spirit.
-
-Fix: have `release.yml` pull its body from `CHANGELOG.md`'s section for the
-version being tagged, or add a check that a version-bump PR renames
-`[Unreleased]`.
-
 ### TD26072423 `Editor.tsx` mixes five concerns in one 581-line component
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-21, F-ARCH-02,
@@ -406,6 +395,28 @@ placeholder ("player available on the shared page"), or have a parent-side
 click handler open the embed URL in a new tab. Whichever is chosen, validate
 the URL against the shared host allow-list (TD26072601).
 
+### TD26072801 Nothing renames `[Unreleased]`, so releases will repeat earlier notes
+
+*Filed 2026-07-28, from the review of PR #142 (TD26072422).*
+`release.yml` builds each GitHub release body from `CHANGELOG.md` via
+`scripts/extract-changelog-notes.mjs`, which reads `## [<version>]` and falls
+back to `## [Unreleased]`. Nothing renames `[Unreleased]` to the version being
+released, so every release resolves through the fallback and publishes the
+whole accumulated section — meaning the second and later releases restate
+every entry the earlier ones already announced.
+
+This is harmless for the first release (the whole section *is* that release)
+and is why the fallback exists, but the steady state is only correct if a
+version-bump PR renames `[Unreleased]` to `[X.Y.Z]` and opens a fresh
+`[Unreleased]` above it. That convention is documented nowhere and enforced by
+nothing; the repo has no release runbook at all.
+
+Fix: approach (b) from the original R-20 finding — a CI check that a PR
+bumping `package.json`'s version also renames `[Unreleased]` in
+`CHANGELOG.md` — and/or a documented release procedure stating the rename
+step. The extractor already prefers `## [<version>]` when present, so no
+change to it is needed.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -460,7 +471,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/140 |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
 | TD26072421 | No mechanism detects a new `poetic` release | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/139 |
-| TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
+| TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/142 |
 | TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | open | | |
@@ -478,3 +489,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072601 | Song-embed host allow-list now lives in three places | open | | |
 | TD26072602 | CSP-governed rendering has no runtime verification | open | | |
 | TD26072603 | Editor preview's song-embed button looks clickable but was never wired | open | | |
+| TD26072801 | Nothing renames `[Unreleased]`, so releases will repeat earlier notes | open | | |
