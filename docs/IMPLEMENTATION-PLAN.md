@@ -510,10 +510,10 @@ public launch, **P2** soon after, **P3** insurance/polish.
 - **W11 (P2, S)** — **Surface min-age 16 at sign-up** (D39, AC115). The age
   term exists in Terms/Privacy but `SignInPrompt.tsx` never mentions it. Add
   the one-line prompt wording.
-- **W12 (P1, M)** — **Poem deletion** (AC92, first half). `poems-store.ts` has
-  save/list/load/share/unshare/remix but no delete; the dashboard has no
-  delete control. Add poem deletion that also revokes any share link and
-  invalidates the share cache tag.
+- **W12 (P1, M)** — **Poem deletion** (AC92, first half) — **done** (PR #124,
+  TD26072414): `deletePoem()` in `poems-store.ts`, a confirmed delete action
+  in `PoemsDashboard.tsx`; deleting an already-shared poem invalidates its
+  share cache tag so the permalink stops serving immediately.
 - **W13 (P1, L)** — **Account deletion** (AC92, second half). Today deletion
   is by email request only. Add self-service account deletion propagating to
   all surfaces (poems, shares, profile) — needs a server-side route using the

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  deletePoem,
   getRemixDefault,
   listPoems,
   updateRemixDefault,
   type SavedPoem,
 } from "@/lib/poems-store";
+import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { useSession } from "@/lib/use-session";
 
 type LoadState =
@@ -27,6 +29,11 @@ export function PoemsDashboard() {
     { kind: "loading" },
   );
   const [remixDefaultSaving, setRemixDefaultSaving] = useState(false);
+  // Which poem (if any) is showing its "delete this poem?" confirmation, so
+  // that step is per-row rather than a single global flag.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   // Tracks whose poems `state` reflects, so a later sign-in as a different
   // account resets to loading (state update during render, matching the
   // pattern Editor.tsx uses for its own per-user resets).
@@ -96,6 +103,36 @@ export function PoemsDashboard() {
     }
   }
 
+  // Deletes a poem after the poet has confirmed (AC22, AC92, TD26072414).
+  // Runs only from the row's own confirmation step, so a stray click can't
+  // remove a poem without that second, explicit step. A shared poem's row is
+  // gone once this resolves, but its share page can still be served from
+  // cache until the next natural expiry — the same gap Editor.tsx's
+  // save/share/unshare already close by invalidating the cache tag, so a
+  // deleted poem's permalink stops serving right away rather than staying
+  // visible for up to the fallback expiry (AC92: removed from every surface).
+  async function handleDeletePoem(poem: SavedPoem) {
+    setDeletingId(poem.id);
+    setDeleteError(null);
+    try {
+      await deletePoem(poem.id);
+      setState((prev) =>
+        prev.kind === "loaded"
+          ? {
+              kind: "loaded",
+              poems: prev.poems.filter((p) => p.id !== poem.id),
+            }
+          : prev,
+      );
+      setConfirmDeleteId(null);
+      if (poem.shareId) revalidateSharedPoem(poem.shareId).catch(() => {});
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   if (!session) {
     return (
       <p className="px-6 text-sm text-foreground/70">
@@ -139,6 +176,11 @@ export function PoemsDashboard() {
           {state.message}
         </p>
       )}
+      {deleteError && (
+        <p role="alert" className="px-6 text-sm text-red-700 dark:text-red-400">
+          {deleteError}
+        </p>
+      )}
       {state.kind === "loaded" && state.poems.length === 0 && (
         <div className="flex flex-col items-start gap-2 px-6">
           <p className="text-sm text-foreground/70">
@@ -155,10 +197,10 @@ export function PoemsDashboard() {
       {state.kind === "loaded" && state.poems.length > 0 && (
         <ul className="flex flex-col gap-2 px-6">
           {state.poems.map((poem) => (
-            <li key={poem.id}>
+            <li key={poem.id} className="flex items-center gap-2">
               <Link
                 href={`/poems/${poem.id}`}
-                className="flex items-center justify-between gap-4 rounded-lg border border-black/10 px-4 py-3 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
+                className="flex flex-1 items-center justify-between gap-4 rounded-lg border border-black/10 px-4 py-3 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
               >
                 <span className="flex items-center gap-2 font-serif text-base font-medium">
                   {poem.title || "Untitled"}
@@ -172,6 +214,36 @@ export function PoemsDashboard() {
                   {new Date(poem.updatedAt).toLocaleDateString()}
                 </span>
               </Link>
+              {confirmDeleteId === poem.id ? (
+                <div className="flex shrink-0 items-center gap-2 text-xs">
+                  <span className="text-foreground/70">Delete this poem?</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePoem(poem)}
+                    disabled={deletingId === poem.id}
+                    className="rounded-md border border-red-700 px-2 py-1 font-medium text-red-700 hover:bg-red-50 disabled:opacity-60 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    {deletingId === poem.id ? "Deleting…" : "Delete forever"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(null)}
+                    disabled={deletingId === poem.id}
+                    className="rounded-md border border-black/10 px-2 py-1 font-medium hover:bg-black/5 disabled:opacity-60 dark:border-white/10 dark:hover:bg-white/5"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(poem.id)}
+                  aria-label={`Delete "${poem.title || "Untitled"}"`}
+                  className="shrink-0 rounded-md border border-black/10 px-2 py-1 text-xs font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
+                >
+                  Delete
+                </button>
+              )}
             </li>
           ))}
         </ul>
