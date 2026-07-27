@@ -54,6 +54,18 @@ export class PoemLoadError extends Error {
 }
 
 /**
+ * A poem couldn't be deleted. `message` is safe to show a poet as-is; the
+ * underlying Supabase/network error is kept as `cause` for diagnosis.
+ */
+export class PoemDeleteError extends Error {
+  constructor(cause: unknown) {
+    super("Couldn't delete your poem — please try again.");
+    this.name = "PoemDeleteError";
+    this.cause = cause;
+  }
+}
+
+/**
  * A share couldn't be created or confirmed. `message` is safe to show a poet
  * as-is; the underlying Supabase/network error is kept as `cause`.
  */
@@ -246,6 +258,26 @@ export async function loadPoem(id: string): Promise<LoadedPoem> {
     shareId: data.share_id,
     allowRemix: data.allow_remix,
   };
+}
+
+/**
+ * Deletes a saved poem outright, self-service — a poet no longer needs to
+ * email the maintainer to remove one (TD26072414). RLS's `poems_delete_own`
+ * policy scopes the delete to the caller's own row, so a poem that isn't
+ * theirs deletes nothing; that surfaces here as a failure rather than a
+ * silent no-op the poet would otherwise read as a successful delete.
+ *
+ * @throws {PoemDeleteError} if the delete doesn't come back with a row.
+ */
+export async function deletePoem(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("poems")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .single<{ id: string }>();
+
+  if (error || !data) throw new PoemDeleteError(error);
 }
 
 /**

@@ -88,17 +88,18 @@ export default function PrivacyPolicy() {
             the poem; the sharer can revoke the share at any time.
           </p>
           <p>
-            You can ask us to delete an individual poem, or your entire account
-            — which removes your email address, all poems you wrote, and all
-            share links you created — by emailing{" "}
+            You can delete an individual poem yourself, at any time, from your
+            My poems dashboard — this removes it permanently, immediately. To
+            delete your entire account — which removes your email address, all
+            poems you wrote, and all share links you created — email{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
               className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
             </a>
-            . We delete data permanently as soon as your deletion request is
-            processed.
+            . We delete data permanently as soon as your account-deletion
+            request is processed.
           </p>
         </section>
 
