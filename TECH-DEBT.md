@@ -274,19 +274,6 @@ bug once (TD26071804).
 Fix: pin an exact Supabase CLI release in `ci.yml`; pin an exact npm
 version (or record the verified major in `package.json`'s `engines.npm`).
 
-### TD26072419 CODEOWNERS' two reviewer accounts appear to be the same person
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-17, F-GOV-03).*
-`@warwickallen` and `@Warwick-Allen` both satisfy the branch-protection
-rule's code-owner-review requirement, but review authorship, `mergedBy`,
-and LICENCE/CLAUDE.md's git user all point to the same individual — so the
-"independent review" the ruleset implies is procedurally self-approval
-through an alternate account.
-
-Fix: document explicitly that review is currently a single-human checkpoint
-under two accounts, or add a second genuine reviewer as the project grows.
-
-
 ### TD26072421 No mechanism detects a new `poetic` release
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-19, F-DEPS-02).*
@@ -574,7 +561,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
 | TD26072417 | README doesn't document the local-only Supabase dev workflow | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/123 |
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/136 |
-| TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | in-progress | | |
+| TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/140 |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
 | TD26072421 | No mechanism detects a new `poetic` release | open | | |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
