@@ -253,6 +253,15 @@ poet-controlled title into a CSP-bearing HTML template, has zero coverage.
 Fix: add `src/lib/use-session.test.ts` and `SharedPoemView.test.tsx`
 covering both, per the review's recommendation for concrete test cases.
 
+### TD26072414 No self-service delete path for a poem, though the schema already supports it
+
+*Filed 2026-07-24, from the 2026-07-23 project review (R-12, F-DATA-02).*
+`poems-store.ts` exports no delete function, though the `poems_delete_own`
+RLS policy and grant already exist in the migration. Deletion today is
+manual, by emailing the maintainer.
+
+Fix: add a `deletePoem(id)` function and a confirmed delete action in
+`PoemsDashboard.tsx`.
 ### TD26072415 CI floats the Supabase CLI and npm versions instead of pinning them
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-13, F-CI-03,
@@ -288,17 +297,6 @@ through an alternate account.
 Fix: document explicitly that review is currently a single-human checkpoint
 under two accounts, or add a second genuine reviewer as the project grows.
 
-### TD26072420 OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-18, F-DOC-03).*
-A dated "Update (2026-07-19)" blockquote in `docs/OBSERVABILITY-PLAN.md`
-narrates the jsdom incident's resolution in past tense — the
-"previously.../fixed by..." phrasing CLAUDE.md's documentation principles
-reserve for `CHANGELOG.md`. The same incident is already narrated there and
-in `TD26071901`.
-
-Fix: trim the blockquote to a one-line as-built statement linking to
-TD26071901.
 
 ### TD26072421 No mechanism detects a new `poetic` release
 
@@ -583,12 +581,12 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072412 | `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/126 |
 | TD26072413 | `revalidateSharedPoem` failures are silently swallowed with no Sentry capture | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/118 |
 | TD26072414 | No self-service delete path for a poem, though the schema already supports it | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/124 |
-| TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | open | | |
+| TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/127 |
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
 | TD26072417 | README doesn't document the local-only Supabase dev workflow | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/123 |
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
-| TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | open | | |
+| TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
 | TD26072421 | No mechanism detects a new `poetic` release | open | | |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
 | TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
