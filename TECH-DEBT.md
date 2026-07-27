@@ -472,7 +472,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
 | TD26072421 | No mechanism detects a new `poetic` release | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/139 |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/142 |
-| TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
+| TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | in-progress | | |
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | open | | |
 | TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | open | | |
