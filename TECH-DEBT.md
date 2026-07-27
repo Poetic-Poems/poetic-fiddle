@@ -576,7 +576,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/136 |
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
-| TD26072421 | No mechanism detects a new `poetic` release | open | | |
+| TD26072421 | No mechanism detects a new `poetic` release | in-progress | | |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
 | TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
