@@ -147,6 +147,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (AC76).
 - The poem title is now visible in the preview panel, via poetic's
   `h2.poem-title` heading.
+- Fixed three sources of horizontal overflow at a 320px viewport width
+  (AC77): the site footer's three legal links no longer force a single
+  unbroken row, the editor's share-link URL now wraps instead of
+  overflowing its box, and the "My poems" dashboard's per-poem delete
+  confirmation (`Delete this poem? / Delete forever / Cancel`) now wraps
+  instead of forcing the row wider than the viewport.
 - The poem title no longer appears twice in the preview panel. The app had
   been overriding poetic's stylesheet to unhide a second, redundant copy of
   the title (the `.poem-info` section's `title` span); poetic's own
