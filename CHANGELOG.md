@@ -129,6 +129,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   live Save/Share feature (Supabase storage, row-level security, share-link
   revocation, and deletion by request) instead of saying storage "isn't
   available yet".
+- The Acceptable Use Policy and Privacy Policy publish a designated takedown
+  address (`takedown@poeticfiddle.com`) and describe the removal process:
+  valid requests result in content being removed from every surface — the
+  poet's dashboard, any active share links, and the published site (D40,
+  AC116).
 
 ### Fixed
 
