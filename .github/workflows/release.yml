@@ -5,6 +5,11 @@ name: Release
 # version is the single source of truth: this workflow tags the commit that
 # introduced it and publishes the GitHub release, so the tag can never drift
 # out of sync with the version the commit itself is bumping to.
+#
+# The release body comes from CHANGELOG.md (scripts/extract-changelog-notes.mjs),
+# not GitHub's auto-generated PR-title notes, so the two stay in sync. It reads
+# the "## [<version>]" section if the bump PR renamed [Unreleased] to it, and
+# falls back to "## [Unreleased]" otherwise.
 on:
   push:
     branches:
@@ -44,6 +49,12 @@ jobs:
           git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
+      - name: Extract release notes from CHANGELOG.md
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          version=$(node -p "require('./package.json').version")
+          node scripts/extract-changelog-notes.mjs "$version" > /tmp/release-notes.md
+
       - name: Create GitHub release
         if: steps.check.outputs.exists == 'false'
         env:
@@ -51,4 +62,4 @@ jobs:
         run: |
           gh release create "${{ steps.version.outputs.tag }}" \
             --title "Poetic ${{ steps.version.outputs.tag }}" \
-            --generate-notes
+            --notes-file /tmp/release-notes.md
