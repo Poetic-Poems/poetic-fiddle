@@ -52,10 +52,17 @@ jobs:
           set -euo pipefail
           title="New poetic release available: ${LATEST_TAG}"
 
+          # Match the whole title, not the tag as a substring: issues that
+          # merely mention a version in passing ("cut a release containing …
+          # (v6.2.0)") are unrelated, and treating one as this report would
+          # silently swallow the release it is meant to announce. Matching
+          # exactly fails the other way — a retitled issue yields a duplicate
+          # report rather than no report — which is the safe direction for a
+          # check whose only job is to not miss a release.
           already_filed=$(gh issue list --state all --limit 200 --json title \
-            | jq --arg tag "$LATEST_TAG" 'any(.[]; .title | contains($tag))')
+            | jq --arg title "$title" 'any(.[]; .title == $title)')
           if [ "$already_filed" = "true" ]; then
-            echo "An issue already references ${LATEST_TAG}; skipping."
+            echo "${LATEST_TAG} has already been reported; skipping."
             exit 0
           fi
 
