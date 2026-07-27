@@ -45,3 +45,56 @@ describe("SharedPoemView srcDoc nonce", () => {
     expect(srcDoc).not.toContain("null");
   });
 });
+
+// escapeHtml itself isn't exported — SharedPoemView is its only caller, and
+// the only place it runs is on `title` in the srcDoc's <title> element, so
+// these assert against that rendered output rather than the private
+// function directly.
+describe("SharedPoemView title escaping (escapeHtml)", () => {
+  function titleOf(container: HTMLElement): string {
+    const iframe = container.querySelector("iframe")!;
+    const srcDoc = iframe.getAttribute("srcdoc")!;
+    return /<title>([\s\S]*?)<\/title>/.exec(srcDoc)![1];
+  }
+
+  function renderWithTitle(title: string): string {
+    const { container } = render(
+      <NonceProvider nonce={null}>
+        <SharedPoemView html="<p>A poem.</p>" css="" title={title} />
+      </NonceProvider>,
+    );
+    return titleOf(container);
+  }
+
+  it("escapes angle brackets so a title can't inject markup", () => {
+    expect(renderWithTitle("<script>alert(1)</script>")).toBe(
+      "&lt;script&gt;alert(1)&lt;/script&gt;",
+    );
+  });
+
+  it("escapes ampersands", () => {
+    expect(renderWithTitle("Rock & Roll")).toBe("Rock &amp; Roll");
+  });
+
+  it("escapes double and single quotes", () => {
+    expect(renderWithTitle(`She said "hi", y'all`)).toBe(
+      "She said &quot;hi&quot;, y&#39;all",
+    );
+  });
+
+  it("re-escapes an already-encoded entity instead of decoding it", () => {
+    expect(renderWithTitle("&amp;")).toBe("&amp;amp;");
+  });
+
+  it("returns an empty title unchanged", () => {
+    expect(renderWithTitle("")).toBe("");
+  });
+
+  it("escapes every special character in a long, repeated title", () => {
+    const title = "<b>&'\"</b>".repeat(200);
+    const escaped = renderWithTitle(title);
+
+    expect(escaped).toBe("&lt;b&gt;&amp;&#39;&quot;&lt;/b&gt;".repeat(200));
+    expect(escaped).not.toContain("<b>");
+  });
+});
