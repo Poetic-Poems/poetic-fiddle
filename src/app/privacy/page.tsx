@@ -173,8 +173,8 @@ export default function PrivacyPolicy() {
             Takedown and content removal
           </h2>
           <p>
-            If you believe content on Poetic Fiddle infringes copyright, violates
-            intellectual property rights, or breaches our{" "}
+            If you believe content on Poetic Fiddle infringes copyright,
+            violates intellectual property rights, or breaches our{" "}
             <Link
               href="/aup"
               className="text-link underline underline-offset-2"
@@ -188,9 +188,9 @@ export default function PrivacyPolicy() {
             >
               takedown@poeticfiddle.com
             </a>{" "}
-            with details of the content. When we remove content following a valid
-            request, we remove it from all surfaces: the poet&rsquo;s account, any
-            share links, and the published site.
+            with details of the content. When we remove content following a
+            valid request, we remove it from all surfaces: the poet&rsquo;s
+            account, any share links, and the published site.
           </p>
         </section>
 

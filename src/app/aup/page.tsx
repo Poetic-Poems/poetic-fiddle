@@ -83,9 +83,9 @@ export default function AcceptableUsePolicy() {
             Takedown and removal requests
           </h2>
           <p>
-            If you believe content on Poetic Fiddle infringes copyright, breaches
-            intellectual property rights, or violates this policy, you can request
-            its removal by emailing{" "}
+            If you believe content on Poetic Fiddle infringes copyright,
+            breaches intellectual property rights, or violates this policy, you
+            can request its removal by emailing{" "}
             <a
               href="mailto:takedown@poeticfiddle.com"
               className="text-link underline underline-offset-2"
@@ -96,9 +96,9 @@ export default function AcceptableUsePolicy() {
           </p>
           <p>
             We will review valid removal requests and, when appropriate, remove
-            the content from all surfaces — the poet&rsquo;s dashboard, any active
-            share links, and the published site. We aim to respond to removal
-            requests within a reasonable timeframe.
+            the content from all surfaces — the poet&rsquo;s dashboard, any
+            active share links, and the published site. We aim to respond to
+            removal requests within a reasonable timeframe.
           </p>
         </section>
 
