@@ -14,7 +14,7 @@ export default function AcceptableUsePolicy() {
           Acceptable Use Policy
         </h1>
         <p className="mt-1 text-sm text-foreground/70">
-          Last updated 23 July 2026
+          Last updated 27 July 2026
         </p>
       </div>
 
@@ -75,6 +75,30 @@ export default function AcceptableUsePolicy() {
               Termination
             </Link>{" "}
             section.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-serif text-lg font-semibold">
+            Takedown and removal requests
+          </h2>
+          <p>
+            If you believe content on Poetic Fiddle infringes copyright, breaches
+            intellectual property rights, or violates this policy, you can request
+            its removal by emailing{" "}
+            <a
+              href="mailto:takedown@poeticfiddle.com"
+              className="text-link underline underline-offset-2"
+            >
+              takedown@poeticfiddle.com
+            </a>{" "}
+            with details of the content and your grounds for removal.
+          </p>
+          <p>
+            We will review valid removal requests and, when appropriate, remove
+            the content from all surfaces — the poet&rsquo;s dashboard, any active
+            share links, and the published site. We aim to respond to removal
+            requests within a reasonable timeframe.
           </p>
         </section>
 
