@@ -286,18 +286,6 @@ through an alternate account.
 Fix: document explicitly that review is currently a single-human checkpoint
 under two accounts, or add a second genuine reviewer as the project grows.
 
-
-### TD26072421 No mechanism detects a new `poetic` release
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-19, F-DEPS-02).*
-`poetic` installs from a pinned GitHub release-tarball URL, which
-Dependabot's npm updater can't track. No script/workflow polls
-`Poetic-Poems/poetic`'s releases for a newer tag than the one pinned.
-Currently up to date, so this is latent, not active.
-
-Fix: a scheduled workflow comparing the pinned version against `poetic`'s
-latest release, mirroring the existing `td-tooling-drift.yml` pattern.
-
 ### TD26072422 CHANGELOG.md and GitHub release notes are unreconciled
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-20, F-CI-02).*
@@ -576,7 +564,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/136 |
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
-| TD26072421 | No mechanism detects a new `poetic` release | in-progress | | |
+| TD26072421 | No mechanism detects a new `poetic` release | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/139 |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
 | TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
