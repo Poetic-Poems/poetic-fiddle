@@ -574,7 +574,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
 | TD26072417 | README doesn't document the local-only Supabase dev workflow | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/123 |
 | TD26072418 | No CONTRIBUTING file or PR/issue templates | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/136 |
-| TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
+| TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | in-progress | | |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
 | TD26072421 | No mechanism detects a new `poetic` release | open | | |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
