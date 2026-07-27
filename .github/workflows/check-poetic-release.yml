@@ -1,0 +1,79 @@
+name: Check for new poetic release
+
+# poetic-fiddle pins the `poetic` dependency to a GitHub release-tarball URL
+# in package.json, which Dependabot's npm updater cannot track (TECH-DEBT.md
+# TD26072421). This workflow polls Poetic-Poems/poetic's releases weekly,
+# compares the latest release tag against the version pinned in
+# package.json, and files an issue naming that tag when a newer release
+# exists. The issue title records the tag, so a release that has already
+# been reported is not reported again on a later run. workflow_dispatch
+# allows an on-demand check.
+
+on:
+  schedule:
+    - cron: "9 7 * * 1" # weekly, Monday 07:09 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Determine pinned poetic version
+        id: pinned
+        run: |
+          set -euo pipefail
+          url=$(node -p "require('./package.json').dependencies.poetic")
+          version=$(echo "$url" | grep -oP '(?<=/download/v)[0-9]+\.[0-9]+\.[0-9]+')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Determine latest poetic release
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag=$(gh release view --repo Poetic-Poems/poetic --json tagName --jq .tagName)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: File an issue if a newer release exists
+        if: steps.pinned.outputs.version != steps.latest.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PINNED_VERSION: ${{ steps.pinned.outputs.version }}
+          LATEST_TAG: ${{ steps.latest.outputs.tag }}
+        run: |
+          set -euo pipefail
+          title="New poetic release available: ${LATEST_TAG}"
+
+          # Match the whole title, not the tag as a substring: issues that
+          # merely mention a version in passing ("cut a release containing …
+          # (v6.2.0)") are unrelated, and treating one as this report would
+          # silently swallow the release it is meant to announce. Matching
+          # exactly fails the other way — a retitled issue yields a duplicate
+          # report rather than no report — which is the safe direction for a
+          # check whose only job is to not miss a release.
+          already_filed=$(gh issue list --state all --limit 200 --json title \
+            | jq --arg title "$title" 'any(.[]; .title == $title)')
+          if [ "$already_filed" = "true" ]; then
+            echo "${LATEST_TAG} has already been reported; skipping."
+            exit 0
+          fi
+
+          notes=$(gh release view "$LATEST_TAG" --repo Poetic-Poems/poetic --json body --jq .body)
+          body_file=$(mktemp)
+          {
+            printf 'poetic %s is pinned in package.json; %s is now available upstream:\n' \
+              "$PINNED_VERSION" "$LATEST_TAG"
+            printf 'https://github.com/Poetic-Poems/poetic/releases/tag/%s\n\n' "$LATEST_TAG"
+            printf "Bump the release-tarball URL in package.json's \`poetic\` dependency to pick it up.\n\n"
+            printf '## Release notes\n\n'
+            printf '%s\n' "$notes"
+          } > "$body_file"
+          gh issue create --title "$title" --body-file "$body_file"
