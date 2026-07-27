@@ -23,7 +23,7 @@
   "dependencies": {
     "@codemirror/language": "^6.12.4",
     "@lezer/highlight": "^1.2.3",
-    "@sentry/nextjs": "^10.66.0",
+    "@sentry/nextjs": "^10.68.0",
     "@supabase/supabase-js": "^2.110.8",
     "@uiw/react-codemirror": "^4.25.11",
     "codemirror": "^6.0.2",
@@ -44,7 +44,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.3",
     "eslint": "^9",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.2.12",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.6",
     "tailwindcss": "^4",
