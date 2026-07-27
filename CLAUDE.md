@@ -83,6 +83,10 @@ subagents where appropriate. Favour a minimal-cost architecture — static/edge
 hosting, in-browser compute, free managed tiers — and add paid infrastructure
 only when a capability genuinely requires it.
 
+## Governance
+
+**Code owner review:** The CODEOWNERS file lists two GitHub accounts — `@warwickallen` and `@Warwick-Allen` — both of which satisfy the branch-protection rule requiring code-owner approval before a merge to `main`. Both accounts belong to the same individual (the repository's sole maintainer). The "independent review" the ruleset implies is procedurally a checkpoint under one person using two accounts, not a separation of concerns. This is appropriate for the current project stage (early development, team of one), but will need to change as the project grows and the team expands: a code-review separation of authority requires genuine independent reviewers. Future cycles: as contributor guidelines and decision-making evolve, assign actual co-maintainers and update both CODEOWNERS and this section accordingly.
+
 ## Branch workflow
 
 `main` is protected: it does not accept direct commits or pushes, from anyone
