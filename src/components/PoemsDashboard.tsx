@@ -197,7 +197,7 @@ export function PoemsDashboard() {
       {state.kind === "loaded" && state.poems.length > 0 && (
         <ul className="flex flex-col gap-2 px-6">
           {state.poems.map((poem) => (
-            <li key={poem.id} className="flex items-center gap-2">
+            <li key={poem.id} className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/poems/${poem.id}`}
                 className="flex flex-1 items-center justify-between gap-4 rounded-lg border border-black/10 px-4 py-3 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
@@ -215,7 +215,7 @@ export function PoemsDashboard() {
                 </span>
               </Link>
               {confirmDeleteId === poem.id ? (
-                <div className="flex shrink-0 items-center gap-2 text-xs">
+                <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
                   <span className="text-foreground/70">Delete this poem?</span>
                   <button
                     type="button"

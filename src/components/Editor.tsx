@@ -506,7 +506,7 @@ export default function Editor({
             href={shareUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-link underline underline-offset-2"
+            className="break-all text-link underline underline-offset-2"
           >
             {shareUrl}
           </a>
