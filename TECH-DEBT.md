@@ -274,17 +274,6 @@ bug once (TD26071804).
 Fix: pin an exact Supabase CLI release in `ci.yml`; pin an exact npm
 version (or record the verified major in `package.json`'s `engines.npm`).
 
-### TD26072418 No CONTRIBUTING file or PR/issue templates
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-16, F-GOV-01,
-F-GOV-02).* The project's contribution workflow (branch naming, commit
-format, PR-only changes) lives only in CLAUDE.md, framed as agent operating
-instructions rather than a human-facing guide, and isn't picked up by
-GitHub's own contribution-guide UI affordances.
-
-Fix: add a short root `CONTRIBUTING.md` pointing to CLAUDE.md's relevant
-sections, plus a minimal `.github/PULL_REQUEST_TEMPLATE.md`.
-
 ### TD26072419 CODEOWNERS' two reviewer accounts appear to be the same person
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-17, F-GOV-03).*
@@ -584,7 +573,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/127 |
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
 | TD26072417 | README doesn't document the local-only Supabase dev workflow | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/123 |
-| TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
+| TD26072418 | No CONTRIBUTING file or PR/issue templates | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/136 |
 | TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
 | TD26072421 | No mechanism detects a new `poetic` release | open | | |
