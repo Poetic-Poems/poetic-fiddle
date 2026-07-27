@@ -489,9 +489,11 @@ finish in one PR each. Items marked **[human]** need Warwick for at least one
 step; everything else is agent-selectable as-is. Priorities: **P1** before
 public launch, **P2** soon after, **P3** insurance/polish.
 
-- **W5 (P1, S)** — **320 px / 200 % reflow** (AC77). Responsive utilities
-  exist but nothing targets the AC's 320 px floor. Verify every page at
-  320 px width and 200 % zoom; fix overflow/clipping.
+- **W5 (P1, S)** — **320 px / 200 % reflow** (AC77) — **done** (PR #137):
+  every page reflows at a 320 px viewport without horizontal scrolling —
+  the site footer's legal links, the editor's share-link URL, and the
+  dashboard's per-poem delete confirmation all wrap instead of forcing
+  the row wider than the viewport.
 - **W6 (P1, M)** — **Mobile source/preview toggle** (AC26, AC83). Desktop
   split-pane is in (`Editor.tsx` `lg:grid-cols-2`) but mobile renders a
   vertical stack, not the planned toggle. Add a source/preview switch below
