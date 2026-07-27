@@ -90,6 +90,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A standalone Acceptable Use Policy page (`/aup`), linked from the site
   footer and from the Terms of Service, so the AUP is a published policy in
   its own right rather than a section inside Terms (D40, AC111).
+- A self-service "Delete" action on each poem in the My poems dashboard, with
+  an inline confirmation step, so removing a poem no longer requires emailing
+  the maintainer (AC92, TD26072414). Deleting an already-shared poem also
+  invalidates its share page's cache, so the permalink stops serving right
+  away rather than staying visible until the cache's next natural expiry.
 
 ### Changed
 
