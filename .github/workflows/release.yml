@@ -43,17 +43,22 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Tag this commit
-        if: steps.check.outputs.exists == 'false'
-        run: |
-          git tag "${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
-
+      # Before the tag is pushed, so a CHANGELOG.md the extractor cannot read a
+      # section out of fails the run while it is still re-runnable. Once the tag
+      # exists the `check` step above reports exists=true and every step below
+      # is skipped, so a failure after tagging would leave the version tagged
+      # but permanently unreleasable without deleting the tag by hand.
       - name: Extract release notes from CHANGELOG.md
         if: steps.check.outputs.exists == 'false'
         run: |
           version=$(node -p "require('./package.json').version")
           node scripts/extract-changelog-notes.mjs "$version" > /tmp/release-notes.md
+
+      - name: Tag this commit
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Create GitHub release
         if: steps.check.outputs.exists == 'false'

@@ -9,6 +9,7 @@
 // <version> is the bare semver being released (e.g. "0.1.0", no "v" prefix).
 
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 export function extractChangelogSection(content, version) {
   const lines = content.split("\n");
@@ -55,6 +56,6 @@ function main() {
   console.log(section);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main();
 }
