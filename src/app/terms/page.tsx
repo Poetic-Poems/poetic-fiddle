@@ -14,7 +14,7 @@ export default function TermsOfService() {
           Terms of Service
         </h1>
         <p className="mt-1 text-sm text-foreground/70">
-          Last updated 23 July 2026
+          Last updated 28 July 2026
         </p>
       </div>
 
@@ -57,11 +57,11 @@ export default function TermsOfService() {
           <h2 className="font-serif text-lg font-semibold">The service</h2>
           <p>
             Poetic Fiddle is an early-stage web editor for the{" "}
-            <code>.poem</code> format, with a live preview as you write. Save
-            and Share, which will store a signed-in poet&rsquo;s poems in our
-            database and let them be shared via a link, aren&rsquo;t available
-            yet — until they are, poems written while signed out are kept only
-            as an anonymous draft in your own browser.
+            <code>.poem</code> format, with a live preview as you write. When
+            you&rsquo;re signed in, you can save your poems to our database,
+            share them via a link, and manage your account and poems. If
+            you&rsquo;re not signed in, poems are kept as an anonymous draft in
+            your own browser.
           </p>
         </section>
 
@@ -103,10 +103,9 @@ export default function TermsOfService() {
             You own the poems you write in Poetic Fiddle, and keep the copyright
             in them. By using the service, you give us only the limited licence
             we need to run it: to store your poems and display them back to you,
-            and — once Save and Share are live — to serve a poem to others via a
-            share link you choose to create for it. We don&rsquo;t claim any
-            broader rights over your work, and we won&rsquo;t use your poems for
-            anything else.
+            and to serve a poem to others via a share link you choose to create
+            for it. We don&rsquo;t claim any broader rights over your work, and
+            we won&rsquo;t use your poems for anything else.
           </p>
         </section>
 
