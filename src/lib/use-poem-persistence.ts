@@ -13,6 +13,7 @@ import {
 } from "@/lib/poems-store";
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { useSession } from "@/lib/use-session";
+import { errorMessage } from "@/lib/errors";
 
 const DEBOUNCE_MS = 200;
 
@@ -25,7 +26,7 @@ export function tryRenderPoem(
   } catch (err) {
     return {
       html: previousHtml,
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMessage(err),
     };
   }
 }
@@ -126,7 +127,7 @@ export function usePoemPersistence({
       })
       .catch((err) => {
         if (cancelled) return;
-        setOpenError(err instanceof Error ? err.message : String(err));
+        setOpenError(errorMessage(err));
         setOpening(false);
       });
     return () => {
@@ -222,7 +223,7 @@ export function usePoemPersistence({
     } catch (err) {
       // The editor keeps every edit either way — a failed save changes nothing
       // but the message (AC94, AC95).
-      setSaveError(err instanceof Error ? err.message : String(err));
+      setSaveError(errorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -257,7 +258,7 @@ export function usePoemPersistence({
       setShareId(newShareId);
       revalidateSharedPoem(newShareId).catch(() => {});
     } catch (err) {
-      setShareError(err instanceof Error ? err.message : String(err));
+      setShareError(errorMessage(err));
     } finally {
       setSharing(false);
     }
@@ -279,7 +280,7 @@ export function usePoemPersistence({
       setShareId(null);
       revalidateSharedPoem(shareId).catch(() => {});
     } catch (err) {
-      setShareError(err instanceof Error ? err.message : String(err));
+      setShareError(errorMessage(err));
     } finally {
       setUnsharing(false);
     }
@@ -311,7 +312,7 @@ export function usePoemPersistence({
         }
         setAllowRemix(await updateAllowRemix(idToUpdate, value));
       } catch (err) {
-        setAllowRemixError(err instanceof Error ? err.message : String(err));
+        setAllowRemixError(errorMessage(err));
       } finally {
         setAllowRemixSaving(false);
       }
@@ -339,7 +340,7 @@ export function usePoemPersistence({
         );
       })
       .catch((err) => {
-        setShareError(err instanceof Error ? err.message : String(err));
+        setShareError(errorMessage(err));
       });
   }, [shareUrl]);
 

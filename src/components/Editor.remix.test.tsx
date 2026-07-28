@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import type { Session } from "@supabase/supabase-js";
 import Editor from "./Editor";
 import { savePoem } from "@/lib/poems-store";
 import { loadDraft } from "@/lib/draft-storage";
 import { useSession } from "@/lib/use-session";
+import { makeSession, resetEditorTestState } from "./editor-test-support";
 
 vi.mock("@/lib/poems-store", () => ({
   loadPoem: vi.fn(),
@@ -19,17 +19,12 @@ vi.mock("@/lib/supabase-client", () => ({
   supabase: { auth: { signOut: vi.fn() } },
 }));
 
-const SESSION = {
-  user: { id: "user-1", email: "remixer@example.com" },
-} as Session;
+const SESSION = makeSession("remixer@example.com");
 
 const REMIX_SOURCE =
   "={title}=Ode to a Fiddle\n\nOde to a Fiddle\nA Poet\n2026-07-17\n\n{Verse 1}\nBorrowed line.\n";
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  window.localStorage.clear();
-});
+beforeEach(resetEditorTestState);
 
 describe("Editor opening a remix", () => {
   it("holds an anonymous remix as the localStorage draft (AC21)", async () => {

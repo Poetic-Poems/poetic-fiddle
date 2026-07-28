@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { Session } from "@supabase/supabase-js";
 import Editor from "./Editor";
 import { loadPoem, savePoem, updateAllowRemix } from "@/lib/poems-store";
 import { useSession } from "@/lib/use-session";
+import { makeSession, resetEditorTestState } from "./editor-test-support";
 
 vi.mock("@/lib/poems-store", () => ({
   loadPoem: vi.fn(),
@@ -19,14 +19,9 @@ vi.mock("@/lib/supabase-client", () => ({
   supabase: { auth: { signOut: vi.fn() } },
 }));
 
-const SESSION = {
-  user: { id: "user-1", email: "poet@example.com" },
-} as Session;
+const SESSION = makeSession();
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  window.localStorage.clear();
-});
+beforeEach(resetEditorTestState);
 
 describe("Editor per-poem remix override (AC114)", () => {
   it("has no remix control for a signed-out visitor", () => {

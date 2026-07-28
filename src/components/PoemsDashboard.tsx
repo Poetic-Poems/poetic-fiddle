@@ -11,6 +11,7 @@ import {
 } from "@/lib/poems-store";
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { useSession } from "@/lib/use-session";
+import { errorMessage } from "@/lib/errors";
 
 type LoadState =
   | { kind: "loading" }
@@ -56,7 +57,7 @@ export function PoemsDashboard() {
         if (!cancelled) {
           setState({
             kind: "error",
-            message: err instanceof Error ? err.message : String(err),
+            message: errorMessage(err),
           });
         }
       });
@@ -78,7 +79,7 @@ export function PoemsDashboard() {
         if (!cancelled) {
           setRemixDefaultState({
             kind: "error",
-            message: err instanceof Error ? err.message : String(err),
+            message: errorMessage(err),
           });
         }
       });
@@ -96,7 +97,7 @@ export function PoemsDashboard() {
     } catch (err) {
       setRemixDefaultState({
         kind: "error",
-        message: err instanceof Error ? err.message : String(err),
+        message: errorMessage(err),
       });
     } finally {
       setRemixDefaultSaving(false);
@@ -127,7 +128,7 @@ export function PoemsDashboard() {
       setConfirmDeleteId(null);
       if (poem.shareId) revalidateSharedPoem(poem.shareId).catch(() => {});
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : String(err));
+      setDeleteError(errorMessage(err));
     } finally {
       setDeletingId(null);
     }
