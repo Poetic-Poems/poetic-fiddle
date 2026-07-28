@@ -181,145 +181,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072403 `next` is one patch behind on advisories affecting Server Actions
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-01, F-SEC-01, F-DEPS-01).*
-`package.json` pins `next@16.2.10`; `npm audit` reports 3 high-severity
-advisories fixed in `16.2.11`, several scoped to Server Actions handling and
-the proxy/middleware layer. `src/lib/revalidate-share.ts` has a live `"use
-server"` export called from `Editor.tsx` on every save of a shared poem, so
-this is reachable, not dormant. Neither a Dependabot PR nor a Dependabot
-alert has surfaced it yet — `eslint-config-next` was bumped in lockstep in
-PR #94, `next` itself was not.
-
-Fix: `npm install next@16.2.11` (or later), run the full check suite, and
-confirm `npm audit` no longer reports the three advisories.
-### TD26072404 CodeMirror editor has no accessible name for screen readers
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-02, F-UX-01).*
-`Editor.tsx`'s `<label htmlFor="poem-source">` targets an `id` that
-CodeMirror's React wrapper places on the outer `<div>`, not on the actual
-`role="textbox"` editable element, which has no `aria-label`.
-`docs/REQUIREMENTS.md` AC79 requires the editor be labelled; PR #89 closed
-that backlog entry without fixing the labelling.
-
-Fix: add `EditorView.contentAttributes.of({ "aria-label": "Your poem" })` to
-the CodeMirror `extensions` array; add a `getByRole`/`getByLabelText`
-assertion to `Editor.test.tsx`.
-
-### TD26072406 CLAUDE.md's Status section understates what's built
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-04, F-DOC-01).*
-CLAUDE.md's Status section says the data layer (save, dashboard, share) "is
-not yet" built. It is — `poems-store.ts`, `PoemsDashboard.tsx`, and the
-share/remix routes are all implemented, tested, and live, and
-`docs/IMPLEMENTATION-PLAN.md` (which CLAUDE.md itself cites) already marks
-those milestones done. An agent trusting CLAUDE.md's line could duplicate
-shipped work or misjudge project maturity.
-
-Fix: rewrite the Status section to name the current milestone and the
-actual remaining ("not yet") hardening work.
-
-### TD26072407 Privacy Policy says poem storage "isn't available yet," but it's live
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-05, F-DATA-01).*
-`src/app/privacy/page.tsx`'s "Saving and sharing poems" section tells
-visitors poem/account storage isn't available yet. `poems-store.ts` has a
-fully wired, unflagged save/share/list/load flow against live tables,
-exercised in production. Rated above what the project's maturity alone
-would suggest, since the harm (a false statement about whether creative
-writing is persisted) reaches the user's actual expectations.
-
-Fix: update the section to present-tense, accurate language; cross-check
-the "delete at any time" promise against actual capability (TD26072414).
-
-### TD26072414 No self-service delete path for a poem, though the schema already supports it
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-12, F-DATA-02).*
-`poems-store.ts` exports no delete function, though the `poems_delete_own`
-RLS policy and grant already exist in the migration. Deletion today is
-manual, by emailing the maintainer.
-
-Fix: add a `deletePoem(id)` function and a confirmed delete action in
-`PoemsDashboard.tsx`.
-### TD26072412 `use-session.ts` and `SharedPoemView`'s `escapeHtml` are untested
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-10, F-TEST-01,
-F-TEST-02).* Every consumer mocks `useSession` entirely, so the hook
-gating all owner-scoped, RLS-backed operations is never exercised directly.
-`SharedPoemView.tsx`'s hand-rolled `escapeHtml`, which interpolates a
-poet-controlled title into a CSP-bearing HTML template, has zero coverage.
-
-Fix: add `src/lib/use-session.test.ts` and `SharedPoemView.test.tsx`
-covering both, per the review's recommendation for concrete test cases.
-
-### TD26072414 No self-service delete path for a poem, though the schema already supports it
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-12, F-DATA-02).*
-`poems-store.ts` exports no delete function, though the `poems_delete_own`
-RLS policy and grant already exist in the migration. Deletion today is
-manual, by emailing the maintainer.
-
-Fix: add a `deletePoem(id)` function and a confirmed delete action in
-`PoemsDashboard.tsx`.
-### TD26072415 CI floats the Supabase CLI and npm versions instead of pinning them
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-13, F-CI-03,
-F-CI-04).* `ci.yml`'s `database` and `deploy` jobs install the Supabase CLI
-via `version: latest`; its `build` job installs npm via the floating
-`npm@12`. Both are the least-pinned parts of an otherwise carefully
-version-pinned pipeline, and this project already hit an npm-version-specific
-bug once (TD26071804).
-
-Fix: pin an exact Supabase CLI release in `ci.yml`; pin an exact npm
-version (or record the verified major in `package.json`'s `engines.npm`).
-
-### TD26072418 No CONTRIBUTING file or PR/issue templates
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-16, F-GOV-01,
-F-GOV-02).* The project's contribution workflow (branch naming, commit
-format, PR-only changes) lives only in CLAUDE.md, framed as agent operating
-instructions rather than a human-facing guide, and isn't picked up by
-GitHub's own contribution-guide UI affordances.
-
-Fix: add a short root `CONTRIBUTING.md` pointing to CLAUDE.md's relevant
-sections, plus a minimal `.github/PULL_REQUEST_TEMPLATE.md`.
-
-### TD26072419 CODEOWNERS' two reviewer accounts appear to be the same person
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-17, F-GOV-03).*
-`@warwickallen` and `@Warwick-Allen` both satisfy the branch-protection
-rule's code-owner-review requirement, but review authorship, `mergedBy`,
-and LICENCE/CLAUDE.md's git user all point to the same individual — so the
-"independent review" the ruleset implies is procedurally self-approval
-through an alternate account.
-
-Fix: document explicitly that review is currently a single-human checkpoint
-under two accounts, or add a second genuine reviewer as the project grows.
-
-
-### TD26072421 No mechanism detects a new `poetic` release
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-19, F-DEPS-02).*
-`poetic` installs from a pinned GitHub release-tarball URL, which
-Dependabot's npm updater can't track. No script/workflow polls
-`Poetic-Poems/poetic`'s releases for a newer tag than the one pinned.
-Currently up to date, so this is latent, not active.
-
-Fix: a scheduled workflow comparing the pinned version against `poetic`'s
-latest release, mirroring the existing `td-tooling-drift.yml` pattern.
-
-### TD26072422 CHANGELOG.md and GitHub release notes are unreconciled
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-20, F-CI-02).*
-`release.yml` creates releases with `--generate-notes` (PR-title bullets),
-independent of `CHANGELOG.md`'s manually curated `[Unreleased]` section.
-Nothing keeps the two in sync; they've already begun to diverge in spirit.
-
-Fix: have `release.yml` pull its body from `CHANGELOG.md`'s section for the
-version being tagged, or add a check that a version-bump PR renames
-`[Unreleased]`.
-
 ### TD26072423 `Editor.tsx` mixes five concerns in one 581-line component
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-21, F-ARCH-02,
@@ -534,6 +395,28 @@ placeholder ("player available on the shared page"), or have a parent-side
 click handler open the embed URL in a new tab. Whichever is chosen, validate
 the URL against the shared host allow-list (TD26072601).
 
+### TD26072801 Nothing renames `[Unreleased]`, so releases will repeat earlier notes
+
+*Filed 2026-07-28, from the review of PR #142 (TD26072422).*
+`release.yml` builds each GitHub release body from `CHANGELOG.md` via
+`scripts/extract-changelog-notes.mjs`, which reads `## [<version>]` and falls
+back to `## [Unreleased]`. Nothing renames `[Unreleased]` to the version being
+released, so every release resolves through the fallback and publishes the
+whole accumulated section — meaning the second and later releases restate
+every entry the earlier ones already announced.
+
+This is harmless for the first release (the whole section *is* that release)
+and is why the fallback exists, but the steady state is only correct if a
+version-bump PR renames `[Unreleased]` to `[X.Y.Z]` and opens a fresh
+`[Unreleased]` above it. That convention is documented nowhere and enforced by
+nothing; the repo has no release runbook at all.
+
+Fix: approach (b) from the original R-20 finding — a CI check that a PR
+bumping `package.json`'s version also renames `[Unreleased]` in
+`CHANGELOG.md` — and/or a documented release procedure stating the rename
+step. The extractor already prefers `## [<version>]` when present, so no
+change to it is needed.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -584,11 +467,11 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072415 | CI floats the Supabase CLI and npm versions instead of pinning them | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/127 |
 | TD26072416 | Parse-error text fails AA contrast; share page has no visible heading | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/116 |
 | TD26072417 | README doesn't document the local-only Supabase dev workflow | resolved | 2026-07-26 | https://github.com/Poetic-Poems/poetic-fiddle/pull/123 |
-| TD26072418 | No CONTRIBUTING file or PR/issue templates | open | | |
-| TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | open | | |
+| TD26072418 | No CONTRIBUTING file or PR/issue templates | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/136 |
+| TD26072419 | CODEOWNERS' two reviewer accounts appear to be the same person | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/140 |
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
-| TD26072421 | No mechanism detects a new `poetic` release | open | | |
-| TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | open | | |
+| TD26072421 | No mechanism detects a new `poetic` release | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/139 |
+| TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/142 |
 | TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | open | | |
@@ -606,3 +489,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072601 | Song-embed host allow-list now lives in three places | open | | |
 | TD26072602 | CSP-governed rendering has no runtime verification | open | | |
 | TD26072603 | Editor preview's song-embed button looks clickable but was never wired | open | | |
+| TD26072801 | Nothing renames `[Unreleased]`, so releases will repeat earlier notes | open | | |

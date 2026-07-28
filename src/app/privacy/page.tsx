@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
           Privacy Policy
         </h1>
         <p className="mt-1 text-sm text-foreground/70">
-          Last updated 24 July 2026
+          Last updated 27 July 2026
         </p>
       </div>
 
@@ -165,6 +165,32 @@ export default function PrivacyPolicy() {
             </a>
             . We keep account and poem data only for as long as your account
             exists.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-serif text-lg font-semibold">
+            Takedown and content removal
+          </h2>
+          <p>
+            If you believe content on Poetic Fiddle infringes copyright,
+            violates intellectual property rights, or breaches our{" "}
+            <Link
+              href="/aup"
+              className="text-link underline underline-offset-2"
+            >
+              Acceptable Use Policy
+            </Link>
+            , you can request its removal. Please email{" "}
+            <a
+              href="mailto:takedown@poeticfiddle.com"
+              className="text-link underline underline-offset-2"
+            >
+              takedown@poeticfiddle.com
+            </a>{" "}
+            with details of the content. When we remove content following a
+            valid request, we remove it from all surfaces: the poet&rsquo;s
+            account, any share links, and the published site.
           </p>
         </section>
 

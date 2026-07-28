@@ -129,6 +129,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   live Save/Share feature (Supabase storage, row-level security, share-link
   revocation, and deletion by request) instead of saying storage "isn't
   available yet".
+- The Acceptable Use Policy and Privacy Policy publish a designated takedown
+  address (`takedown@poeticfiddle.com`) and describe the removal process:
+  valid requests result in content being removed from every surface — the
+  poet's dashboard, any active share links, and the published site (D40,
+  AC116).
 
 ### Fixed
 
@@ -142,6 +147,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (AC76).
 - The poem title is now visible in the preview panel, via poetic's
   `h2.poem-title` heading.
+- Fixed three sources of horizontal overflow at a 320px viewport width
+  (AC77): the site footer's three legal links no longer force a single
+  unbroken row, the editor's share-link URL now wraps instead of
+  overflowing its box, and the "My poems" dashboard's per-poem delete
+  confirmation (`Delete this poem? / Delete forever / Cancel`) now wraps
+  instead of forcing the row wider than the viewport.
 - The poem title no longer appears twice in the preview panel. The app had
   been overriding poetic's stylesheet to unhide a second, redundant copy of
   the title (the `.poem-info` section's `title` span); poetic's own
