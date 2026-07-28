@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Poetic Fiddle",
@@ -9,14 +10,7 @@ export const metadata: Metadata = {
 export default function TermsOfService() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10 sm:px-10">
-      <div>
-        <h1 className="font-serif text-2xl font-semibold tracking-tight">
-          Terms of Service
-        </h1>
-        <p className="mt-1 text-sm text-foreground/70">
-          Last updated 28 July 2026
-        </p>
-      </div>
+      <PageHeader title="Terms of Service" lastUpdated="28 July 2026" />
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed">
         <section>
