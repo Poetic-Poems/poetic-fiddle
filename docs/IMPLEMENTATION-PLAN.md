@@ -498,9 +498,10 @@ public launch, **P2** soon after, **P3** insurance/polish.
   split-pane is in (`Editor.tsx` `lg:grid-cols-2`) but mobile renders a
   vertical stack, not the planned toggle. Add a source/preview switch below
   the `lg` breakpoint.
-- **W7 (P1, S)** — **Terms page stale copy**. `terms/page.tsx` still says
-  Save and Share "aren't available yet" — they shipped (M5/M6). Re-read the
-  whole page against as-built behaviour, not just that line.
+- **W7 (P1, S)** — **Terms page stale copy** — **done** (PR #143): the
+  "aren't available yet" language for Save and Share is gone from "The
+  service" and "Your content" sections, which now describe signed-in
+  save/share and browser-only anonymous drafts as they actually behave.
 - **W9 (P1, S)** — **Takedown address + process** (D40, AC116). No dedicated
   takedown/abuse contact is published. Mailbox **decided 2026-07-21**:
   `takedown@poeticfiddle.com` — the domain's existing catch-all already

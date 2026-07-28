@@ -181,17 +181,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072423 `Editor.tsx` mixes five concerns in one 581-line component
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-21, F-ARCH-02,
-F-CODE-01).* `Editor.tsx` owns 13 state/ref hooks, session-migration logic,
-draft persistence, debounced rendering, and four independent Supabase-backed
-save/share/unshare/allow-remix flows. Currently proportionate (thoroughly
-tested, well-commented) but a real god-object risk as Phase 2 features land.
-
-Fix: extract the non-presentational state machine into one or more hooks
-(e.g. `usePoemPersistence`), incrementally and test-driven.
-
 ### TD26072424 Analysis-toggle DOM wiring is tested only against a hand-authored fixture
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-22, F-ARCH-01).*
@@ -213,18 +202,6 @@ currently user-visible, but the asymmetry is real.
 
 Fix: fold `saveDraft` into the same or a shorter debounce as the render
 call.
-
-### TD26072426 Code-quality quick wins (test boilerplate, error-message helper, PageHeader)
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-24, F-CODE-03,
-F-CODE-04, F-CODE-05).* Six `Editor.*.test.tsx` files repeat identical
-mock/fixture boilerplate; `err instanceof Error ? err.message : String(err)`
-is duplicated 10 times; three route components inline the same page-header
-JSX.
-
-Fix: factor shared test mocks into `editor-test-support.ts`; extract an
-`errorMessage()` helper; extract a `PageHeader` component if a fourth route
-needs it.
 
 ### TD26072427 Unauthenticated cache-bust action; weak minimum password length
 
@@ -472,10 +449,10 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072420 | OBSERVABILITY-PLAN.md narrates a fixed bug's history, duplicating CHANGELOG.md | resolved | 2026-07-27 | https://github.com/Poetic-Poems/poetic-fiddle/pull/128 |
 | TD26072421 | No mechanism detects a new `poetic` release | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/139 |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/142 |
-| TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | open | | |
+| TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/144 |
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | open | | |
-| TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | open | | |
+| TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/148 |
 | TD26072427 | Unauthenticated cache-bust action; weak minimum password length | open | | |
 | TD26072428 | No test coverage tooling or watch-mode script | open | | |
 | TD26072429 | Undocumented TypeScript/ESLint major-version holds | open | | |

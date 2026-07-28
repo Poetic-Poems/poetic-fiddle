@@ -1,0 +1,24 @@
+name: Tech-debt register check
+
+# Keeps TECH-DEBT.md internally consistent: every open/in-progress Ledger row
+# has exactly one "### <id>" body under Current Items, and no resolved or
+# not-debt row leaves its body behind. Resolving an item by flipping the row
+# but forgetting to delete the section is the drift this catches — it happened
+# nine times in this repository alone before the check existed, so a pull
+# request that does it now fails its own CI instead of landing quietly.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check TECH-DEBT.md consistency
+        run: perl scripts/td-check.pl TECH-DEBT.md
