@@ -213,6 +213,19 @@ describe("usePoemPersistence — editing", () => {
     vi.useRealTimers();
   });
 
+  it("flushes a pending debounced draft on unmount", () => {
+    vi.useFakeTimers();
+    const { result, unmount } = renderHook(() => usePoemPersistence({}));
+
+    act(() => result.current.handleChange("Unsaved edit."));
+    expect(loadDraft()).not.toBe("Unsaved edit.");
+
+    unmount();
+
+    expect(loadDraft()).toBe("Unsaved edit.");
+    vi.useRealTimers();
+  });
+
   it("debounces the re-render and keeps the last good preview across a parse error", async () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => usePoemPersistence({}));

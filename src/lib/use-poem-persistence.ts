@@ -71,6 +71,7 @@ export function usePoemPersistence({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
+  const pendingDraftRef = useRef<string | null>(null);
   const [migratedUserId, setMigratedUserId] = useState<string | null>(null);
   const [poemId, setPoemId] = useState<string | null>(null);
   const [savedSource, setSavedSource] = useState<string | null>(null);
@@ -93,7 +94,13 @@ export function usePoemPersistence({
 
   useEffect(() => {
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        // Flush: unmounting mid-debounce (e.g. navigating away right after
+        // typing) must not drop the last edit that hadn't reached storage yet.
+        if (pendingDraftRef.current !== null)
+          saveDraft(pendingDraftRef.current);
+      }
       if (linkCopiedTimeoutRef.current)
         clearTimeout(linkCopiedTimeoutRef.current);
     };
@@ -186,8 +193,10 @@ export function usePoemPersistence({
 
   const handleChange = useCallback((value: string) => {
     setSource(value);
+    pendingDraftRef.current = value;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      pendingDraftRef.current = null;
       saveDraft(value);
       setRendered((previous) => tryRenderPoem(value, previous.html));
     }, DEBOUNCE_MS);
