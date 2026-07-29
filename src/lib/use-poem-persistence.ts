@@ -186,9 +186,9 @@ export function usePoemPersistence({
 
   const handleChange = useCallback((value: string) => {
     setSource(value);
-    saveDraft(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      saveDraft(value);
       setRendered((previous) => tryRenderPoem(value, previous.html));
     }, DEBOUNCE_MS);
   }, []);
