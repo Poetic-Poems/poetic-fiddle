@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
+import DOMPurify from "dompurify";
+import { renderPoem } from "poetic/browser";
 import { PoemPreview, wireAnalysisToggles } from "./PoemPreview";
 import { NonceProvider } from "@/lib/nonce-context";
 
@@ -124,6 +126,146 @@ describe("wireAnalysisToggles", () => {
     expect(fullPanel.classList.contains("hidden")).toBe(true);
     expect(synoButton.classList.contains("selected")).toBe(true);
     expect(fullButton.classList.contains("selected")).toBe(false);
+  });
+});
+
+// The ANALYSIS_HTML/SELECTOR_HTML fixtures above are hand-copied from
+// poetic's _poem-content.pug, so a template change there could silently
+// desync the fixture from what poetic actually emits (the failure mode
+// behind TD26071401/TD26071602). This pipes a real .poem source with an
+// {Analysis} block through poetic's own renderPoem(), the same way
+// PoemPreview does, to exercise wireAnalysisToggles against genuine output.
+const POEM_WITH_ANALYSIS = `Analysis Wiring Test
+A Poet
+2026-07-24
+
+{Verse}
+Hello world.
+
+====
+
+====
+
+====
+
+{Synopsis}
+
+A short synopsis.
+
+{Full}
+
+The full analysis text.
+
+====
+`;
+
+describe("wireAnalysisToggles against real poetic output", () => {
+  function realAnalysisDocument(): Document {
+    const html = renderPoem(POEM_WITH_ANALYSIS);
+    const sanitised = DOMPurify.sanitize(html);
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = sanitised;
+    return doc;
+  }
+
+  it("strips the onclick handlers poetic emits, leaving the buttons for wireAnalysisToggles to rewire", () => {
+    const html = renderPoem(POEM_WITH_ANALYSIS);
+    expect(html).toContain("onclick=");
+
+    const doc = realAnalysisDocument();
+    expect(doc.body.innerHTML).not.toContain("onclick");
+  });
+
+  it("shows the analysis panel and hides the show button on click", () => {
+    const doc = realAnalysisDocument();
+    wireAnalysisToggles(doc);
+
+    const showButton = doc.getElementById(
+      "show-analysis--analysis-wiring-test",
+    )!;
+    const panel = doc.getElementById("analysis--analysis-wiring-test")!;
+
+    (showButton as HTMLElement).click();
+
+    expect(panel.style.display).toBe("block");
+    expect(showButton.style.display).toBe("none");
+  });
+
+  it("hides the analysis panel and restores the show button on click", () => {
+    const doc = realAnalysisDocument();
+    wireAnalysisToggles(doc);
+
+    const showButton = doc.getElementById(
+      "show-analysis--analysis-wiring-test",
+    )!;
+    const hideButton = doc.getElementById(
+      "hide-analysis--analysis-wiring-test",
+    )!;
+    const panel = doc.getElementById("analysis--analysis-wiring-test")!;
+
+    (showButton as HTMLElement).click();
+    (hideButton as HTMLElement).click();
+
+    expect(panel.style.display).toBe("none");
+    expect(showButton.style.display).toBe("block");
+  });
+
+  it("switches from the synopsis to the full analysis and marks its button selected", () => {
+    const doc = realAnalysisDocument();
+    wireAnalysisToggles(doc);
+
+    const synoButton = doc.getElementById(
+      "analysis-select-syno--analysis-wiring-test",
+    )!;
+    const fullButton = doc.getElementById(
+      "analysis-select-full--analysis-wiring-test",
+    )!;
+    const synoPanel = doc.getElementById(
+      "analysis-syno--analysis-wiring-test",
+    )!;
+    const fullPanel = doc.getElementById(
+      "analysis-full--analysis-wiring-test",
+    )!;
+
+    // poetic renders the synopsis selected and the full panel hidden by
+    // default (both declared, `analysis.synopsis && analysis.full`).
+    expect(synoButton.classList.contains("selected")).toBe(true);
+    expect(fullPanel.classList.contains("hidden")).toBe(true);
+
+    (fullButton as HTMLElement).click();
+
+    expect(synoPanel.classList.contains("hidden")).toBe(true);
+    expect(fullPanel.classList.contains("hidden")).toBe(false);
+    expect(synoButton.classList.contains("selected")).toBe(false);
+    expect(fullButton.classList.contains("selected")).toBe(true);
+    expect(fullPanel.textContent).toContain("The full analysis text.");
+  });
+
+  it("switches back to the synopsis and marks its button selected", () => {
+    const doc = realAnalysisDocument();
+    wireAnalysisToggles(doc);
+
+    const synoButton = doc.getElementById(
+      "analysis-select-syno--analysis-wiring-test",
+    )!;
+    const fullButton = doc.getElementById(
+      "analysis-select-full--analysis-wiring-test",
+    )!;
+    const synoPanel = doc.getElementById(
+      "analysis-syno--analysis-wiring-test",
+    )!;
+    const fullPanel = doc.getElementById(
+      "analysis-full--analysis-wiring-test",
+    )!;
+
+    (fullButton as HTMLElement).click();
+    (synoButton as HTMLElement).click();
+
+    expect(synoPanel.classList.contains("hidden")).toBe(false);
+    expect(fullPanel.classList.contains("hidden")).toBe(true);
+    expect(synoButton.classList.contains("selected")).toBe(true);
+    expect(fullButton.classList.contains("selected")).toBe(false);
+    expect(synoPanel.textContent).toContain("A short synopsis.");
   });
 });
 
