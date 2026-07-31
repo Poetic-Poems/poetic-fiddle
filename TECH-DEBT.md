@@ -215,15 +215,6 @@ Fix: no change needed to `revalidateSharedPoem` unless this pattern is
 reused for a less entropy-rich identifier; raise password `minLength` to
 ~8-10.
 
-### TD26072428 No test coverage tooling or watch-mode script
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-26, F-TEST-03,
-F-TEST-04).* No coverage tool is configured anywhere; `package.json`'s only
-test script is a single-shot `vitest run`.
-
-Fix: add `@vitest/coverage-v8` and a `coverage` script; add a `test:watch`
-script.
-
 ### TD26072429 Undocumented TypeScript/ESLint major-version holds
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-27, F-DEPS-04).*
@@ -454,7 +445,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | open | | |
 | TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/148 |
 | TD26072427 | Unauthenticated cache-bust action; weak minimum password length | open | | |
-| TD26072428 | No test coverage tooling or watch-mode script | in-progress | | |
+| TD26072428 | No test coverage tooling or watch-mode script | resolved | 2026-07-31 | https://github.com/Poetic-Poems/poetic-fiddle/pull/156 |
 | TD26072429 | Undocumented TypeScript/ESLint major-version holds | open | | |
 | TD26072430 | README/tooling polish (missing scripts, WSL pointer, postinstall error message) | open | | |
 | TD26072431 | Editor/dashboard loading & feedback polish | open | | |
