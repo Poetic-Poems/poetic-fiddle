@@ -193,13 +193,37 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
 });
 
 describe("usePoemPersistence — editing", () => {
-  it("updates source and persists it as the draft on change", () => {
+  it("updates source immediately, debouncing the draft persistence", () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => usePoemPersistence({}));
 
     act(() => result.current.handleChange("New words."));
 
+    // Reflected in state right away...
     expect(result.current.source).toBe("New words.");
+    // ...but not yet written to storage — that write is debounced alongside
+    // the render, not synchronous on every keystroke.
+    expect(loadDraft()).not.toBe("New words.");
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
     expect(loadDraft()).toBe("New words.");
+    vi.useRealTimers();
+  });
+
+  it("flushes a pending debounced draft on unmount", () => {
+    vi.useFakeTimers();
+    const { result, unmount } = renderHook(() => usePoemPersistence({}));
+
+    act(() => result.current.handleChange("Unsaved edit."));
+    expect(loadDraft()).not.toBe("Unsaved edit.");
+
+    unmount();
+
+    expect(loadDraft()).toBe("Unsaved edit.");
+    vi.useRealTimers();
   });
 
   it("debounces the re-render and keeps the last good preview across a parse error", async () => {
