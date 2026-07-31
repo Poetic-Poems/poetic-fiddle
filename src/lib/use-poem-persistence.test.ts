@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { Session } from "@supabase/supabase-js";
 import { usePoemPersistence } from "./use-poem-persistence";
@@ -47,6 +47,13 @@ beforeEach(() => {
   window.localStorage.clear();
   vi.mocked(revalidateSharedPoem).mockResolvedValue(undefined);
   signedOut();
+});
+
+// Safety net: a test that calls vi.useFakeTimers() and then throws before
+// reaching its own vi.useRealTimers() would otherwise leak fake timers into
+// every test that runs after it.
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("usePoemPersistence — initial source", () => {
