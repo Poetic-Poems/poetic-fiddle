@@ -53,6 +53,11 @@ export default function Editor({
   initialSource,
 }: EditorProps) {
   const prefersDark = usePrefersDark();
+  // Below the `lg` breakpoint the split-pane collapses to one visible pane at
+  // a time (AC26, AC83) — desktop ignores this and shows both via `lg:flex`.
+  const [mobileView, setMobileView] = useState<"source" | "preview">(
+    "source",
+  );
   // CodeMirror's style-mod injects the editor's styles as an inline <style>
   // tag; passing the request's CSP nonce here is what lets style-src drop
   // 'unsafe-inline' (TECH-DEBT.md TD26072101).
@@ -245,8 +250,42 @@ export default function Editor({
           </button>
         </div>
       )}
+      <div
+        role="group"
+        aria-label="View"
+        className="flex gap-1 self-start rounded-md border border-black/10 p-1 text-sm dark:border-white/10 lg:hidden"
+      >
+        <button
+          type="button"
+          aria-pressed={mobileView === "source"}
+          onClick={() => setMobileView("source")}
+          className={`rounded px-3 py-1.5 font-medium ${
+            mobileView === "source"
+              ? "bg-primary text-white"
+              : "text-foreground/70 hover:bg-black/5 dark:hover:bg-white/5"
+          }`}
+        >
+          Source
+        </button>
+        <button
+          type="button"
+          aria-pressed={mobileView === "preview"}
+          onClick={() => setMobileView("preview")}
+          className={`rounded px-3 py-1.5 font-medium ${
+            mobileView === "preview"
+              ? "bg-primary text-white"
+              : "text-foreground/70 hover:bg-black/5 dark:hover:bg-white/5"
+          }`}
+        >
+          Preview
+        </button>
+      </div>
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="flex min-h-0 flex-col gap-2">
+        <div
+          className={`min-h-0 flex-col gap-2 ${
+            mobileView === "source" ? "flex" : "hidden"
+          } lg:flex`}
+        >
           <div className="flex items-center justify-between gap-2">
             <label htmlFor="poem-source" className="text-sm font-medium">
               Your poem
@@ -283,7 +322,11 @@ export default function Editor({
               : ""}
           </p>
         </div>
-        <div className="flex min-h-0 flex-col gap-2">
+        <div
+          className={`min-h-0 flex-col gap-2 ${
+            mobileView === "preview" ? "flex" : "hidden"
+          } lg:flex`}
+        >
           <span className="text-sm font-medium">Preview</span>
           <PoemPreview html={rendered.html} css={poeticCss} />
         </div>
