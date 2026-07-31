@@ -178,23 +178,30 @@ commit on the branch.
 ## Tech debt
 
 When you defer work, take a shortcut, or notice a known gap, record it in
-`TECH-DEBT.md` at the repo root — do not leave it only in a commit message or in
-chat. Keep entries short and aligned to the format outlined in `TECH-DEBT.md`,
-and delete one when it is resolved. If you add an entry in `TECH-DEBT.md` and
-refer to that entry in other places (e.g., code comments), note that reference
-in the `TECH-DEBT.md` entry, so whoever addresses that item knows to also remove
-the references.
+the tech-debt register — do not leave it only in a commit message or in
+chat. The register is per-item: one `tech-debt/<id>.md` file per record
+(YAML frontmatter plus a Markdown body), IDs scoped `PPpfid`, with
+`TECH-DEBT.md` at the repo root holding only the policy — the filing and
+claiming workflows and the declared scope. `docs/TECH-DEBT-REGISTER.md` in
+`Poetic-Poems/poetic` specifies the format, the ID grammar and the
+scope-code registry. If an entry is referenced in other places (e.g. code
+comments), note that reference in the entry's body, so whoever resolves it
+knows to also remove the references.
 
-`TECH-DEBT.md` ends with a permanent Ledger table recording every ID ever
-allocated, so a removed entry's ID is never reused. Get a new entry's ID from
-`scripts/next-tech-debt-id.pl` rather than counting by hand; add the entry's
-body under the `## Current Items` heading as a `### <id> <title>` section, and
-add a Ledger row (`open`) alongside it. When picking up an existing open item,
-follow the "Claiming an item" workflow at the top of `TECH-DEBT.md` — flip its
-Ledger row to `in-progress` and open a draft PR immediately, so the claim is
-visible to other agents/developers before the fix lands. The `/td` skill
-(`.claude/skills/td/SKILL.md`) automates resolving an ID segment to a record
-via `scripts/get-tech-debt-record.pl` and dispatching it to a subagent.
+The register is an append-only set — item files are never deleted or
+renamed once on `main`, so an ID is never reused (CI enforces this). Get a
+new entry's ID from `scripts/next-tech-debt-id.pl --ref origin/main`
+(after a fetch) rather than counting by hand, and create
+`tech-debt/<id>.md` with `status: open`. When picking up an existing open
+item, follow the "Claiming an item" workflow in `TECH-DEBT.md` — take the
+`td/<id>` claim branch, flip the item's frontmatter to
+`status: in-progress`, and open a draft PR immediately, so the claim is
+visible to other agents/developers before the fix lands. Resolving is a
+frontmatter-only edit — `status: resolved` plus `resolved:` and `ref:` —
+with the body left in place as the permanent record. The `/td` skill
+(`.claude/skills/td/SKILL.md`) automates resolving an ID segment to a
+record via `scripts/get-tech-debt-record.pl` and dispatching it to a
+subagent.
 
 ## Key docs
 
