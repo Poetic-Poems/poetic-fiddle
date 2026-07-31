@@ -190,18 +190,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072424 Analysis-toggle DOM wiring is tested only against a hand-authored fixture
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-22, F-ARCH-01).*
-`PoemPreview.tsx`'s `wireAnalysisToggles`, shared by the live preview and
-the share page, is tested only against a hand-copied fixture string, never
-real `poetic` output — the same cross-tool-seam gap that already caused two
-resolved incidents (TD26071401, TD26071602).
-
-Fix: add a test piping real `.poem` source with an `{Analysis}` block
-through `renderPoem()` and `wireAnalysisToggles`, mirroring
-`render-share.test.ts`'s pattern.
-
 ### TD26072427 Unauthenticated cache-bust action; weak minimum password length
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-25, F-SEC-02,
@@ -596,7 +584,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072421 | No mechanism detects a new `poetic` release | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/139 |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/142 |
 | TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/144 |
-| TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
+| TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/153 |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/152 |
 | TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/148 |
 | TD26072427 | Unauthenticated cache-bust action; weak minimum password length | open | | |
