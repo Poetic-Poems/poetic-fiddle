@@ -372,6 +372,21 @@ bumping `package.json`'s version also renames `[Unreleased]` in
 step. The extractor already prefers `## [<version>]` when present, so no
 change to it is needed.
 
+### TD26073101 New-account password minimum is enforced only in the browser
+
+*Filed 2026-07-31, from the review of PR #154 (TD26072427).* The 10-character
+sign-up minimum is an HTML `minLength` attribute on `SignInPrompt.tsx`'s
+password field, so it constrains the form and nothing else — a call straight
+to Supabase Auth still creates an account with a 6-character password.
+`supabase/config.toml` still sets `minimum_password_length = 6`, and CI's
+`supabase db push` pushes migrations only, never the `[auth]` block, so the
+live project's minimum is a Supabase dashboard setting this repo does not
+apply.
+
+Fix: raise `minimum_password_length` in `supabase/config.toml` to match the
+client-side hint, and set the same minimum on the live project's Auth
+settings (a manual dashboard change) so the two agree.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -445,3 +460,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072602 | CSP-governed rendering has no runtime verification | open | | |
 | TD26072603 | Editor preview's song-embed button looks clickable but was never wired | open | | |
 | TD26072801 | Nothing renames `[Unreleased]`, so releases will repeat earlier notes | open | | |
+| TD26073101 | New-account password minimum is enforced only in the browser | open | | |
