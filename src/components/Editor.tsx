@@ -55,9 +55,7 @@ export default function Editor({
   const prefersDark = usePrefersDark();
   // Below the `lg` breakpoint the split-pane collapses to one visible pane at
   // a time (AC26, AC83) — desktop ignores this and shows both via `lg:flex`.
-  const [mobileView, setMobileView] = useState<"source" | "preview">(
-    "source",
-  );
+  const [mobileView, setMobileView] = useState<"source" | "preview">("source");
   // CodeMirror's style-mod injects the editor's styles as an inline <style>
   // tag; passing the request's CSP nonce here is what lets style-src drop
   // 'unsafe-inline' (TECH-DEBT.md TD26072101).
@@ -282,6 +280,7 @@ export default function Editor({
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
         <div
+          data-testid="mobile-pane-source"
           className={`min-h-0 flex-col gap-2 ${
             mobileView === "source" ? "flex" : "hidden"
           } lg:flex`}
@@ -323,6 +322,7 @@ export default function Editor({
           </p>
         </div>
         <div
+          data-testid="mobile-pane-preview"
           className={`min-h-0 flex-col gap-2 ${
             mobileView === "preview" ? "flex" : "hidden"
           } lg:flex`}
