@@ -494,10 +494,9 @@ public launch, **P2** soon after, **P3** insurance/polish.
   the site footer's legal links, the editor's share-link URL, and the
   dashboard's per-poem delete confirmation all wrap instead of forcing
   the row wider than the viewport.
-- **W6 (P1, M)** — **Mobile source/preview toggle** (AC26, AC83). Desktop
-  split-pane is in (`Editor.tsx` `lg:grid-cols-2`) but mobile renders a
-  vertical stack, not the planned toggle. Add a source/preview switch below
-  the `lg` breakpoint.
+- **W6 (P1, M)** — **Mobile source/preview toggle** (AC26, AC83) — **done**
+  (PR #155): `Editor.tsx` shows a Source/Preview toggle below the `lg`
+  breakpoint, keeping the `lg:grid-cols-2` split-pane on desktop unchanged.
 - **W7 (P1, S)** — **Terms page stale copy** — **done** (PR #143): the
   "aren't available yet" language for Save and Share is gone from "The
   service" and "Your content" sections, which now describe signed-in

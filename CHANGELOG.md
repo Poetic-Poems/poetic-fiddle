@@ -134,6 +134,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   valid requests result in content being removed from every surface — the
   poet's dashboard, any active share links, and the published site (D40,
   AC116).
+- A Source/Preview toggle in the editor below the `lg` breakpoint, so mobile
+  users can switch between the two views without horizontal scrolling; the
+  split-pane layout at `lg` and above is unchanged (AC26, AC83).
 
 ### Fixed
 
