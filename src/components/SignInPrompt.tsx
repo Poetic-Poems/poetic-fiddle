@@ -158,11 +158,17 @@ function SignInForm({ action, onClose }: SignInFormProps) {
           <label htmlFor="signin-password" className="text-sm font-medium">
             Password
           </label>
+          {/* Sign-in deliberately has no minLength: accounts created under
+              the old 6-character policy must still get through, and the
+              server rejects a wrong password either way. */}
           <input
             id="signin-password"
             type="password"
             required
-            minLength={6}
+            minLength={passwordMode === "sign-up" ? 10 : undefined}
+            aria-describedby={
+              passwordMode === "sign-up" ? "signin-password-hint" : undefined
+            }
             autoComplete={
               passwordMode === "sign-in" ? "current-password" : "new-password"
             }
@@ -170,6 +176,11 @@ function SignInForm({ action, onClose }: SignInFormProps) {
             onChange={(event) => setPassword(event.target.value)}
             className={inputClassName}
           />
+          {passwordMode === "sign-up" && (
+            <p id="signin-password-hint" className="text-xs text-foreground/70">
+              At least 10 characters.
+            </p>
+          )}
           <button
             type="submit"
             disabled={pending}
