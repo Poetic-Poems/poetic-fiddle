@@ -162,7 +162,8 @@ function SignInForm({ action, onClose }: SignInFormProps) {
             id="signin-password"
             type="password"
             required
-            minLength={6}
+            minLength={10}
+            aria-describedby="signin-password-hint"
             autoComplete={
               passwordMode === "sign-in" ? "current-password" : "new-password"
             }
@@ -170,6 +171,9 @@ function SignInForm({ action, onClose }: SignInFormProps) {
             onChange={(event) => setPassword(event.target.value)}
             className={inputClassName}
           />
+          <p id="signin-password-hint" className="text-xs text-foreground/70">
+            At least 10 characters.
+          </p>
           <button
             type="submit"
             disabled={pending}
