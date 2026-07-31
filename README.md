@@ -49,3 +49,5 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | `npm run typecheck` | TypeScript, no emit |
 | `npm run format` / `format:check` | Prettier |
 | `npm test` | Vitest |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run coverage` | Vitest with coverage reporting |

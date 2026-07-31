@@ -105,11 +105,20 @@ recommendation are the same work.
 | R-31 — Document backup/restore and export/delete runbooks | TD26072433 |
 | R-32 — Shared sanitisation-policy constant between preview and share pipelines | TD26072434 |
 | R-33 — Add automated accessibility testing (axe smoke test) | TD26072435 |
+| 2026-07-31 review R-01 — Require the `register` check before merge | TD26080101 |
+| 2026-07-31 review R-02 — Add focus management & Escape dismissal to delete-poem confirmation | TD26080102 |
+| 2026-07-31 review R-03 — Re-sync vendored tech-debt scripts; harden `td-tooling-drift.yml` | TD26080103 |
+| 2026-07-31 review R-04 — Decompose `use-poem-persistence.ts`'s flat state; dedupe the save-guard | TD26080104 |
+| 2026-07-31 review R-05 — Guard against a new workflow shipping without required-check wiring | TD26080105 |
+| 2026-07-31 review R-07 — Add `Referrer-Policy`/`X-Content-Type-Options`/`Permissions-Policy` headers | TD26080106 |
+| 2026-07-31 review R-08 — Add a CI `npm audit` gate and local `engine-strict` enforcement | TD26080107 |
 
 Full evidence, impact, and rationale for each item live in
-`reviews/project-review-2026-07-23/02-findings.md` and
-`03-recommendations.md`; the entries below summarise them for readers who
-only have this file.
+`reviews/project-review-2026-07-23/02-findings.md` /
+`03-recommendations.md` (R-01 through R-33) and
+`reviews/project-review-2026-07-31/02-findings.md` /
+`03-recommendations.md` (the "2026-07-31 review" rows above); the entries
+below summarise them for readers who only have this file.
 
 ## Current Items
 
@@ -181,39 +190,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072424 Analysis-toggle DOM wiring is tested only against a hand-authored fixture
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-22, F-ARCH-01).*
-`PoemPreview.tsx`'s `wireAnalysisToggles`, shared by the live preview and
-the share page, is tested only against a hand-copied fixture string, never
-real `poetic` output — the same cross-tool-seam gap that already caused two
-resolved incidents (TD26071401, TD26071602).
-
-Fix: add a test piping real `.poem` source with an `{Analysis}` block
-through `renderPoem()` and `wireAnalysisToggles`, mirroring
-`render-share.test.ts`'s pattern.
-
-### TD26072427 Unauthenticated cache-bust action; weak minimum password length
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-25, F-SEC-02,
-F-SEC-03).* `revalidateSharedPoem` has no authorization check before
-invalidating a share page's cache tag (low-impact given the token's
-entropy). `SignInPrompt.tsx` allows 6-character passwords with no strength
-guidance.
-
-Fix: no change needed to `revalidateSharedPoem` unless this pattern is
-reused for a less entropy-rich identifier; raise password `minLength` to
-~8-10.
-
-### TD26072428 No test coverage tooling or watch-mode script
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-26, F-TEST-03,
-F-TEST-04).* No coverage tool is configured anywhere; `package.json`'s only
-test script is a single-shot `vitest run`.
-
-Fix: add `@vitest/coverage-v8` and a `coverage` script; add a `test:watch`
-script.
-
 ### TD26072429 Undocumented TypeScript/ESLint major-version holds
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-27, F-DEPS-04).*
@@ -223,6 +199,20 @@ jsdom's well-documented TD26071901 hold.
 
 Fix: trial each bump; merge if clean, or record the specific breakage as a
 dated entry matching jsdom's style.
+
+*Root cause found 2026-07-31 (review R-06, F-SEC-01, F-DEPS-01):* the
+`eslint` hold's blocker is now known — Dependabot PR #129
+(`eslint` 9.39.5 → 10.8.0) has a maintainer comment (2026-07-27) confirming
+`eslint-config-next@16.2.12` (current latest stable) bundles
+`eslint-plugin-react@7.37.5`, which still calls the ESLint-10-removed
+`context.getFilename()` API, so CI's lint step throws a `TypeError`; no
+newer `eslint-config-next` exists yet to fix it. This is also why `npm
+audit` reports 9 high-severity advisories (all one chain:
+`eslint@9.39.5`'s own `minimatch@3.1.5` → `brace-expansion@1.1.16`,
+GHSA-mh99-v99m-4gvg) — dev-tooling only, not reachable from any deployed
+path, resolved automatically once this bump lands. The `typescript` half
+remains genuinely undocumented — Dependabot's closed PR #9 has only its
+generic auto-close message, no human rationale recorded.
 
 ### TD26072430 README/tooling polish (missing scripts, WSL pointer, postinstall error message)
 
@@ -247,6 +237,12 @@ already-signed-in poet; `SignInPrompt.tsx` gives no "in progress" feedback.
 Fix: pass a `loading` fallback to the `next/dynamic` calls; add a loading
 state to `useSession()`; add pending-state button text to `SignInPrompt.tsx`.
 
+*Scope extended 2026-07-31 (review R-15, F-UX-02):* the same disable-only,
+no-status-text pattern also affects `PoemsDashboard.tsx`'s remix-default
+checkbox and `Editor.tsx`'s per-poem "Remixing this poem" select — extend
+whatever fix/pattern this item introduces to those two controls in the same
+PR, rather than treating `SignInPrompt.tsx` as the only site of this gap.
+
 ### TD26072432 Doc polish (rejected-alternative narration, missing live-app link)
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-30, F-DOC-04,
@@ -258,6 +254,16 @@ documenting it as deployed.
 Fix: trim the rejected-alternative narration to one-liners; add a "Live
 at..." link to README.
 
+*Re-verified 2026-07-31 (review R-12, F-DOC-02, F-DOC-03):* both still
+open, unchanged. Two further, small doc-accuracy defects found in the same
+pass, worth bundling into the same PR: `docs/IMPLEMENTATION-PLAN.md`'s "W9"
+item still describes the takedown contact as unpublished though it shipped
+in PR #138; and `src/lib/revalidate-share.ts`'s doc comment names the wrong
+file and undercounts its own call sites (now four, across two files, not
+three in `Editor.tsx`, after PR #144's extraction). See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-12 for the
+full, bundled scope.
+
 ### TD26072433 No documented backup/restore or export/delete runbooks
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-31, F-OPS-02,
@@ -267,6 +273,18 @@ fulfilling a privacy export/delete request.
 
 Fix: add a short paragraph on the actual backup/PITR guarantee; add a short
 internal runbook for export/delete requests, mirroring TRIAGE.md's style.
+
+*Framing sharpened 2026-07-31 (review R-10, F-DATA-01, F-OPS-01):*
+deletion is asymmetric with export, not equally "just undocumented" — the
+underlying deletion mechanism already exists (a FK `on delete cascade` from
+`auth.users`, pgTAP-tested), so deletion genuinely only needs the runbook.
+Export has no backing mechanism at all — no script, Admin API call, or
+procedure anywhere pulls a poet's stored data out; `SUPABASE_SERVICE_ROLE_KEY`
+is confirmed unused by any code path. Fix, revised: build the export script
+first (using the service-role key, admin-run, not poet-facing self-service),
+then write the runbook around both paths plus the actual backup/PITR
+statement. See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-10.
 
 ### TD26072434 Two independently-maintained sanitisation pipelines, no shared policy constant
 
@@ -384,6 +402,117 @@ bumping `package.json`'s version also renames `[Unreleased]` in
 step. The extractor already prefers `## [<version>]` when present, so no
 change to it is needed.
 
+### TD26073101 New-account password minimum is enforced only in the browser
+
+*Filed 2026-07-31, from the review of PR #154 (TD26072427).* The 10-character
+sign-up minimum is an HTML `minLength` attribute on `SignInPrompt.tsx`'s
+password field, so it constrains the form and nothing else — a call straight
+to Supabase Auth still creates an account with a 6-character password.
+`supabase/config.toml` still sets `minimum_password_length = 6`, and CI's
+`supabase db push` pushes migrations only, never the `[auth]` block, so the
+live project's minimum is a Supabase dashboard setting this repo does not
+apply.
+
+Fix: raise `minimum_password_length` in `supabase/config.toml` to match the
+client-side hint, and set the same minimum on the live project's Auth
+settings (a manual dashboard change) so the two agree.
+
+### TD26080101 `tech-debt-register.yml`'s consistency check isn't a required status check
+
+*Filed 2026-08-01, from the 2026-07-31 project review (R-01, F-CI-01).*
+Severity: High. The branch-protection ruleset's `required_status_checks`
+lists only `commit-format` and `CI` — `tech-debt-register.yml`'s `register`
+job (a separate workflow, confirmed via a PR's `statusCheckRollup`) is
+absent, so a PR that desyncs `TECH-DEBT.md`'s Ledger from its Current Items
+can get a red `register` check and still be merged. `tech-debt-register.yml`
+shipped in PR #145, after the ruleset was last updated (PR #111), and the
+ruleset was never revisited.
+
+Fix: add `register` to ruleset `18828479`'s `required_status_checks`
+(a GitHub configuration change, not a code change). See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-01.
+
+### TD26080102 Delete-poem confirmation has no focus management or Escape dismissal
+
+*Filed 2026-08-01, from the 2026-07-31 project review (R-02, F-UX-01).*
+Severity: Medium. `PoemsDashboard.tsx`'s delete confirmation swaps the
+focused "Delete" button for a different `<div>` at the same position with
+no focus management, so focus silently drops to `<body>`; there is no
+Escape-to-cancel, unlike every other dismissible surface in the app.
+
+Fix: move focus onto the confirmation on open (default: "Cancel"); treat
+Escape as Cancel; return focus to a sensible target on both cancel and
+successful delete. See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-02.
+
+### TD26080103 `td-tooling-drift.yml`'s vendored scripts have already drifted; no issue-filing on failure
+
+*Filed 2026-08-01, from the 2026-07-31 project review (R-03, F-GOV-01,
+F-CI-03).* Severity: Medium. Three of the four vendored tech-debt scripts
+(`get-tech-debt-record.pl`, `next-tech-debt-id.pl`, `td-check.pl`) differ
+from `Poetic-Poems/poetic`'s current `main`; the drift-detection workflow
+hasn't run against the versions PR #145 introduced. Separately, that
+workflow has no issue-filing step on detecting drift, unlike its sibling
+`check-poetic-release.yml`.
+
+Fix: re-sync the three scripts from poetic main (no functional change for
+this repo's legacy single-file usage); confirm the guard now fires
+correctly; add issue-filing or document why a bare failed run suffices. See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-03.
+
+### TD26080104 `use-poem-persistence.ts`'s flat 24-field return shape and a duplicated save-guard
+
+*Filed 2026-08-01, from the 2026-07-31 project review (R-04, F-ARCH-01,
+F-CODE-01).* Severity: Medium. The hook returns an ungrouped 24-field
+object across six async flows, with no internal grouping to extend into;
+`handleShare` and `handleAllowRemixChange` duplicate an identical
+eight-line "save if unsaved, then act" block.
+
+Fix: group the return value by concern (e.g. `{ save, share, remix }`);
+extract a shared `ensureSaved()` helper. See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-04.
+
+### TD26080105 No automation enforces that a new workflow gets wired into required checks
+
+*Filed 2026-08-01, from the 2026-07-31 project review (R-05, F-CI-02).*
+Severity: Medium. `ci.yml`'s header comment documents the discipline of
+adding new conditional jobs to its `needs` list, but nothing asserts it
+stays true — and TD26080101 is the concrete cross-workflow instance of this
+exact gap already being missed once in practice.
+
+Fix: a script (in the spirit of `scripts/td-check.pl`) that fails when a
+`pull_request`-triggered job isn't reachable from `ci.yml`'s `needs` graph
+or the ruleset's required checks; or, if disproportionate, a documented
+checklist step instead. See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-05.
+
+### TD26080106 No `Referrer-Policy`/`X-Content-Type-Options`/`Permissions-Policy` header
+
+*Filed 2026-08-01, from the 2026-07-31 project review (R-07, F-SEC-02).*
+Severity: Low. `src/proxy.ts` sets only `x-nonce` and
+`Content-Security-Policy`. Largely mitigated already by CSP's
+`frame-ancestors 'none'` and modern browser defaults, but
+`/share/[share_id]` URLs embed the share token in the path, making an
+explicit `Referrer-Policy` a cheap closure of a theoretical leak path.
+
+Fix: add the three headers alongside CSP in `src/proxy.ts`. See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-07.
+
+### TD26080107 No CI `npm audit` gate; `engine-strict` not set locally
+
+*Filed 2026-08-01, from the 2026-07-31 project review (R-08, F-TOOL-02,
+F-TOOL-04, F-DEPS-02).* Severity: Low. No `.github/workflows/*.yml` job
+runs `npm audit` — the project relies entirely on out-of-band Dependabot
+alerts, which the 2026-07-23 review found can go silent on a real
+advisory. `.npmrc` has no `engine-strict`, so a Node-version mismatch
+against `engines.node: "22.x"` is only a warning locally.
+
+Fix: add `npm audit --audit-level=high` (scoped to skip the already-tracked
+TD26072429 eslint chain) to `ci.yml`'s `build` job; add
+`engine-strict=true` to `.npmrc` after confirming it doesn't fight Vercel's
+build. See
+`reviews/project-review-2026-07-31/04-improvement-prompts.md` R-08.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -440,11 +569,11 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072421 | No mechanism detects a new `poetic` release | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/139 |
 | TD26072422 | CHANGELOG.md and GitHub release notes are unreconciled | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/142 |
 | TD26072423 | `Editor.tsx` mixes five concerns in one 581-line component | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/144 |
-| TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
+| TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/153 |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/152 |
 | TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/148 |
-| TD26072427 | Unauthenticated cache-bust action; weak minimum password length | open | | |
-| TD26072428 | No test coverage tooling or watch-mode script | open | | |
+| TD26072427 | Unauthenticated cache-bust action; weak minimum password length | resolved | 2026-07-31 | https://github.com/Poetic-Poems/poetic-fiddle/pull/154 |
+| TD26072428 | No test coverage tooling or watch-mode script | resolved | 2026-07-31 | https://github.com/Poetic-Poems/poetic-fiddle/pull/156 |
 | TD26072429 | Undocumented TypeScript/ESLint major-version holds | open | | |
 | TD26072430 | README/tooling polish (missing scripts, WSL pointer, postinstall error message) | open | | |
 | TD26072431 | Editor/dashboard loading & feedback polish | open | | |
@@ -457,3 +586,11 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072602 | CSP-governed rendering has no runtime verification | open | | |
 | TD26072603 | Editor preview's song-embed button looks clickable but was never wired | open | | |
 | TD26072801 | Nothing renames `[Unreleased]`, so releases will repeat earlier notes | open | | |
+| TD26073101 | New-account password minimum is enforced only in the browser | open | | |
+| TD26080101 | `tech-debt-register.yml`'s consistency check isn't a required status check | open | | |
+| TD26080102 | Delete-poem confirmation has no focus management or Escape dismissal | open | | |
+| TD26080103 | `td-tooling-drift.yml`'s vendored scripts have already drifted; no issue-filing on failure | open | | |
+| TD26080104 | `use-poem-persistence.ts`'s flat 24-field return shape and a duplicated save-guard | open | | |
+| TD26080105 | No automation enforces that a new workflow gets wired into required checks | open | | |
+| TD26080106 | No `Referrer-Policy`/`X-Content-Type-Options`/`Permissions-Policy` header | open | | |
+| TD26080107 | No CI `npm audit` gate; `engine-strict` not set locally | open | | |
