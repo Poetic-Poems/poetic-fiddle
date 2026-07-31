@@ -132,6 +132,29 @@ describe("SignInPrompt", () => {
     expect(alert).not.toHaveTextContent(/some internal detail/i);
   });
 
+  it("does not constrain password length when signing in with an existing account", () => {
+    render(<SignInPrompt action="save" onClose={() => {}} />);
+
+    openPasswordSection();
+
+    expect(screen.getByLabelText(/^password$/i)).not.toHaveAttribute(
+      "minLength",
+    );
+  });
+
+  it("requires a 10-character password when creating a new account", () => {
+    render(<SignInPrompt action="save" onClose={() => {}} />);
+
+    openPasswordSection();
+    fireEvent.click(screen.getByText(/new here\? create a password instead/i));
+
+    expect(screen.getByLabelText(/^password$/i)).toHaveAttribute(
+      "minLength",
+      "10",
+    );
+    expect(screen.getByText(/at least 10 characters/i)).toBeInTheDocument();
+  });
+
   it("switches to sign-up and shows a confirmation message when no session is returned", async () => {
     authMock.signUp.mockResolvedValue({
       data: { session: null },

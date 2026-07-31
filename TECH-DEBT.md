@@ -190,18 +190,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072427 Unauthenticated cache-bust action; weak minimum password length
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-25, F-SEC-02,
-F-SEC-03).* `revalidateSharedPoem` has no authorization check before
-invalidating a share page's cache tag (low-impact given the token's
-entropy). `SignInPrompt.tsx` allows 6-character passwords with no strength
-guidance.
-
-Fix: no change needed to `revalidateSharedPoem` unless this pattern is
-reused for a less entropy-rich identifier; raise password `minLength` to
-~8-10.
-
 ### TD26072428 No test coverage tooling or watch-mode script
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-26, F-TEST-03,
@@ -432,6 +420,21 @@ bumping `package.json`'s version also renames `[Unreleased]` in
 step. The extractor already prefers `## [<version>]` when present, so no
 change to it is needed.
 
+### TD26073101 New-account password minimum is enforced only in the browser
+
+*Filed 2026-07-31, from the review of PR #154 (TD26072427).* The 10-character
+sign-up minimum is an HTML `minLength` attribute on `SignInPrompt.tsx`'s
+password field, so it constrains the form and nothing else — a call straight
+to Supabase Auth still creates an account with a 6-character password.
+`supabase/config.toml` still sets `minimum_password_length = 6`, and CI's
+`supabase db push` pushes migrations only, never the `[auth]` block, so the
+live project's minimum is a Supabase dashboard setting this repo does not
+apply.
+
+Fix: raise `minimum_password_length` in `supabase/config.toml` to match the
+client-side hint, and set the same minimum on the live project's Auth
+settings (a manual dashboard change) so the two agree.
+
 ### TD26080101 `tech-debt-register.yml`'s consistency check isn't a required status check
 
 *Filed 2026-08-01, from the 2026-07-31 project review (R-01, F-CI-01).*
@@ -587,7 +590,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/153 |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/152 |
 | TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/148 |
-| TD26072427 | Unauthenticated cache-bust action; weak minimum password length | open | | |
+| TD26072427 | Unauthenticated cache-bust action; weak minimum password length | resolved | 2026-07-31 | https://github.com/Poetic-Poems/poetic-fiddle/pull/154 |
 | TD26072428 | No test coverage tooling or watch-mode script | open | | |
 | TD26072429 | Undocumented TypeScript/ESLint major-version holds | open | | |
 | TD26072430 | README/tooling polish (missing scripts, WSL pointer, postinstall error message) | open | | |
@@ -601,6 +604,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072602 | CSP-governed rendering has no runtime verification | open | | |
 | TD26072603 | Editor preview's song-embed button looks clickable but was never wired | open | | |
 | TD26072801 | Nothing renames `[Unreleased]`, so releases will repeat earlier notes | open | | |
+| TD26073101 | New-account password minimum is enforced only in the browser | open | | |
 | TD26080101 | `tech-debt-register.yml`'s consistency check isn't a required status check | open | | |
 | TD26080102 | Delete-poem confirmation has no focus management or Escape dismissal | open | | |
 | TD26080103 | `td-tooling-drift.yml`'s vendored scripts have already drifted; no issue-filing on failure | open | | |
