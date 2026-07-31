@@ -190,24 +190,6 @@ reusable `contrastRatio`/`blendOver` helpers already; extending its pairing
 list to also cover the generated poetic.css's tokens would give this
 regression the same CI coverage globals.css now has.
 
-### TD26072428 No test coverage tooling or watch-mode script
-
-*Filed 2026-07-24, from the 2026-07-23 project review (R-26, F-TEST-03,
-F-TEST-04).* No coverage tool is configured anywhere; `package.json`'s only
-test script is a single-shot `vitest run`.
-
-Fix: add `@vitest/coverage-v8` and a `coverage` script; add a `test:watch`
-script.
-
-*Scope extended 2026-07-31 (review R-09, F-TEST-01, F-TEST-02):* still
-accurate as filed. Two further, unrelated test-tooling gaps found in the
-same pass: `src/lib/poem-syntax.ts` (the `.poem` CodeMirror tokenizer) has
-no test file at all; and `use-poem-persistence.test.ts`'s fake-timer tests
-have no `afterEach(() => vi.useRealTimers())` safety net, so a thrown
-assertion mid-block would leak fake timers into later tests in the same
-file. Bundle both into the same PR that adds coverage/watch-mode tooling —
-see `reviews/project-review-2026-07-31/04-improvement-prompts.md` R-09.
-
 ### TD26072429 Undocumented TypeScript/ESLint major-version holds
 
 *Filed 2026-07-24, from the 2026-07-23 project review (R-27, F-DEPS-04).*
@@ -591,7 +573,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/152 |
 | TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/148 |
 | TD26072427 | Unauthenticated cache-bust action; weak minimum password length | resolved | 2026-07-31 | https://github.com/Poetic-Poems/poetic-fiddle/pull/154 |
-| TD26072428 | No test coverage tooling or watch-mode script | open | | |
+| TD26072428 | No test coverage tooling or watch-mode script | resolved | 2026-07-31 | https://github.com/Poetic-Poems/poetic-fiddle/pull/156 |
 | TD26072429 | Undocumented TypeScript/ESLint major-version holds | open | | |
 | TD26072430 | README/tooling polish (missing scripts, WSL pointer, postinstall error message) | open | | |
 | TD26072431 | Editor/dashboard loading & feedback polish | open | | |
