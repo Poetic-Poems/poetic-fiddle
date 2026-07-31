@@ -443,7 +443,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072424 | Analysis-toggle DOM wiring is tested only against a hand-authored fixture | open | | |
 | TD26072425 | Draft autosave writes to localStorage synchronously on every keystroke | resolved | 2026-07-30 | https://github.com/Poetic-Poems/poetic-fiddle/pull/152 |
 | TD26072426 | Code-quality quick wins (test boilerplate, error-message helper, PageHeader) | resolved | 2026-07-28 | https://github.com/Poetic-Poems/poetic-fiddle/pull/148 |
-| TD26072427 | Unauthenticated cache-bust action; weak minimum password length | open | | |
+| TD26072427 | Unauthenticated cache-bust action; weak minimum password length | in-progress | | |
 | TD26072428 | No test coverage tooling or watch-mode script | open | | |
 | TD26072429 | Undocumented TypeScript/ESLint major-version holds | open | | |
 | TD26072430 | README/tooling polish (missing scripts, WSL pointer, postinstall error message) | open | | |
