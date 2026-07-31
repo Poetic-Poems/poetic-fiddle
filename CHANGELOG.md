@@ -296,5 +296,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   toolchain) to 5.0.8, resolving a high-severity denial of service via
   unbounded expansion result length
   ([GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg)).
-- Raised the sign-in/sign-up password field's minimum length from 6 to 10
-  characters, with a visible hint on the requirement (`SignInPrompt.tsx`).
+- Raised the new-account password minimum length from 6 to 10 characters,
+  with a visible hint on the requirement, without changing the constraint
+  on the same field when signing in to an existing account
+  (`SignInPrompt.tsx`).
