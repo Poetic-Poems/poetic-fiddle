@@ -158,6 +158,9 @@ function SignInForm({ action, onClose }: SignInFormProps) {
           <label htmlFor="signin-password" className="text-sm font-medium">
             Password
           </label>
+          {/* Sign-in deliberately has no minLength: accounts created under
+              the old 6-character policy must still get through, and the
+              server rejects a wrong password either way. */}
           <input
             id="signin-password"
             type="password"
