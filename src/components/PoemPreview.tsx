@@ -9,57 +9,50 @@ interface PoemPreviewProps {
   css: string;
 }
 
-// poetic's Analysis section (_poem-content.pug, upstream in the poetic
-// repo) shows/hides its content via inline onclick handlers, which
-// DOMPurify.sanitize() strips. The preview iframe has no allow-scripts, so
-// those handlers couldn't run even unsanitised — rewire the same behaviour
-// here instead, via allow-same-origin DOM access rather than by executing
-// script inside the sandboxed content.
+// poetic's Analysis section (_poem-content.pug, upstream in the poetic repo)
+// keeps its show/hide and synopsis/full state in `aria-expanded`,
+// `aria-pressed` and `data-*` attributes, which poetic.css keys visibility off
+// through attribute selectors; poetic's own poetic.js flips them from a single
+// delegated click listener. Fiddle never loads that script — the preview
+// iframe grants no allow-scripts at all — so mirror the listener here,
+// reaching the document through allow-same-origin rather than by executing
+// script inside the sandboxed content. Setting the same attributes (rather
+// than inline styles or classes of Fiddle's own) is what keeps the CSS in
+// charge of what is visible, so the preview matches a published page.
 export function wireAnalysisToggles(doc: Document) {
-  doc
-    .querySelectorAll<HTMLElement>("button.analysis.show")
-    .forEach((showButton) => {
-      const panel = doc.getElementById(showButton.id.replace(/^show-/, ""));
-      if (!panel) return;
-      const hideButton = panel.querySelector<HTMLElement>(
-        "button.analysis.hide",
-      );
+  doc.addEventListener("click", (event) => {
+    // Not `instanceof Element`: in the preview iframe these nodes come from
+    // another realm, whose Element is a different constructor.
+    const target = event.target as Element | null;
+    if (typeof target?.closest !== "function") return;
 
-      showButton.addEventListener("click", () => {
-        panel.style.display = "block";
-        showButton.style.display = "none";
-      });
-      hideButton?.addEventListener("click", () => {
-        panel.style.display = "none";
-        showButton.style.display = "block";
-      });
+    const showButton = target.closest(".analysis.show");
+    if (showButton) {
+      showButton.setAttribute("aria-expanded", "true");
+      return;
+    }
+
+    const hideButton = target.closest(".analysis.hide");
+    if (hideButton) {
+      const showButtonId = hideButton.getAttribute("data-analysis-toggle");
+      if (showButtonId) {
+        doc
+          .getElementById(showButtonId)
+          ?.setAttribute("aria-expanded", "false");
+      }
+      return;
+    }
+
+    const selectButton = target.closest(".analysis.selector");
+    const group = selectButton?.closest(".full-or-synopsis-selector");
+    if (!selectButton || !group) return;
+
+    const panel = selectButton.getAttribute("data-analysis-select");
+    if (panel) group.setAttribute("data-selected", panel);
+    group.querySelectorAll(".analysis.selector").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button === selectButton));
     });
-
-  doc
-    .querySelectorAll<HTMLElement>("button.analysis.selector")
-    .forEach((selectorButton) => {
-      const match = selectorButton.id.match(
-        /^analysis-select-(syno|full)--(.+)$/,
-      );
-      if (!match) return;
-      const [, variant, slug] = match;
-      const synoPanel = doc.getElementById(`analysis-syno--${slug}`);
-      const fullPanel = doc.getElementById(`analysis-full--${slug}`);
-      const synoButton = doc.getElementById(`analysis-select-syno--${slug}`);
-      const fullButton = doc.getElementById(`analysis-select-full--${slug}`);
-      if (!synoPanel || !fullPanel || !synoButton || !fullButton) return;
-
-      const showsSynopsis = variant === "syno";
-      selectorButton.addEventListener("click", () => {
-        // The full panel starts with poetic's `hidden` class, whose
-        // `display: none !important` an inline style.display can't
-        // override, so toggle that class rather than style.display.
-        synoPanel.classList.toggle("hidden", !showsSynopsis);
-        fullPanel.classList.toggle("hidden", showsSynopsis);
-        synoButton.classList.toggle("selected", showsSynopsis);
-        fullButton.classList.toggle("selected", !showsSynopsis);
-      });
-    });
+  });
 }
 
 /**
