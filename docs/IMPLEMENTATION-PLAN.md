@@ -501,7 +501,9 @@ public launch, **P2** soon after, **P3** insurance/polish.
   "aren't available yet" language for Save and Share is gone from "The
   service" and "Your content" sections, which now describe signed-in
   save/share and browser-only anonymous drafts as they actually behave.
-- **W9 (P1, S)** — **Takedown address + process** (D40, AC116) — **done** (PR #138): the takedown address `takedown@poeticfiddle.com` and process are published in the AUP and Privacy pages.
+- **W9 (P1, S)** — **Takedown address + process** (D40, AC116) — **done**
+  (PR #138): the takedown address `takedown@poeticfiddle.com` and process
+  are published in the AUP and Privacy pages.
 - **W10 (P1, S)** — **Breach-handling statement** (AC118). Nothing user-facing
   today. Add wording to the Privacy Policy per the NZ notifiable-breach
   scheme (REQUIREMENTS.md §15).

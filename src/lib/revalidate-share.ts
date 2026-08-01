@@ -5,13 +5,12 @@ import { sharedPoemCacheTag } from "@/lib/shared-poem-cache";
 import { reportSwallowedError } from "@/lib/observability";
 
 /**
- * Invalidates a share page's cached render. Called from the editor
- * (a client component) right after a save that touches an already-shared
- * poem, so the permalink reflects the current source rather than a stale
- * cached render until the next natural expiry (AC19, AC82). `updateTag`
- * (not `revalidateTag`) because this always runs inside a Server Action and
- * wants the invalidation to apply immediately, with no profile/deprecation
- * warning to reason about.
+ * Invalidates a share page's cached render. Called right after a save that
+ * touches an already-shared poem, so the permalink reflects the current
+ * source rather than a stale cached render until the next natural expiry
+ * (AC19, AC82). `updateTag` (not `revalidateTag`) because this always runs
+ * inside a Server Action and wants the invalidation to apply immediately,
+ * with no profile/deprecation warning to reason about.
  *
  * Every call site treats this as best-effort and swallows any rejection — a
  * failure here leaves a stale cached render for up to the 300s fallback expiry
@@ -19,10 +18,10 @@ import { reportSwallowedError } from "@/lib/observability";
  * decision must not make the failure itself invisible, so it's captured here
  * rather than in the client: this function always runs server-side (Server
  * Actions execute on the server even when invoked from a client component),
- * where `reportSwallowedError`'s Sentry capture is actually wired up. Editor.tsx
- * is a client component with no client-side Sentry collection
- * (docs/OBSERVABILITY-PLAN.md O2, D42) — reporting from there would silently do
- * nothing.
+ * where `reportSwallowedError`'s Sentry capture is actually wired up. Every
+ * call site is a client component with no client-side Sentry collection
+ * (docs/OBSERVABILITY-PLAN.md O2, D42) — reporting from there would silently
+ * do nothing.
  */
 export async function revalidateSharedPoem(shareId: string): Promise<void> {
   try {
