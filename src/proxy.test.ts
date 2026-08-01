@@ -75,3 +75,22 @@ describe("proxy's Content-Security-Policy", () => {
     expect(response.headers.get("x-middleware-request-x-nonce")).toBe(nonce);
   });
 });
+
+describe("proxy's other security headers", () => {
+  it("sends only the origin, not the full path, to cross-origin destinations", () => {
+    expect(run().headers.get("Referrer-Policy")).toBe(
+      "strict-origin-when-cross-origin",
+    );
+  });
+
+  it("stops the browser from MIME-sniffing responses", () => {
+    expect(run().headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("denies geolocation, microphone, and camera by default", () => {
+    const value = run().headers.get("Permissions-Policy");
+    expect(value).toContain("geolocation=()");
+    expect(value).toContain("microphone=()");
+    expect(value).toContain("camera=()");
+  });
+});
