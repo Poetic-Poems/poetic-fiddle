@@ -13,8 +13,28 @@ import path from "node:path";
 
 function main() {
   const require = createRequire(import.meta.url);
-  const cssPath = require.resolve("poetic/browser/poetic.css");
-  const css = readFileSync(cssPath, "utf8");
+  let cssPath;
+  let css;
+
+  try {
+    cssPath = require.resolve("poetic/browser/poetic.css");
+  } catch {
+    console.error(
+      "Error: poetic package is not installed or does not contain browser/poetic.css",
+    );
+    console.error(
+      "Please ensure 'poetic' is listed in package.json dependencies and run 'npm install'",
+    );
+    process.exit(1);
+  }
+
+  try {
+    css = readFileSync(cssPath, "utf8");
+  } catch (error) {
+    console.error(`Error: Unable to read CSS file at ${cssPath}`);
+    console.error(error.message);
+    process.exit(1);
+  }
 
   const outPath = path.join(
     path.dirname(fileURLToPath(import.meta.url)),

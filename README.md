@@ -44,6 +44,7 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | Command | Purpose |
 |---------|---------|
 | `npm run dev` | Start the dev server at `http://localhost:3000` |
+| `npm start` | Start the production server |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, no emit |
@@ -51,3 +52,17 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | `npm test` | Vitest |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run coverage` | Vitest with coverage reporting |
+| `npm run test:db` | pgTAP database layer tests |
+
+## Troubleshooting
+
+### WSL npm-shadowing issue
+
+On Windows Subsystem for Linux (WSL), the system PATH often includes Windows npm and node binaries before Linux-installed ones. This can cause build commands to silently fail when they rely on Linux-specific paths. If you encounter path-related errors during `npm run build` or other commands on WSL, use the `scripts/setup-linux.sh` wrapper:
+
+```bash
+./scripts/setup-linux.sh npm run build
+./scripts/setup-linux.sh npm run dev
+```
+
+This wrapper activates nvm (if installed) before executing your command, ensuring the correct Linux Node.js is used. On macOS or native Linux installs, it is a transparent pass-through.
