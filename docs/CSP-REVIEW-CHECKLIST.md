@@ -46,5 +46,8 @@ Record in the pull request description which of these you ran and what you
 saw — "verified by inspection" with no detail is what let both incidents
 above ship with green CI.
 
-TD-PPpfid-26072602 tracks replacing this checklist with an automated
-browser-level smoke test; until that lands, this is the gate.
+TD-PPpfid-26072602 chose this checklist over an automated browser-level
+smoke test (Playwright against a live CSP header needs a live Supabase
+instance to cover the share page, which wasn't available when this was
+written); file a new tech-debt item if that automation becomes practical —
+until then, this is the gate.
