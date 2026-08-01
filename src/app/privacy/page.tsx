@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPolicy() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10 sm:px-10">
-      <PageHeader title="Privacy Policy" lastUpdated="27 July 2026" />
+      <PageHeader title="Privacy Policy" lastUpdated="2 August 2026" />
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed">
         <section>
@@ -159,6 +159,29 @@ export default function PrivacyPolicy() {
             </a>
             . We keep account and poem data only for as long as your account
             exists.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-serif text-lg font-semibold">
+            Privacy breach notification
+          </h2>
+          <p>
+            If a privacy breach occurs that is likely to result in serious harm
+            to an individual&rsquo;s privacy, we will notify the Office of the
+            Privacy Commissioner and affected individuals without unreasonable
+            delay, as the New Zealand Privacy Act 2020 requires. Notification
+            will be sent to the email address associated with your account and
+            will include details about the breach and the measures we are taking
+            to protect your information. If you believe your personal
+            information has been involved in a breach, please report it to{" "}
+            <a
+              href="mailto:warwick@datumprocess.co.nz"
+              className="text-link underline underline-offset-2"
+            >
+              warwick@datumprocess.co.nz
+            </a>
+            .
           </p>
         </section>
 
