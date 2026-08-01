@@ -135,9 +135,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   poet's dashboard, any active share links, and the published site (D40,
   AC116).
 - The Privacy Policy describes the privacy breach notification process: if a
-  breach is likely to cause serious harm, affected individuals are notified
-  without unreasonable delay, at the email address associated with their
-  account, per the NZ Privacy Act 2020 notifiable-breach scheme (D41, AC118).
+  breach is likely to cause serious harm, the Office of the Privacy
+  Commissioner and affected individuals are notified without unreasonable
+  delay — individuals at the email address associated with their account —
+  and suspected breaches can be reported to the published privacy contact,
+  per the NZ Privacy Act 2020 notifiable-breach scheme (D41, AC118).
 - A Source/Preview toggle in the editor below the `lg` breakpoint, so mobile
   users can switch between the two views without horizontal scrolling; the
   split-pane layout at `lg` and above is unchanged (AC26, AC83).
