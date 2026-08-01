@@ -24,7 +24,7 @@ beforeEach(resetEditorTestState);
 
 describe("Editor opening a saved poem", () => {
   it("restores the poem's source and keeps its id across a reload (AC15)", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source:
@@ -60,7 +60,7 @@ describe("Editor opening a saved poem", () => {
   });
 
   it("shows a way back to the dashboard when the poem can't be opened (RLS/not found)", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockRejectedValue(
       new Error(
         "That poem couldn't be found — it may have been deleted, or belongs to someone else.",
