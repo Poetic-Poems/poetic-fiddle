@@ -13,7 +13,21 @@ import path from "node:path";
 
 function main() {
   const require = createRequire(import.meta.url);
-  const cssPath = require.resolve("poetic/browser/poetic.css");
+
+  let cssPath;
+  try {
+    cssPath = require.resolve("poetic/browser/poetic.css");
+  } catch (cause) {
+    const pinnedVersion = require("../package.json").dependencies.poetic;
+    throw new Error(
+      `Could not resolve poetic/browser/poetic.css from the pinned poetic ` +
+        `dependency (${pinnedVersion}). Its browser/poetic.css export path ` +
+        `may have moved — check the release notes for the pinned version ` +
+        `and update this script's require.resolve() call to match.`,
+      { cause },
+    );
+  }
+
   const css = readFileSync(cssPath, "utf8");
 
   const outPath = path.join(
