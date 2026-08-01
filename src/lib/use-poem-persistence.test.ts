@@ -35,11 +35,11 @@ const SESSION = {
 } as Session;
 
 function signedOut() {
-  vi.mocked(useSession).mockReturnValue(null);
+  vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
 }
 
 function signedIn() {
-  vi.mocked(useSession).mockReturnValue(SESSION);
+  vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
 }
 
 beforeEach(() => {
@@ -130,7 +130,7 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
     window.localStorage.setItem("poetic-fiddle:draft:v1", "A stashed draft.");
     const { result, rerender } = renderHook(
       ({ session }) => {
-        vi.mocked(useSession).mockReturnValue(session);
+        vi.mocked(useSession).mockReturnValue({ session, loading: false });
         return usePoemPersistence({});
       },
       { initialProps: { session: null as Session | null } },
@@ -155,7 +155,7 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
     });
     const { result, rerender } = renderHook(
       ({ session }) => {
-        vi.mocked(useSession).mockReturnValue(session);
+        vi.mocked(useSession).mockReturnValue({ session, loading: false });
         return usePoemPersistence({});
       },
       { initialProps: { session: SESSION } },
@@ -185,7 +185,7 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
     });
     const { result, rerender } = renderHook(
       ({ session }) => {
-        vi.mocked(useSession).mockReturnValue(session);
+        vi.mocked(useSession).mockReturnValue({ session, loading: false });
         return usePoemPersistence({ initialPoemId: "poem-1" });
       },
       { initialProps: { session: SESSION as Session | null } },

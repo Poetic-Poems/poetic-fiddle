@@ -31,8 +31,19 @@ beforeEach(() => {
 });
 
 describe("PoemsDashboard", () => {
+  it("shows a loading state instead of the sign-in prompt while the session is still resolving (F-UX-06)", () => {
+    vi.mocked(useSession).mockReturnValue({ session: null, loading: true });
+
+    render(<PoemsDashboard />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(/loading/i);
+    expect(
+      screen.queryByText(/sign in to see your saved poems/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("asks a signed-out visitor to sign in, without listing anything", () => {
-    vi.mocked(useSession).mockReturnValue(null);
+    vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
 
     render(<PoemsDashboard />);
 
@@ -44,7 +55,7 @@ describe("PoemsDashboard", () => {
   });
 
   it("shows an empty state that links back to the editor (AC22)", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(listPoems).mockResolvedValue([]);
 
     render(<PoemsDashboard />);
@@ -57,7 +68,7 @@ describe("PoemsDashboard", () => {
   });
 
   it("lists saved poems, each linking to its own editor URL (AC15, AC22)", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(listPoems).mockResolvedValue([
       {
         id: "poem-1",
@@ -86,7 +97,7 @@ describe("PoemsDashboard", () => {
   });
 
   it("marks a shared poem so its owner can tell at a glance", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(listPoems).mockResolvedValue([
       {
         id: "poem-1",
@@ -102,7 +113,7 @@ describe("PoemsDashboard", () => {
   });
 
   it("surfaces an error without crashing when the list fails to load", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(listPoems).mockRejectedValue(
       new Error("Couldn't load your poems — please try again."),
     );
@@ -118,7 +129,10 @@ describe("PoemsDashboard", () => {
 
   describe("remix default (AC114)", () => {
     it("shows the poet's global remix default, off by default", async () => {
-      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
       vi.mocked(listPoems).mockResolvedValue([]);
       vi.mocked(getRemixDefault).mockResolvedValue(false);
 
@@ -132,7 +146,10 @@ describe("PoemsDashboard", () => {
     });
 
     it("shows an already-enabled remix default as checked", async () => {
-      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
       vi.mocked(listPoems).mockResolvedValue([]);
       vi.mocked(getRemixDefault).mockResolvedValue(true);
 
@@ -145,7 +162,10 @@ describe("PoemsDashboard", () => {
     });
 
     it("saves a toggle to the poet's global remix default", async () => {
-      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
       vi.mocked(listPoems).mockResolvedValue([]);
       vi.mocked(getRemixDefault).mockResolvedValue(false);
       vi.mocked(updateRemixDefault).mockResolvedValue(true);
@@ -163,8 +183,40 @@ describe("PoemsDashboard", () => {
       await waitFor(() => expect(checkbox).toBeChecked());
     });
 
+    it("shows pending feedback while a toggle is saving (F-UX-02)", async () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(listPoems).mockResolvedValue([]);
+      vi.mocked(getRemixDefault).mockResolvedValue(false);
+      let resolveSave: (value: boolean) => void = () => {};
+      vi.mocked(updateRemixDefault).mockReturnValue(
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+      );
+
+      render(<PoemsDashboard />);
+
+      const checkbox = await screen.findByRole("checkbox", {
+        name: /let others remix my poems by default/i,
+      });
+      fireEvent.click(checkbox);
+
+      expect(await screen.findByText(/saving/i)).toBeInTheDocument();
+
+      resolveSave(true);
+      await waitFor(() =>
+        expect(screen.queryByText(/saving/i)).not.toBeInTheDocument(),
+      );
+    });
+
     it("surfaces an error without crashing when the remix default fails to save", async () => {
-      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
       vi.mocked(listPoems).mockResolvedValue([]);
       vi.mocked(getRemixDefault).mockResolvedValue(false);
       vi.mocked(updateRemixDefault).mockRejectedValue(
@@ -188,7 +240,10 @@ describe("PoemsDashboard", () => {
 
   describe("delete (TD26072414)", () => {
     beforeEach(() => {
-      vi.mocked(useSession).mockReturnValue(SESSION);
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
       vi.mocked(listPoems).mockResolvedValue([
         {
           id: "poem-1",
