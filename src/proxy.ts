@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { buildContentSecurityPolicy } from "@/lib/csp";
 
+// Before merging a change here, run docs/CSP-REVIEW-CHECKLIST.md against a
+// real browser — this file's own tests assert the emitted header string,
+// never that a browser then accepts what it allows or rejects what it
+// doesn't.
+
 // Next.js's own inline scripts (the RSC hydration payload) pick up this nonce
 // automatically once it detects the `nonce-...` pattern in the outgoing
 // Content-Security-Policy header — see src/app/layout.tsx (forwards it to

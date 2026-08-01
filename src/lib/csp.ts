@@ -1,5 +1,9 @@
 import { EMBED_FRAME_SRC } from "@/lib/embed-hosts";
 
+// This file's own tests assert emitted policy *strings*, never that a browser
+// then accepts the content — see docs/CSP-REVIEW-CHECKLIST.md before merging
+// a change here, and run it against a real browser.
+
 // The Supabase project ref differs per environment and NEXT_PUBLIC_SUPABASE_URL
 // isn't set during CI's plain `npm run build` (src/lib/supabase-server.ts), so
 // a wildcard host covers every environment without depending on an env var at
