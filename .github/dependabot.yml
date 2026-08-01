@@ -17,8 +17,8 @@ updates:
       # TD26071901 and issue #86 before lifting this.
       - dependency-name: "jsdom"
         update-types: ["version-update:semver-major"]
-      # typescript is pinned to 6.0.3: eslint-config-next's bundled
-      # typescript-eslint declares a `typescript` peer range of
+      # typescript is held at 6.x (`^6.0.3`): the typescript-eslint that
+      # eslint-config-next pulls in declares a `typescript` peer range of
       # `>=4.8.4 <6.1.0` and refuses to run at all above it, so any bump past
       # 6.0.x breaks `npm run lint`. See tech-debt/TD-PPpfid-26072429.md
       # before lifting this.
