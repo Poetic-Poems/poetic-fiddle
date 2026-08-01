@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPolicy() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10 sm:px-10">
-      <PageHeader title="Privacy Policy" lastUpdated="27 July 2026" />
+      <PageHeader title="Privacy Policy" lastUpdated="1 August 2026" />
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed">
         <section>
