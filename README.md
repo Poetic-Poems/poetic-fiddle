@@ -44,6 +44,7 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | Command | Purpose |
 |---------|---------|
 | `npm run dev` | Start the dev server at `http://localhost:3000` |
+| `npm start` | Serve a production build made with `npm run build` |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, no emit |
@@ -51,3 +52,9 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | `npm test` | Vitest |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run coverage` | Vitest with coverage reporting |
+| `npm run test:db` | pgTAP data-layer tests, via the Supabase CLI (`supabase start` first) |
+
+On WSL, npm/node commands can pick up the Windows binaries ahead of the
+Linux ones on `PATH`. `scripts/setup-linux.sh` loads `nvm` first so the
+Linux toolchain is used instead — prefix any `npm run …` command with it,
+e.g. `./scripts/setup-linux.sh npm run build`.
