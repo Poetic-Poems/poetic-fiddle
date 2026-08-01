@@ -38,19 +38,21 @@ beforeEach(() => {
 });
 
 describe("useSession", () => {
-  it("starts with a null session while getSession is still pending", () => {
+  it("starts with a null session and loading=true while getSession is still pending", () => {
     getSession.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useSession());
-    expect(result.current).toBeNull();
+    expect(result.current.session).toBeNull();
+    expect(result.current.loading).toBe(true);
   });
 
-  it("adopts the session getSession resolves with", async () => {
+  it("adopts the session getSession resolves with, and clears loading", async () => {
     const session = fakeSession();
     getSession.mockResolvedValue({ data: { session } });
 
     const { result } = renderHook(() => useSession());
 
-    await waitFor(() => expect(result.current).toEqual(session));
+    await waitFor(() => expect(result.current.session).toEqual(session));
+    expect(result.current.loading).toBe(false);
   });
 
   it("updates the session when the auth-state-change listener fires", async () => {
@@ -63,21 +65,21 @@ describe("useSession", () => {
       onChange("SIGNED_IN", session);
     });
 
-    expect(result.current).toEqual(session);
+    expect(result.current.session).toEqual(session);
   });
 
   it("clears the session when the listener reports a sign-out", async () => {
     const session = fakeSession();
     getSession.mockResolvedValue({ data: { session } });
     const { result } = renderHook(() => useSession());
-    await waitFor(() => expect(result.current).toEqual(session));
+    await waitFor(() => expect(result.current.session).toEqual(session));
 
     const onChange = onAuthStateChange.mock.calls[0][0];
     act(() => {
       onChange("SIGNED_OUT", null);
     });
 
-    expect(result.current).toBeNull();
+    expect(result.current.session).toBeNull();
   });
 
   it("unsubscribes from the auth listener on unmount", async () => {
