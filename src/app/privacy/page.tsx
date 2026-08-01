@@ -168,11 +168,11 @@ export default function PrivacyPolicy() {
           </h2>
           <p>
             If a privacy breach occurs that is likely to result in serious harm
-            to an individual&rsquo;s privacy, we will notify affected individuals
-            without unreasonable delay. Notification will be sent to the email
-            address associated with your account and will include details about
-            the breach and the measures we are taking to protect your
-            information.
+            to an individual&rsquo;s privacy, we will notify affected
+            individuals without unreasonable delay. Notification will be sent to
+            the email address associated with your account and will include
+            details about the breach and the measures we are taking to protect
+            your information.
           </p>
         </section>
 
