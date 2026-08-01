@@ -34,7 +34,7 @@ beforeEach(() => {
 
 describe("Editor share", () => {
   it("prompts an anonymous poet to sign in instead of sharing (AC10 pattern)", () => {
-    vi.mocked(useSession).mockReturnValue(null);
+    vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
     render(<Editor poeticCss="" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Share" }));
@@ -44,7 +44,7 @@ describe("Editor share", () => {
   });
 
   it("saves an unsaved poem first, then shares it, and shows the link (AC17)", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(savePoem).mockResolvedValue({
       id: "poem-1",
       title: "A Title",
@@ -69,7 +69,7 @@ describe("Editor share", () => {
   });
 
   it("re-shares an already-saved, unchanged poem without saving again", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
@@ -87,7 +87,7 @@ describe("Editor share", () => {
   });
 
   it("shows an already-minted share link when opening a shared poem", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
@@ -101,7 +101,7 @@ describe("Editor share", () => {
   });
 
   it("surfaces a failed share without losing the poem", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(savePoem).mockResolvedValue({
       id: "poem-1",
       title: "A Title",
@@ -123,7 +123,7 @@ describe("Editor share", () => {
   });
 
   it("has no Unshare control until a poem is shared", () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     render(<Editor poeticCss="" />);
 
     expect(
@@ -132,7 +132,7 @@ describe("Editor share", () => {
   });
 
   it("unshares a poem, hides the link, and invalidates its cached render", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
@@ -162,7 +162,7 @@ describe("Editor share", () => {
       value: { writeText },
       configurable: true,
     });
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
@@ -203,7 +203,7 @@ describe("Editor share", () => {
       value: { writeText },
       configurable: true,
     });
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
@@ -227,7 +227,7 @@ describe("Editor share", () => {
   });
 
   it("surfaces a failed unshare without losing the share link", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",

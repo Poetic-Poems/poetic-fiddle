@@ -24,7 +24,7 @@ type RemixDefaultState =
   | { kind: "error"; message: string };
 
 export function PoemsDashboard() {
-  const session = useSession();
+  const { session, loading: sessionLoading } = useSession();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [remixDefaultState, setRemixDefaultState] = useState<RemixDefaultState>(
     { kind: "loading" },
@@ -134,6 +134,16 @@ export function PoemsDashboard() {
     }
   }
 
+  // While the session is still resolving, an already-signed-in poet must not
+  // briefly see the sign-in prompt below (F-UX-06).
+  if (sessionLoading) {
+    return (
+      <p role="status" className="px-6 text-sm text-foreground/70">
+        Loading…
+      </p>
+    );
+  }
+
   if (!session) {
     return (
       <p className="px-6 text-sm text-foreground/70">
@@ -159,6 +169,11 @@ export function PoemsDashboard() {
               Let others remix my poems by default (off unless you turn this on;
               you can still allow or block remixing per poem)
             </span>
+            {remixDefaultSaving && (
+              <span role="status" className="text-xs text-foreground/70">
+                Saving…
+              </span>
+            )}
           </label>
         )}
         {remixDefaultState.kind === "error" && (

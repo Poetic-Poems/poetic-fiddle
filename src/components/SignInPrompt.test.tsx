@@ -66,6 +66,24 @@ describe("SignInPrompt", () => {
     );
   });
 
+  it("shows in-progress feedback on the button that was clicked, disabling the others (F-UX-05)", async () => {
+    // Never resolves: a successful OAuth call redirects the browser away, so
+    // there is no "pending" state to return from.
+    authMock.signInWithOAuth.mockReturnValue(new Promise(() => {}));
+    render(<SignInPrompt action="save" onClose={() => {}} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue with google/i }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: /signing in…/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send magic link/i }),
+    ).toBeDisabled();
+  });
+
   it("signs in with email and password, closing the dialog on success", async () => {
     const onClose = vi.fn();
     authMock.signInWithPassword.mockResolvedValue({

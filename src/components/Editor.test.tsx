@@ -4,7 +4,7 @@ import Editor, { tryRenderPoem } from "./Editor";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
 
 vi.mock("@/lib/use-session", () => ({
-  useSession: () => null,
+  useSession: () => ({ session: null, loading: false }),
 }));
 
 vi.mock("@/lib/supabase-client", () => ({
