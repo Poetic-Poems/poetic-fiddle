@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   deletePoem,
   getRemixDefault,
@@ -23,8 +23,15 @@ type RemixDefaultState =
   | { kind: "loaded"; value: boolean }
   | { kind: "error"; message: string };
 
+// Where to move focus after the confirmation closes, applied in an effect
+// once the corresponding row has (re)rendered: back onto a row's own
+// "Delete" button (cancel, or a neighbouring row after a successful
+// delete), or onto the page's own heading if no row is left to receive it.
+type PendingFocus =
+  { kind: "delete-button"; poemId: string } | { kind: "heading" };
+
 export function PoemsDashboard() {
-  const session = useSession();
+  const { session, loading: sessionLoading } = useSession();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [remixDefaultState, setRemixDefaultState] = useState<RemixDefaultState>(
     { kind: "loading" },
@@ -35,6 +42,13 @@ export function PoemsDashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // A focus move queued by cancel or a successful delete, applied by an
+  // effect once its target has rendered. Held in a ref (not state) since
+  // applying it is a one-shot side effect, not something to re-render for.
+  const [focusRequestId, setFocusRequestId] = useState(0);
+  const pendingFocusRef = useRef<PendingFocus | null>(null);
+  const deleteButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const cancelButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   // Tracks whose poems `state` reflects, so a later sign-in as a different
   // account resets to loading (state update during render, matching the
   // pattern Editor.tsx uses for its own per-user resets).
@@ -44,6 +58,11 @@ export function PoemsDashboard() {
     setLoadedForUserId(session.user.id);
     setState({ kind: "loading" });
     setRemixDefaultState({ kind: "loading" });
+  }
+
+  function requestFocus(target: PendingFocus) {
+    pendingFocusRef.current = target;
+    setFocusRequestId((id) => id + 1);
   }
 
   useEffect(() => {
@@ -88,6 +107,27 @@ export function PoemsDashboard() {
     };
   }, [session]);
 
+  // Moves focus onto the confirmation as soon as it appears (TD-PPpfid-26080102):
+  // the "Delete" button it replaces is gone from the DOM, so without this the
+  // browser would silently drop focus to <body>.
+  useEffect(() => {
+    if (confirmDeleteId === null) return;
+    cancelButtonRefs.current.get(confirmDeleteId)?.focus();
+  }, [confirmDeleteId]);
+
+  // Applies a queued focus move once the target row (or the page heading,
+  // if none is left) has rendered.
+  useEffect(() => {
+    const target = pendingFocusRef.current;
+    if (!target) return;
+    if (target.kind === "delete-button") {
+      deleteButtonRefs.current.get(target.poemId)?.focus();
+    } else {
+      document.getElementById("poems-heading")?.focus();
+    }
+    pendingFocusRef.current = null;
+  }, [focusRequestId]);
+
   async function handleRemixDefaultChange(checked: boolean) {
     if (!session) return;
     setRemixDefaultSaving(true);
@@ -113,6 +153,16 @@ export function PoemsDashboard() {
   // deleted poem's permalink stops serving right away rather than staying
   // visible for up to the fallback expiry (AC92: removed from every surface).
   async function handleDeletePoem(poem: SavedPoem) {
+    const poemsBeforeDelete = state.kind === "loaded" ? state.poems : [];
+    const index = poemsBeforeDelete.findIndex((p) => p.id === poem.id);
+    const nextPoem = poemsBeforeDelete[index + 1];
+    const previousPoem = index > 0 ? poemsBeforeDelete[index - 1] : undefined;
+    const focusAfterDelete: PendingFocus = nextPoem
+      ? { kind: "delete-button", poemId: nextPoem.id }
+      : previousPoem
+        ? { kind: "delete-button", poemId: previousPoem.id }
+        : { kind: "heading" };
+
     setDeletingId(poem.id);
     setDeleteError(null);
     try {
@@ -126,12 +176,40 @@ export function PoemsDashboard() {
           : prev,
       );
       setConfirmDeleteId(null);
+      requestFocus(focusAfterDelete);
       if (poem.shareId) revalidateSharedPoem(poem.shareId).catch(() => {});
     } catch (err) {
       setDeleteError(errorMessage(err));
     } finally {
       setDeletingId(null);
     }
+  }
+
+  // Cancels the confirmation, whether via the "Cancel" button or Escape, and
+  // returns focus to the row's own "Delete" button.
+  function handleCancelDelete(poem: SavedPoem) {
+    if (deletingId === poem.id) return;
+    setConfirmDeleteId(null);
+    requestFocus({ kind: "delete-button", poemId: poem.id });
+  }
+
+  function handleConfirmKeyDown(
+    event: KeyboardEvent<HTMLDivElement>,
+    poem: SavedPoem,
+  ) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    handleCancelDelete(poem);
+  }
+
+  // While the session is still resolving, an already-signed-in poet must not
+  // briefly see the sign-in prompt below (F-UX-06).
+  if (sessionLoading) {
+    return (
+      <p role="status" className="px-6 text-sm text-foreground/70">
+        Loading…
+      </p>
+    );
   }
 
   if (!session) {
@@ -159,6 +237,11 @@ export function PoemsDashboard() {
               Let others remix my poems by default (off unless you turn this on;
               you can still allow or block remixing per poem)
             </span>
+            {remixDefaultSaving && (
+              <span role="status" className="text-xs text-foreground/70">
+                Saving…
+              </span>
+            )}
           </label>
         )}
         {remixDefaultState.kind === "error" && (
@@ -216,7 +299,10 @@ export function PoemsDashboard() {
                 </span>
               </Link>
               {confirmDeleteId === poem.id ? (
-                <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
+                <div
+                  className="flex shrink-0 flex-wrap items-center gap-2 text-xs"
+                  onKeyDown={(event) => handleConfirmKeyDown(event, poem)}
+                >
                   <span className="text-foreground/70">Delete this poem?</span>
                   <button
                     type="button"
@@ -228,7 +314,11 @@ export function PoemsDashboard() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setConfirmDeleteId(null)}
+                    ref={(el) => {
+                      if (el) cancelButtonRefs.current.set(poem.id, el);
+                      else cancelButtonRefs.current.delete(poem.id);
+                    }}
+                    onClick={() => handleCancelDelete(poem)}
                     disabled={deletingId === poem.id}
                     className="rounded-md border border-black/10 px-2 py-1 font-medium hover:bg-black/5 disabled:opacity-60 dark:border-white/10 dark:hover:bg-white/5"
                   >
@@ -238,6 +328,10 @@ export function PoemsDashboard() {
               ) : (
                 <button
                   type="button"
+                  ref={(el) => {
+                    if (el) deleteButtonRefs.current.set(poem.id, el);
+                    else deleteButtonRefs.current.delete(poem.id);
+                  }}
                   onClick={() => setConfirmDeleteId(poem.id)}
                   aria-label={`Delete "${poem.title || "Untitled"}"`}
                   className="shrink-0 rounded-md border border-black/10 px-2 py-1 text-xs font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"

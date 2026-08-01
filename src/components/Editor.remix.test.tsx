@@ -28,7 +28,7 @@ beforeEach(resetEditorTestState);
 
 describe("Editor opening a remix", () => {
   it("holds an anonymous remix as the localStorage draft (AC21)", async () => {
-    vi.mocked(useSession).mockReturnValue(null);
+    vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
 
     render(<Editor poeticCss="" initialSource={REMIX_SOURCE} />);
 
@@ -39,7 +39,7 @@ describe("Editor opening a remix", () => {
   });
 
   it("saves a remix as a new poem of the signed-in poet's own (AC20)", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(savePoem).mockResolvedValue({
       id: "new-poem",
       title: "Ode to a Fiddle",
@@ -65,7 +65,7 @@ describe("Editor opening a remix", () => {
 
   it("keeps the remix when a leftover draft exists and the poet signs in", async () => {
     window.localStorage.setItem("poetic-fiddle:draft:v1", "A stale draft.");
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
 
     render(<Editor poeticCss="" initialSource={REMIX_SOURCE} />);
 

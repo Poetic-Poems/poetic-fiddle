@@ -278,6 +278,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   match poetic.css's `var()` fallback for a default-sized embed, which is why
   this was previously invisible; a non-default `preview-lines` or an
   aspect-ratio embed (no fallback) rendered wrong.
+- The editor and "My poems" dashboard now show a loading fallback instead of
+  a blank gap while their client-side bundle hydrates, and an already
+  signed-in poet visiting "My poems" no longer briefly sees a "sign in"
+  prompt before their session resolves. Sign-in (Google, magic link,
+  password), the poet's global remix-default checkbox, and a poem's own
+  "Remixing this poem" control now show in-progress text ("Signing in…",
+  "Saving…") instead of only disabling while the change is in flight.
+- The "My poems" dashboard's delete confirmation now manages focus and
+  supports Escape. Clicking "Delete" used to swap the focused button for a
+  different element with no focus management, silently dropping keyboard and
+  screen-reader focus to the page body; focus now moves onto the
+  confirmation's "Cancel" button, Escape cancels it, and focus returns to a
+  sensible target (the row's own "Delete" button on cancel; the next row's,
+  else the previous row's, else the page heading, after a successful delete).
 
 ### Security
 
