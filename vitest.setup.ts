@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach, vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { toHaveNoViolations } from "jest-axe";
+
+// jest-axe's matcher is written against Jest's `expect.extend` shape, which
+// Vitest's `expect` implements identically — no Jest runtime involved.
+expect.extend(toHaveNoViolations);
 
 // vitest.config.ts doesn't set `test.globals`, so Testing Library's
 // auto-cleanup (which looks for a global `afterEach`) never registers —

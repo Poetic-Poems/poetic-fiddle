@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import { wirePoemToggles } from "@/components/PoemPreview";
 import { useNonce } from "@/lib/nonce-context";
+import { EMBED_FRAME_SRC } from "@/lib/embed-hosts";
 
 interface SharedPoemViewProps {
   /**
@@ -15,18 +16,16 @@ interface SharedPoemViewProps {
   title: string;
 }
 
-const EMBED_HOSTS = "https://mega.nz https://audiomack.com";
-
 /**
  * A strict Content-Security-Policy for the sandboxed document below, as a
  * backstop independent of the server-side sanitisation: even if a <script>
  * somehow survived DOMPurify, `script-src 'none'` stops it running here. It
  * does not restrict the allow-listed embeds themselves — those are separate
  * framed documents governed by their own origin's policy, not this one;
- * `frame-src` here just re-states the same host allow-list as a second,
- * browser-enforced line of defence (AC86).
+ * `frame-src` here just re-states the same host allow-list (embed-hosts.ts)
+ * as a second, browser-enforced line of defence (AC86).
  */
-const CONTENT_SECURITY_POLICY = `default-src 'none'; script-src 'none'; object-src 'none'; base-uri 'none'; style-src 'unsafe-inline'; img-src * data:; media-src *; frame-src ${EMBED_HOSTS};`;
+const CONTENT_SECURITY_POLICY = `default-src 'none'; script-src 'none'; object-src 'none'; base-uri 'none'; style-src 'unsafe-inline'; img-src * data:; media-src *; frame-src ${EMBED_FRAME_SRC};`;
 
 function escapeHtml(value: string): string {
   return value

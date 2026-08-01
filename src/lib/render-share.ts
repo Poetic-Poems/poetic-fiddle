@@ -11,18 +11,7 @@ import { JSDOM } from "jsdom";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
 import { reportSwallowedError } from "@/lib/observability";
-
-/**
- * Hosts poetic's builtin song handlers can point an embed at (see poetic's
- * `src/song-handlers.yaml`). Fiddle passes no `config.song_handlers` to
- * `renderPoem` (there is no `.poetic-config.yaml` UI), so every
- * `data-embed-src` this module ever sees is built from one of these two
- * fixed URL templates — a poet's audio value can only fill the *path*, never
- * the origin. This allow-list is still enforced explicitly (AC86), rather
- * than trusted implicitly, as the defence that actually matters if that
- * assumption ever stops holding.
- */
-const EMBED_ALLOWED_HOSTS = new Set(["mega.nz", "audiomack.com"]);
+import { EMBED_ALLOWED_HOSTS } from "@/lib/embed-hosts";
 
 /**
  * Sandboxed just enough for a media player to work (script execution, and
@@ -70,6 +59,10 @@ export function sanitizeSharedPoemHtml(rawHtml: string): string {
       } catch {
         return;
       }
+      // A poet's audio value can only ever fill the URL's path, never its
+      // origin (see embed-hosts.ts) — but this allow-list is still enforced
+      // explicitly (AC86), rather than trusted implicitly, as the defence
+      // that actually matters if that assumption ever stops holding.
       if (
         url.protocol !== "https:" ||
         !EMBED_ALLOWED_HOSTS.has(url.hostname.toLowerCase())

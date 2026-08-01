@@ -98,3 +98,24 @@ describe("SharedPoemView title escaping (escapeHtml)", () => {
     expect(escaped).not.toContain("<b>");
   });
 });
+
+// The srcDoc's own <meta> CSP re-states the song-embed host allow-list as a
+// second, browser-enforced line of defence (AC86); embed-hosts.ts is where
+// every copy of that list comes from. Asserted against literal origins here,
+// as proxy.test.ts does for the site-wide policy, so that a change to the
+// shared list has to be a deliberate one in both consumers' tests.
+describe("SharedPoemView srcDoc frame-src", () => {
+  it("allow-lists the song-embed hosts the sanitiser activates embeds for", () => {
+    const { container } = render(
+      <NonceProvider nonce={null}>
+        <SharedPoemView html="<p>A poem.</p>" css="" title="A shared poem" />
+      </NonceProvider>,
+    );
+
+    const srcDoc = container.querySelector("iframe")!.getAttribute("srcdoc")!;
+    const frameSrc = /frame-src ([^;"]+);/.exec(srcDoc)![1];
+
+    expect(frameSrc).toContain("https://mega.nz");
+    expect(frameSrc).toContain("https://audiomack.com");
+  });
+});
