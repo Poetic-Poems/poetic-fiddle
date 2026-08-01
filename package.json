@@ -6,7 +6,7 @@
   "license": "MIT",
   "engines": {
     "node": "22.x",
-    "npm": "11.17.0"
+    "npm": ">=10"
   },
   "scripts": {
     "dev": "next dev",
