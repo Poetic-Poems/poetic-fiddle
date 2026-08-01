@@ -9,22 +9,43 @@ interface PoemPreviewProps {
   css: string;
 }
 
-// poetic's Analysis section (_poem-content.pug, upstream in the poetic repo)
-// keeps its show/hide and synopsis/full state in `aria-expanded`,
+// poetic's Analysis section and postscript preview (_poem-content.pug, upstream
+// in the poetic repo) keep their expanded/selected state in `aria-expanded`,
 // `aria-pressed` and `data-*` attributes, which poetic.css keys visibility off
-// through attribute selectors; poetic's own poetic.js flips them from a single
-// delegated click listener. Fiddle never loads that script — the preview
-// iframe grants no allow-scripts at all — so mirror the listener here,
-// reaching the document through allow-same-origin rather than by executing
-// script inside the sandboxed content. Setting the same attributes (rather
-// than inline styles or classes of Fiddle's own) is what keeps the CSS in
-// charge of what is visible, so the preview matches a published page.
-export function wireAnalysisToggles(doc: Document) {
+// through attribute selectors; poetic's own poetic.js flips them from delegated
+// click listeners. Fiddle never loads that script — the preview iframe grants
+// no allow-scripts at all — so mirror those listeners here, reaching the
+// document through allow-same-origin rather than by executing script inside the
+// sandboxed content. Setting the same attributes (rather than inline styles or
+// classes of Fiddle's own) is what keeps the CSS in charge of what is visible,
+// so the preview matches a published page.
+export function wirePoemToggles(doc: Document) {
   doc.addEventListener("click", (event) => {
     // Not `instanceof Element`: in the preview iframe these nodes come from
     // another realm, whose Element is a different constructor.
     const target = event.target as Element | null;
     if (typeof target?.closest !== "function") return;
+
+    // Without this, a postscript longer than its `--preview-lines` budget stays
+    // clamped by `.postscript-content`'s max-height with no way to read the
+    // rest: poetic's control was a CSS-only checkbox until v6.2.0 made it a
+    // scripted button (TD-PPpfid-26080108 covers what is still missing).
+    const postscriptToggle = target.closest(".postscript-toggle");
+    if (postscriptToggle) {
+      const contentId = postscriptToggle.getAttribute("aria-controls");
+      const content = contentId ? doc.getElementById(contentId) : null;
+      if (!content) return;
+
+      const expanded =
+        postscriptToggle.getAttribute("aria-expanded") === "true";
+      postscriptToggle.setAttribute("aria-expanded", String(!expanded));
+      content.classList.toggle("postscript-expanded", !expanded);
+      // The visible label is poetic.css's ::after content, keyed off
+      // aria-expanded; this span is the button's accessible name.
+      const label = postscriptToggle.querySelector(".sr-only");
+      if (label) label.textContent = expanded ? "See more" : "See less";
+      return;
+    }
 
     const showButton = target.closest(".analysis.show");
     if (showButton) {
@@ -78,7 +99,7 @@ export function PoemPreview({ html, css }: PoemPreviewProps) {
 
   const handleLoad = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
-    if (doc) wireAnalysisToggles(doc);
+    if (doc) wirePoemToggles(doc);
   }, []);
 
   return (
