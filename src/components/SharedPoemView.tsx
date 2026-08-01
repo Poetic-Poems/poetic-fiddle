@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef } from "react";
-import { wireAnalysisToggles } from "@/components/PoemPreview";
+import { wirePoemToggles } from "@/components/PoemPreview";
 import { useNonce } from "@/lib/nonce-context";
 
 interface SharedPoemViewProps {
@@ -47,14 +47,14 @@ function escapeHtml(value: string): string {
  * activates. `allow-scripts` + `allow-same-origin` together would normally
  * be avoided (MDN warns against the combination), but the CSP above
  * neutralises the residual risk for our own sanitised content, and
- * `allow-same-origin` is what lets `wireAnalysisToggles` reach the iframe's
+ * `allow-same-origin` is what lets `wirePoemToggles` reach the iframe's
  * DOM the same way the editor preview does — without it, a poem's Analysis
  * section would stay permanently hidden (poeticCss sets `display: none`
  * until the toggle reveals it), which AC84's "viewable without client-side
  * JS" doesn't excuse.
  *
  * Uses `srcDoc`, a plain HTML attribute the browser honours with no JS: the
- * page is fully viewable without client-side JS (AC84); `wireAnalysisToggles`
+ * page is fully viewable without client-side JS (AC84); `wirePoemToggles`
  * only enhances the Analysis show/hide toggle once JS does run.
  */
 export function SharedPoemView({ html, css, title }: SharedPoemViewProps) {
@@ -75,7 +75,7 @@ export function SharedPoemView({ html, css, title }: SharedPoemViewProps) {
 
   const handleLoad = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
-    if (doc) wireAnalysisToggles(doc);
+    if (doc) wirePoemToggles(doc);
   }, []);
 
   return (

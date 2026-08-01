@@ -152,6 +152,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `src/lib/contrast.test.ts` now measures poetic's stylesheet the way a
   browser paints it — inherited colours, backdrops and opacity resolved, over
   poems put through poetic's own renderer — in both colour schemes.
+- The postscript's "See more" control works in the preview and share views.
+  Poetic clamps a long postscript to five lines and offers the control to
+  reveal the rest; it used to be a CSS-only checkbox, and became a scripted
+  button in the version picked up here, which would have left a long
+  postscript truncated with no way to read it. The preview now drives the
+  control itself, as it already did for the Analysis section.
 - Link text (`text-link`, e.g. the legal-page and editor share links) only
   met AA contrast in light mode — 2.61:1 against the dark background, well
   below the 4.5:1 threshold. Dark mode now uses a lighter tint of the same
