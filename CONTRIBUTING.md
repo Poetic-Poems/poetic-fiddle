@@ -16,6 +16,12 @@ Thanks for your interest in contributing! Poetic Fiddle is a collaborative proje
    - Fill in the PR body with context: what the change does, why it matters, any test plan or verification steps
    - Link the issue or tech-debt item if applicable
    - CI checks must pass before merge
+   - If the PR touches `src/lib/csp.ts`, `src/proxy.ts`,
+     `src/components/PoemPreview.tsx` or `src/components/SharedPoemView.tsx`,
+     run through [docs/CSP-REVIEW-CHECKLIST.md](./docs/CSP-REVIEW-CHECKLIST.md)
+     in a real browser and note the results in the PR's test plan — CI's
+     string-level CSP tests don't catch a browser actually rejecting the
+     content they assert about
 
 ## Getting help
 

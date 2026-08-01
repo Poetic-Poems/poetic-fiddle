@@ -55,6 +55,10 @@ function escapeHtml(value: string): string {
  * Uses `srcDoc`, a plain HTML attribute the browser honours with no JS: the
  * page is fully viewable without client-side JS (AC84); `wirePoemToggles`
  * only enhances the Analysis show/hide toggle once JS does run.
+ *
+ * This srcDoc inherits the app shell's CSP in addition to its own <meta> CSP
+ * above — before merging a change that touches this file, run
+ * docs/CSP-REVIEW-CHECKLIST.md against a real browser.
  */
 export function SharedPoemView({ html, css, title }: SharedPoemViewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);

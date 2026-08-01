@@ -80,6 +80,10 @@ export function wirePoemToggles(doc: Document) {
  * Renders sanitised poem HTML inside an isolated iframe, bundling poetic's
  * own CSS so page-level selectors (`body`, `h1`, …) style the preview
  * without ever touching Fiddle's app shell.
+ *
+ * This srcDoc inherits the app shell's CSP (src/lib/csp.ts) in addition to
+ * anything of its own — before merging a change that touches this file, run
+ * docs/CSP-REVIEW-CHECKLIST.md against a real browser.
  */
 export function PoemPreview({ html, css }: PoemPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
