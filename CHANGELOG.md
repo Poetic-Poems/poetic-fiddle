@@ -140,6 +140,24 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Poem text in the preview and share views now meets AA contrast. Poetic's
+  byline, song-segment, song-link, postscript and empty-section text was a
+  grey calibrated against the white card that poetic's own site paints behind
+  a poem; Fiddle renders the poem fragment straight onto poetic's page
+  background, where that grey was 4.17:1, below the 4.5:1 AA threshold. The
+  pinned `poetic` dependency moves to v6.3.0, which darkens it to 4.54:1
+  there, stops fading the song-segment marker to 2.65:1 with `opacity`, and
+  gives the empty-section notice and the analysis headings the dark-mode
+  colours they were missing (3.07:1 and 1.67:1 against the dark background).
+  `src/lib/contrast.test.ts` now measures poetic's stylesheet the way a
+  browser paints it — inherited colours, backdrops and opacity resolved, over
+  poems put through poetic's own renderer — in both colour schemes.
+- The postscript's "See more" control works again in the preview and share
+  views. Poetic clamps a long postscript to five lines and offers the control
+  to reveal the rest; it used to be a CSS-only checkbox, and became a scripted
+  button in the version the pin moved to, which left a long postscript
+  truncated with no way to read it. The preview now drives the control itself,
+  as it already did for the Analysis section.
 - Link text (`text-link`, e.g. the legal-page and editor share links) only
   met AA contrast in light mode — 2.61:1 against the dark background, well
   below the 4.5:1 threshold. Dark mode now uses a lighter tint of the same
