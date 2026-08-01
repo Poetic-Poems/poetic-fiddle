@@ -59,7 +59,7 @@ export function usePoemPersistence({
   initialPoemId,
   initialSource,
 }: UsePoemPersistenceOptions) {
-  const session = useSession();
+  const { session } = useSession();
 
   const [source, setSource] = useState(() =>
     initialPoemId ? "" : (initialSource ?? loadDraft() ?? EXAMPLE_POEM),
