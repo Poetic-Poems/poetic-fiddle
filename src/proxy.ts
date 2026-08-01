@@ -23,6 +23,15 @@ export function proxy(request: NextRequest) {
     request: { headers: requestHeaders },
   });
   response.headers.set("Content-Security-Policy", contentSecurityPolicy);
+  // Cross-origin destinations get only the origin, not the full path — this
+  // keeps a /share/[share_id] URL's token out of the Referer header sent to
+  // them, without dropping the referrer same-origin flows may rely on.
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set(
+    "Permissions-Policy",
+    "geolocation=(), microphone=(), camera=()",
+  );
   return response;
 }
 

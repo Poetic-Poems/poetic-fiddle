@@ -335,3 +335,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a visible hint on the requirement. The same field imposes no minimum when
   signing in to an existing account, so accounts created under the old minimum
   can still sign in (`SignInPrompt.tsx`).
+- Added `Referrer-Policy`, `X-Content-Type-Options`, and `Permissions-Policy`
+  response headers alongside the existing CSP (`src/proxy.ts`).
+  `Referrer-Policy: strict-origin-when-cross-origin` closes a theoretical leak
+  path where a `/share/[share_id]` URL's token could otherwise reach a
+  cross-origin destination in full via the `Referer` header.
