@@ -31,14 +31,14 @@ beforeEach(() => {
 // suite catches labelling/structure defects, not contrast regressions.
 describe("PoemsDashboard accessibility (TD-PPpfid-26072435)", () => {
   it("has no axe violations when signed out", async () => {
-    vi.mocked(useSession).mockReturnValue(null);
+    vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
     const { container } = render(<PoemsDashboard />);
 
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it("has no axe violations with a loaded, non-empty poem list", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(listPoems).mockResolvedValue([
       {
         id: "poem-1",

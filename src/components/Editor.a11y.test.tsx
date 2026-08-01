@@ -28,7 +28,7 @@ const AXE_OPTIONS = { iframes: false };
 describe("Editor accessibility (TD-PPpfid-26072435)", () => {
   it("has no axe violations when signed out", async () => {
     resetEditorTestState();
-    vi.mocked(useSession).mockReturnValue(null);
+    vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
     const { container } = render(<Editor poeticCss="" />);
 
     expect(await axe(container, AXE_OPTIONS)).toHaveNoViolations();
@@ -36,7 +36,10 @@ describe("Editor accessibility (TD-PPpfid-26072435)", () => {
 
   it("has no axe violations when signed in", async () => {
     resetEditorTestState();
-    vi.mocked(useSession).mockReturnValue(makeSession());
+    vi.mocked(useSession).mockReturnValue({
+      session: makeSession(),
+      loading: false,
+    });
     const { container } = render(<Editor poeticCss="" />);
 
     expect(await axe(container, AXE_OPTIONS)).toHaveNoViolations();
