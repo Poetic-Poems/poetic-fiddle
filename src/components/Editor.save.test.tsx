@@ -20,11 +20,11 @@ vi.mock("@/lib/supabase-client", () => ({
 const SESSION = makeSession();
 
 function signedIn() {
-  vi.mocked(useSession).mockReturnValue(SESSION);
+  vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
 }
 
 function signedOut() {
-  vi.mocked(useSession).mockReturnValue(null);
+  vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
 }
 
 beforeEach(resetEditorTestState);

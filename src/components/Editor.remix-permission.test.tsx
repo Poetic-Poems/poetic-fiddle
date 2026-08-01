@@ -25,7 +25,7 @@ beforeEach(resetEditorTestState);
 
 describe("Editor per-poem remix override (AC114)", () => {
   it("has no remix control for a signed-out visitor", () => {
-    vi.mocked(useSession).mockReturnValue(null);
+    vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
     render(<Editor poeticCss="" />);
 
     expect(
@@ -34,7 +34,7 @@ describe("Editor per-poem remix override (AC114)", () => {
   });
 
   it("defaults an unsaved poem's remix control to inherit the poet's default", () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     render(<Editor poeticCss="" />);
 
     const select = screen.getByLabelText(/remixing this poem/i);
@@ -42,7 +42,7 @@ describe("Editor per-poem remix override (AC114)", () => {
   });
 
   it("shows an already-set per-poem override when opening a saved poem", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
@@ -56,7 +56,7 @@ describe("Editor per-poem remix override (AC114)", () => {
   });
 
   it("saves an override on an already-saved poem without saving again", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
@@ -78,7 +78,7 @@ describe("Editor per-poem remix override (AC114)", () => {
   });
 
   it("saves the poem first when setting an override before the first save", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(savePoem).mockResolvedValue({
       id: "new-poem",
       title: "A Title",
@@ -101,8 +101,36 @@ describe("Editor per-poem remix override (AC114)", () => {
     );
   });
 
+  it("shows pending feedback while an override is saving (F-UX-02)", async () => {
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
+    vi.mocked(loadPoem).mockResolvedValue({
+      id: "poem-1",
+      source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
+      shareId: null,
+      allowRemix: null,
+    });
+    let resolveUpdate: (value: boolean) => void = () => {};
+    vi.mocked(updateAllowRemix).mockReturnValue(
+      new Promise((resolve) => {
+        resolveUpdate = resolve;
+      }),
+    );
+    render(<Editor poeticCss="" initialPoemId="poem-1" />);
+
+    await screen.findByText("Hello.");
+    const select = screen.getByLabelText(/remixing this poem/i);
+    fireEvent.change(select, { target: { value: "deny" } });
+
+    expect(await screen.findByText(/saving/i)).toBeInTheDocument();
+
+    resolveUpdate(false);
+    await waitFor(() =>
+      expect(screen.queryByText(/saving/i)).not.toBeInTheDocument(),
+    );
+  });
+
   it("surfaces a failed override save without losing the current setting", async () => {
-    vi.mocked(useSession).mockReturnValue(SESSION);
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
     vi.mocked(loadPoem).mockResolvedValue({
       id: "poem-1",
       source: "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",

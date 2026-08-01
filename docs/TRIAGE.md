@@ -70,10 +70,9 @@ Per AC121, triage reads through a credential that **cannot write telemetry,
 deploy, or read secrets**, and that is never committed (AC88). Both interactive
 (VS Code-hosted) and autonomous (headless) agents use **one** mechanism: an
 org-owned Internal Integration read token, registered as the user-scope
-`sentry-headless` MCP server. Sentry's hosted OAuth MCP was trialled and
-dropped — it needs interactive browser consent, so it cannot serve autonomous
-agents; a single token-based server covers both contexts. Full rationale and
-setup are in [SENTRY-AGENT-ACCESS.md](SENTRY-AGENT-ACCESS.md).
+`sentry-headless` MCP server. A token-based server is used because it works in
+both interactive and headless contexts. Full rationale and setup are in
+[SENTRY-AGENT-ACCESS.md](SENTRY-AGENT-ACCESS.md).
 
 Mint the token at **Organization Settings → Developer Settings → Custom
 Integrations → New Internal Integration** (not the Organization Tokens /

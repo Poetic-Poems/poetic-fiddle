@@ -201,6 +201,11 @@ export default function Editor({
             <option value="allow">Always allow</option>
             <option value="deny">Never allow</option>
           </select>
+          {allowRemixSaving && (
+            <span role="status" className="text-xs text-foreground/70">
+              Saving…
+            </span>
+          )}
           {allowRemixError && (
             <p role="alert" className="text-sm text-red-700 dark:text-red-400">
               {allowRemixError}

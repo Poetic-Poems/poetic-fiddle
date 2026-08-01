@@ -22,25 +22,15 @@ copy lives in the password safe. It is never committed to the repo.
 
 ## Why it is set up this way
 
-- **Token, not OAuth.** The hosted OAuth server (`https://mcp.sentry.dev/mcp`) was
-  trialled and removed. OAuth needs an interactive browser consent, so it cannot
-  serve the **autonomous** agents (no browser, no interactive flow). A token works
-  in every context, so a single token‑based server covers both. The redundant
-  hosted `sentry` entry was removed from `.mcp.json` to avoid two competing Sentry
-  servers.
-- **User scope, not local.** `claude mcp add -s local` stores the server under the
-  *current directory's* project key in `~/.claude.json`. Adding it from several
-  directories silently created three separate, inconsistent copies. User scope is a
-  single global entry that works from any directory, so both the VS Code agent
-  (whatever its project root) and the autonomous agents (whatever their cwd) get it.
-- **Literal in mode‑600 config, not encrypted.** A gpg‑encrypted file plus a shell
-  wrapper was trialled and abandoned: it required a passphrase / pinentry at launch,
-  and — critically — the wrapper only runs for **terminal** launches, so it never
-  reached the VS Code extension (which spawns `claude` directly). Claude Code reads a
-  literal config value directly at server launch in *every* context with no
-  environment injection, so a literal in `~/.claude.json` (mode `600`) is the one
-  approach that "just works" for both. The token is **read‑only and least‑privilege**,
-  so a leak of that file means, at worst, someone can read our error data.
+- **Token, not OAuth.** A token works in both interactive and headless contexts,
+  so a single token‑based server covers both.
+- **User scope, not local.** User scope is a single global entry that works from
+  any directory, so both the VS Code agent and the autonomous agents get it.
+- **Literal in mode‑600 config, not encrypted.** Claude Code reads a literal
+  config value directly at server launch in every context with no environment
+  injection, so a literal in `~/.claude.json` (mode `600`) is the approach that
+  works for both. The token is **read‑only and least‑privilege**, so a leak of
+  that file means, at worst, someone can read our error data.
 
 ## Important behavioural quirk — pass the org slug explicitly
 
