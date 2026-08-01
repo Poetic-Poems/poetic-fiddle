@@ -281,6 +281,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   password), the poet's global remix-default checkbox, and a poem's own
   "Remixing this poem" control now show in-progress text ("Signing in…",
   "Saving…") instead of only disabling while the change is in flight.
+- The "My poems" dashboard's delete confirmation now manages focus and
+  supports Escape. Clicking "Delete" used to swap the focused button for a
+  different element with no focus management, silently dropping keyboard and
+  screen-reader focus to the page body; focus now moves onto the
+  confirmation's "Cancel" button, Escape cancels it, and focus returns to a
+  sensible target (the row's own "Delete" button on cancel; the next row's,
+  else the previous row's, else the page heading, after a successful delete).
 
 ### Security
 

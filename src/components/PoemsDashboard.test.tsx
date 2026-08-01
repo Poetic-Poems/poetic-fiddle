@@ -326,4 +326,205 @@ describe("PoemsDashboard", () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe("delete focus management (TD-PPpfid-26080102)", () => {
+    it("moves focus onto the Cancel button when the confirmation opens", async () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(listPoems).mockResolvedValue([
+        {
+          id: "poem-1",
+          title: "Ode to a Fiddle",
+          updatedAt: "2026-07-16T00:00:00Z",
+          shareId: null,
+        },
+      ]);
+
+      render(<PoemsDashboard />);
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "ode to a fiddle"/i,
+        }),
+      );
+
+      expect(screen.getByRole("button", { name: /^cancel$/i })).toHaveFocus();
+    });
+
+    it("dismisses the confirmation on Escape, without deleting, and returns focus to Delete", async () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(listPoems).mockResolvedValue([
+        {
+          id: "poem-1",
+          title: "Ode to a Fiddle",
+          updatedAt: "2026-07-16T00:00:00Z",
+          shareId: null,
+        },
+      ]);
+
+      render(<PoemsDashboard />);
+
+      const deleteButton = await screen.findByRole("button", {
+        name: /delete "ode to a fiddle"/i,
+      });
+      fireEvent.click(deleteButton);
+      fireEvent.keyDown(screen.getByRole("button", { name: /^cancel$/i }), {
+        key: "Escape",
+      });
+
+      expect(deletePoem).not.toHaveBeenCalled();
+      expect(screen.queryByText(/delete this poem\?/i)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /delete "ode to a fiddle"/i }),
+      ).toHaveFocus();
+    });
+
+    it("returns focus to Delete after a click-cancelled confirmation", async () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(listPoems).mockResolvedValue([
+        {
+          id: "poem-1",
+          title: "Ode to a Fiddle",
+          updatedAt: "2026-07-16T00:00:00Z",
+          shareId: null,
+        },
+      ]);
+
+      render(<PoemsDashboard />);
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "ode to a fiddle"/i,
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+      expect(
+        screen.getByRole("button", { name: /delete "ode to a fiddle"/i }),
+      ).toHaveFocus();
+    });
+
+    it("moves focus to the next row's Delete button after a successful delete", async () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(listPoems).mockResolvedValue([
+        {
+          id: "poem-1",
+          title: "Ode to a Fiddle",
+          updatedAt: "2026-07-16T00:00:00Z",
+          shareId: null,
+        },
+        {
+          id: "poem-2",
+          title: "A Second Verse",
+          updatedAt: "2026-07-15T00:00:00Z",
+          shareId: null,
+        },
+      ]);
+      vi.mocked(deletePoem).mockResolvedValue(undefined);
+
+      render(<PoemsDashboard />);
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "ode to a fiddle"/i,
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /delete forever/i }));
+
+      await waitFor(() => expect(deletePoem).toHaveBeenCalledWith("poem-1"));
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: /delete "a second verse"/i }),
+        ).toHaveFocus(),
+      );
+    });
+
+    it("moves focus to the previous row's Delete button when the last row is deleted", async () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(listPoems).mockResolvedValue([
+        {
+          id: "poem-1",
+          title: "Ode to a Fiddle",
+          updatedAt: "2026-07-16T00:00:00Z",
+          shareId: null,
+        },
+        {
+          id: "poem-2",
+          title: "A Second Verse",
+          updatedAt: "2026-07-15T00:00:00Z",
+          shareId: null,
+        },
+      ]);
+      vi.mocked(deletePoem).mockResolvedValue(undefined);
+
+      render(<PoemsDashboard />);
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "a second verse"/i,
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /delete forever/i }));
+
+      await waitFor(() => expect(deletePoem).toHaveBeenCalledWith("poem-2"));
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: /delete "ode to a fiddle"/i }),
+        ).toHaveFocus(),
+      );
+    });
+
+    it("moves focus to the dashboard's heading when the last poem is deleted", async () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(listPoems).mockResolvedValue([
+        {
+          id: "poem-1",
+          title: "Ode to a Fiddle",
+          updatedAt: "2026-07-16T00:00:00Z",
+          shareId: null,
+        },
+      ]);
+      vi.mocked(deletePoem).mockResolvedValue(undefined);
+
+      render(
+        <>
+          <h1 id="poems-heading" tabIndex={-1}>
+            My poems
+          </h1>
+          <PoemsDashboard />
+        </>,
+      );
+
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /delete "ode to a fiddle"/i,
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /delete forever/i }));
+
+      await waitFor(() => expect(deletePoem).toHaveBeenCalledWith("poem-1"));
+      await waitFor(() =>
+        expect(
+          screen.getByRole("heading", { name: /my poems/i }),
+        ).toHaveFocus(),
+      );
+    });
+  });
 });
