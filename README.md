@@ -1,6 +1,8 @@
 # poetic-fiddle
 A user-friendly interface to the Poetic poem-authoring framework.
 
+**Live at:** https://www.poeticfiddle.com/
+
 ## Environment & secrets
 
 The app reads its configuration from environment variables. `.env.example`
