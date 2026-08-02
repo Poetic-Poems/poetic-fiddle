@@ -14,7 +14,9 @@ function fakeAdmin({
 } = {}) {
   let call = 0;
   const listUsers = vi.fn(() =>
-    Promise.resolve(listUsersPages[call++] ?? { data: { users: [] }, error: null }),
+    Promise.resolve(
+      listUsersPages[call++] ?? { data: { users: [] }, error: null },
+    ),
   );
   const getUserById = vi.fn(() => Promise.resolve(getUserByIdResult));
   // Chainable PostgREST-style builder: from().select().eq() resolves for
@@ -42,9 +44,7 @@ function fakeAdmin({
 
 describe("looksLikeUserId", () => {
   it("recognises a UUID", () => {
-    expect(looksLikeUserId("11111111-1111-1111-1111-111111111111")).toBe(
-      true,
-    );
+    expect(looksLikeUserId("11111111-1111-1111-1111-111111111111")).toBe(true);
   });
 
   it("rejects an email", () => {
@@ -68,9 +68,9 @@ describe("findUserIdByEmail", () => {
       ],
     });
 
-    await expect(
-      findUserIdByEmail(admin, "poet@example.com"),
-    ).resolves.toBe("user-1");
+    await expect(findUserIdByEmail(admin, "poet@example.com")).resolves.toBe(
+      "user-1",
+    );
   });
 
   it("pages until it finds a match", async () => {
@@ -86,13 +86,16 @@ describe("findUserIdByEmail", () => {
     const admin = fakeAdmin({
       listUsersPages: [
         fullPage,
-        { data: { users: [{ id: "user-9", email: "poet@example.com" }] }, error: null },
+        {
+          data: { users: [{ id: "user-9", email: "poet@example.com" }] },
+          error: null,
+        },
       ],
     });
 
-    await expect(
-      findUserIdByEmail(admin, "poet@example.com"),
-    ).resolves.toBe("user-9");
+    await expect(findUserIdByEmail(admin, "poet@example.com")).resolves.toBe(
+      "user-9",
+    );
     expect(admin.auth.admin.listUsers).toHaveBeenCalledTimes(2);
   });
 
@@ -101,9 +104,9 @@ describe("findUserIdByEmail", () => {
       listUsersPages: [{ data: { users: [] }, error: null }],
     });
 
-    await expect(findUserIdByEmail(admin, "nobody@example.com")).rejects.toThrow(
-      /No account found/,
-    );
+    await expect(
+      findUserIdByEmail(admin, "nobody@example.com"),
+    ).rejects.toThrow(/No account found/);
   });
 
   it("surfaces a listUsers error rather than silently finding nothing", async () => {
@@ -131,7 +134,10 @@ describe("resolveUserId", () => {
   it("resolves an email via findUserIdByEmail", async () => {
     const admin = fakeAdmin({
       listUsersPages: [
-        { data: { users: [{ id: "user-1", email: "poet@example.com" }] }, error: null },
+        {
+          data: { users: [{ id: "user-1", email: "poet@example.com" }] },
+          error: null,
+        },
       ],
     });
     await expect(resolveUserId(admin, "poet@example.com")).resolves.toBe(
@@ -157,7 +163,10 @@ describe("exportPoetData", () => {
       },
     });
 
-    const result = await exportPoetData(admin, "11111111-1111-1111-1111-111111111111");
+    const result = await exportPoetData(
+      admin,
+      "11111111-1111-1111-1111-111111111111",
+    );
 
     expect(admin.from).toHaveBeenCalledWith("profiles");
     expect(admin.profileQuery.eq).toHaveBeenCalledWith(
@@ -179,7 +188,10 @@ describe("exportPoetData", () => {
 
   it("throws when no account exists for the id", async () => {
     const admin = fakeAdmin({
-      getUserByIdResult: { data: { user: null }, error: { message: "not found" } },
+      getUserByIdResult: {
+        data: { user: null },
+        error: { message: "not found" },
+      },
     });
 
     await expect(
