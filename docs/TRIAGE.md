@@ -3,7 +3,9 @@
 How to investigate a production failure in Poetic Fiddle, and how an AI agent
 gets **least-privilege, read-only** access to do it. This is the O3 milestone
 of [`OBSERVABILITY-PLAN.md`](OBSERVABILITY-PLAN.md) and satisfies AC121/AC122
-(REQUIREMENTS.md §12.9).
+(REQUIREMENTS.md §12.9). For a poet's export or deletion request instead of a
+production fault, see
+[`PRIVACY-EXPORT-DELETE-RUNBOOK.md`](PRIVACY-EXPORT-DELETE-RUNBOOK.md).
 
 ## Where the evidence lives
 
