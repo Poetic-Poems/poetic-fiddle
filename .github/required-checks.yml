@@ -1,0 +1,32 @@
+# Checked-in snapshot of the required_status_checks contexts on the
+# branch-protection ruleset that gates merges into main (ruleset 18828479),
+# plus an explicit, justified list of pull_request-triggered jobs that are
+# deliberately not required checks.
+#
+# scripts/check-workflow-wiring.mjs — run as ci.yml's `workflow-wiring` job,
+# which the required `ci` job depends on — reads this file to confirm that
+# every job triggered on `pull_request` across .github/workflows/*.yml is
+# either reachable via `needs` from a job listed in `required:` below, or
+# explicitly listed in `exempt:` with a reason. That is what stops a new
+# workflow (or a new job in an existing one) from landing without being
+# wired into what actually blocks a merge — the gap that let
+# tech-debt-register.yml's `register` job ship ungated in PR #145
+# (TD-PPpfid-26080105).
+#
+# `required:` must match the live ruleset exactly. The scheduled
+# .github/workflows/required-checks-drift.yml re-fetches the ruleset via
+# `gh api` and fails if this list has drifted from it — so a required check
+# added or removed only on GitHub's side (not here) gets caught too. Update
+# both this file and the ruleset together when required checks change.
+
+required:
+  - CI
+  - commit-format
+  - register
+
+exempt:
+  - workflow: codeql.yml
+    job: analyze
+    reason: >-
+      CodeQL findings post to the Security tab, not a merge-blocking check —
+      scanning is advisory by design (see codeql.yml's own header comment).

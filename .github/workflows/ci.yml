@@ -20,6 +20,13 @@ name: CI
 # Adding a conditional job later means adding it to `ci`'s `needs` list. The
 # ruleset keeps requiring `CI` and does not need editing.
 #
+# `workflow-wiring` is that same discipline made automatic (TD-PPpfid-26080105):
+# it fails when a pull_request-triggered job — in this file or any other
+# under .github/workflows/ — isn't reachable from a required check. Wiring it
+# in here, rather than as its own separate always-required workflow, means
+# the guard protects itself through the exact mechanism it's checking,
+# without needing a ruleset edit.
+#
 # `changes` classifies the diff once, here, so there is no second path list
 # anywhere to keep in sync by hand. It names what is *inert* rather than what
 # is relevant: because passing this gate is what unblocks a merge, the failure
@@ -109,6 +116,26 @@ jobs:
             echo "app=$app"
             echo "database=$database"
           } >> "$GITHUB_OUTPUT"
+
+  workflow-wiring:
+    name: Check workflow wiring
+    runs-on: ubuntu-latest
+
+    # Unconditional, like `changes`: this asserts every pull_request-triggered
+    # job across .github/workflows/*.yml is reachable from a required check
+    # (see .github/required-checks.yml), which is a property of the workflow
+    # files themselves, not of what this particular diff touches.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check workflow wiring
+        run: node scripts/check-workflow-wiring.mjs
 
   build:
     name: Build the app
@@ -214,7 +241,7 @@ jobs:
     # without it, a skipped dependency would skip this job too, and a required
     # check that never reports blocks the merge instead of passing it.
     if: always()
-    needs: [changes, build, database, deploy]
+    needs: [changes, workflow-wiring, build, database, deploy]
     runs-on: ubuntu-latest
 
     steps:

@@ -1,0 +1,55 @@
+name: Required-checks drift check
+
+# .github/required-checks.yml's `required:` list is a checked-in snapshot of
+# the branch-protection ruleset's required_status_checks contexts, read by
+# scripts/check-workflow-wiring.mjs (ci.yml's `workflow-wiring` job) so that
+# check can run without calling GitHub's ruleset API on every pull request.
+# This workflow is what keeps that snapshot honest: it re-fetches the live
+# ruleset via `gh api` on a schedule and fails if the two have drifted —
+# whether because a required check was added or removed on GitHub without
+# updating this file, or vice versa (TD-PPpfid-26080105).
+#
+# Scheduled rather than pull_request-triggered, in the same spirit as
+# td-tooling-drift.yml: the ruleset only changes when a human deliberately
+# edits branch protection, so there's nothing for a per-PR run to catch that
+# a weekly one wouldn't, and it avoids the recursive problem of this guard
+# itself needing to be wired into required checks.
+
+on:
+  schedule:
+    - cron: "42 6 * * 1" # weekly, Monday 06:42 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compare required-checks.yml against the live ruleset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          live=$(gh api repos/${{ github.repository }}/rulesets/18828479 \
+            --jq '[.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | sort | .[]')
+
+          snapshot=$(grep -A100 '^required:' .github/required-checks.yml \
+            | sed -n '/^exempt:/q; s/^  - //p' \
+            | sort)
+
+          if [ "$live" != "$snapshot" ]; then
+            echo "::error file=.github/required-checks.yml::required-checks.yml's required: list has drifted from the live ruleset"
+            echo "Live ruleset required checks:"
+            echo "$live"
+            echo "Checked-in snapshot:"
+            echo "$snapshot"
+            exit 1
+          fi
+
+          echo "required-checks.yml matches the live ruleset:"
+          echo "$live"
