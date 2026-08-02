@@ -41,6 +41,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRIFTED: ${{ steps.diff.outputs.drifted }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
           title="Tech-debt tooling has drifted from Poetic-Poems/poetic main"
@@ -64,9 +65,8 @@ jobs:
             for f in $DRIFTED; do
               printf -- '- `%s`\n' "$f"
             done
-            printf '\nRe-sync the file(s) above from poetic main (see this '
-            printf 'workflow'"'"'s run for the diff), preserving this '
-            printf 'repo'"'"'s legacy single-file usage.\n'
+            printf '\nRe-sync the file(s) above from poetic main. The run that '
+            printf 'detected this has the diff:\n%s\n' "$RUN_URL"
           } > "$body_file"
           gh issue create --title "$title" --body-file "$body_file"
 
