@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { renderPoem } from "poetic/browser";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
@@ -48,6 +49,42 @@ export interface UsePoemPersistenceOptions {
   initialSource?: string;
 }
 
+export interface UsePoemPersistenceResult {
+  session: Session | null;
+  source: string;
+  rendered: { html: string; error: string | null };
+  handleChange: (value: string) => void;
+  open: {
+    opening: boolean;
+    openError: string | null;
+  };
+  save: {
+    saving: boolean;
+    saveError: string | null;
+    saveStatus: string;
+    handleSave: () => Promise<void>;
+  };
+  share: {
+    sharing: boolean;
+    shareError: string | null;
+    shareId: string | null;
+    shareUrl: string | null;
+    handleShare: () => Promise<void>;
+    unsharing: boolean;
+    handleUnshare: () => Promise<void>;
+    linkCopied: boolean;
+    handleCopyShareLink: () => void;
+  };
+  remix: {
+    allowRemix: boolean | null;
+    allowRemixSaving: boolean;
+    allowRemixError: string | null;
+    handleAllowRemixChange: (value: boolean | null) => Promise<void>;
+  };
+  signInPromptAction: "save" | "share" | null;
+  dismissSignInPrompt: () => void;
+}
+
 /**
  * Orchestrates a poem's whole persistence lifecycle: which anonymous draft or
  * saved poem the editor opens with, session-driven draft migration, debounced
@@ -58,7 +95,7 @@ export interface UsePoemPersistenceOptions {
 export function usePoemPersistence({
   initialPoemId,
   initialSource,
-}: UsePoemPersistenceOptions) {
+}: UsePoemPersistenceOptions): UsePoemPersistenceResult {
   const { session } = useSession();
 
   const [source, setSource] = useState(() =>
@@ -238,6 +275,26 @@ export function usePoemPersistence({
     }
   }, [poemId, session, source]);
 
+  // Shared by every flow that must not act on a stale/unsaved row: save the
+  // current source first if there's nothing saved yet, or it's changed since
+  // the last save, and either way return the id of the row now on the server.
+  // Callers only reach this after their own sign-in guard, so `session` here
+  // is always the caller's already-narrowed one, not the hook's own.
+  const ensureSaved = useCallback(
+    async (session: Session): Promise<string> => {
+      if (poemId !== null && !hasUnsavedChanges) return poemId;
+      const saved = await savePoem({
+        id: poemId,
+        ownerId: session.user.id,
+        source,
+      });
+      setPoemId(saved.id);
+      setSavedSource(source);
+      return saved.id;
+    },
+    [hasUnsavedChanges, poemId, source],
+  );
+
   const handleShare = useCallback(async () => {
     if (!session) {
       setSignInPromptAction("share");
@@ -247,20 +304,8 @@ export function usePoemPersistence({
     setSharing(true);
     setShareError(null);
     try {
-      // Share always mints/reveals a link for the *current* source (AC17):
-      // save first if there's nothing saved yet, or the poem has changed
-      // since the last save.
-      let idToShare = poemId;
-      if (idToShare === null || hasUnsavedChanges) {
-        const saved = await savePoem({
-          id: poemId,
-          ownerId: session.user.id,
-          source,
-        });
-        setPoemId(saved.id);
-        setSavedSource(source);
-        idToShare = saved.id;
-      }
+      // Share always mints/reveals a link for the *current* source (AC17).
+      const idToShare = await ensureSaved(session);
       // Idempotent: re-clicking Share on an already-shared poem returns the
       // same id rather than minting a new one.
       const newShareId = await sharePoem(idToShare);
@@ -271,7 +316,7 @@ export function usePoemPersistence({
     } finally {
       setSharing(false);
     }
-  }, [hasUnsavedChanges, poemId, session, source]);
+  }, [ensureSaved, session]);
 
   // Reverses Share: moves the poem back to draft so its permalink stops
   // serving. `poemId` is always set here (this only renders once `shareId`
@@ -308,17 +353,7 @@ export function usePoemPersistence({
       setAllowRemixSaving(true);
       setAllowRemixError(null);
       try {
-        let idToUpdate = poemId;
-        if (idToUpdate === null || hasUnsavedChanges) {
-          const saved = await savePoem({
-            id: poemId,
-            ownerId: session.user.id,
-            source,
-          });
-          setPoemId(saved.id);
-          setSavedSource(source);
-          idToUpdate = saved.id;
-        }
+        const idToUpdate = await ensureSaved(session);
         setAllowRemix(await updateAllowRemix(idToUpdate, value));
       } catch (err) {
         setAllowRemixError(errorMessage(err));
@@ -326,7 +361,7 @@ export function usePoemPersistence({
         setAllowRemixSaving(false);
       }
     },
-    [hasUnsavedChanges, poemId, session, source],
+    [ensureSaved, session],
   );
 
   const shareUrl =
@@ -370,25 +405,33 @@ export function usePoemPersistence({
     source,
     rendered,
     handleChange,
-    opening,
-    openError,
-    saving,
-    saveError,
-    saveStatus,
-    handleSave,
-    sharing,
-    shareError,
-    shareId,
-    shareUrl,
-    handleShare,
-    unsharing,
-    handleUnshare,
-    linkCopied,
-    handleCopyShareLink,
-    allowRemix,
-    allowRemixSaving,
-    allowRemixError,
-    handleAllowRemixChange,
+    open: {
+      opening,
+      openError,
+    },
+    save: {
+      saving,
+      saveError,
+      saveStatus,
+      handleSave,
+    },
+    share: {
+      sharing,
+      shareError,
+      shareId,
+      shareUrl,
+      handleShare,
+      unsharing,
+      handleUnshare,
+      linkCopied,
+      handleCopyShareLink,
+    },
+    remix: {
+      allowRemix,
+      allowRemixSaving,
+      allowRemixError,
+      handleAllowRemixChange,
+    },
     signInPromptAction,
     dismissSignInPrompt,
   };
