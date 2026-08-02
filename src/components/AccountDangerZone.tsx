@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase-client";
 import { deleteAccount } from "@/lib/account";
+import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { errorMessage } from "@/lib/errors";
 
 interface AccountDangerZoneProps {
@@ -54,7 +55,16 @@ export function AccountDangerZone({ session }: AccountDangerZoneProps) {
     setDeleting(true);
     setError(null);
     try {
-      await deleteAccount();
+      const shareIds = await deleteAccount();
+      // Best-effort, exactly as per-poem deletion treats it
+      // (`PoemsDashboard.tsx`): the account is already gone, so a failed
+      // invalidation must not report the deletion as failed — it only costs
+      // a permalink still serving from cache until its 300s expiry.
+      await Promise.all(
+        shareIds.map((shareId) =>
+          revalidateSharedPoem(shareId).catch(() => {}),
+        ),
+      );
       await supabase.auth.signOut();
       // A full navigation (not client-side routing) is deliberate: this is
       // the one action in the app where leaving every in-memory client
@@ -87,6 +97,14 @@ export function AccountDangerZone({ session }: AccountDangerZoneProps) {
       <dialog
         ref={dialogRef}
         onClose={handleClose}
+        onCancel={(event) => {
+          // Escape mid-delete would close the dialog natively while
+          // `handleClose` declines to clear `open` — and because "Delete
+          // account" only sets `open` to a value it already holds, nothing
+          // would reopen it, stranding the section until a reload. Refusing
+          // the cancel keeps the two in step.
+          if (deleting) event.preventDefault();
+        }}
         className="w-full max-w-sm rounded-lg border border-black/10 bg-background p-6 text-foreground backdrop:bg-black/40 dark:border-white/10"
       >
         {open && (

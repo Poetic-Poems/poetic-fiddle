@@ -46,6 +46,26 @@ describe("deleteAccount", () => {
     });
   });
 
+  it("returns the share ids the route reports, for the caller to invalidate", async () => {
+    withSession("the-access-token");
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, shareIds: ["a", "b"] }), {
+        status: 200,
+      }),
+    );
+
+    await expect(deleteAccount()).resolves.toEqual(["a", "b"]);
+  });
+
+  it("resolves to no share ids — rather than throwing — when the success body doesn't parse", async () => {
+    withSession("the-access-token");
+    vi.mocked(fetch).mockResolvedValue(
+      new Response("not json", { status: 200 }),
+    );
+
+    await expect(deleteAccount()).resolves.toEqual([]);
+  });
+
   it("throws when the route reports failure, without leaking the raw response as the message", async () => {
     withSession("the-access-token");
     vi.mocked(fetch).mockResolvedValue(

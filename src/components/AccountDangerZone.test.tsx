@@ -3,9 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Session } from "@supabase/supabase-js";
 import { AccountDangerZone } from "./AccountDangerZone";
 import { deleteAccount } from "@/lib/account";
+import { revalidateSharedPoem } from "@/lib/revalidate-share";
 
 vi.mock("@/lib/account", () => ({
   deleteAccount: vi.fn(),
+}));
+
+vi.mock("@/lib/revalidate-share", () => ({
+  revalidateSharedPoem: vi.fn(),
 }));
 
 const signOut = vi.hoisted(() => vi.fn());
@@ -79,7 +84,7 @@ describe("AccountDangerZone", () => {
   });
 
   it("deletes the account, signs out, and navigates home on confirm", async () => {
-    vi.mocked(deleteAccount).mockResolvedValue(undefined);
+    vi.mocked(deleteAccount).mockResolvedValue([]);
     signOut.mockResolvedValue({ error: null });
     render(<AccountDangerZone session={SESSION} />);
     openDialog();
@@ -92,6 +97,45 @@ describe("AccountDangerZone", () => {
     );
 
     await waitFor(() => expect(deleteAccount).toHaveBeenCalled());
+    await waitFor(() => expect(signOut).toHaveBeenCalled());
+    await waitFor(() => expect(window.location.href).toBe("/"));
+  });
+
+  it("invalidates each deleted poem's share page so its permalink stops serving from cache", async () => {
+    vi.mocked(deleteAccount).mockResolvedValue(["share-a", "share-b"]);
+    vi.mocked(revalidateSharedPoem).mockResolvedValue(undefined);
+    signOut.mockResolvedValue({ error: null });
+    render(<AccountDangerZone session={SESSION} />);
+    openDialog();
+
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "poet@example.com" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /delete account forever/i }),
+    );
+
+    await waitFor(() =>
+      expect(revalidateSharedPoem).toHaveBeenCalledWith("share-a"),
+    );
+    expect(revalidateSharedPoem).toHaveBeenCalledWith("share-b");
+    await waitFor(() => expect(window.location.href).toBe("/"));
+  });
+
+  it("still signs out and navigates when a share invalidation fails", async () => {
+    vi.mocked(deleteAccount).mockResolvedValue(["share-a"]);
+    vi.mocked(revalidateSharedPoem).mockRejectedValue(new Error("no cache"));
+    signOut.mockResolvedValue({ error: null });
+    render(<AccountDangerZone session={SESSION} />);
+    openDialog();
+
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "poet@example.com" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /delete account forever/i }),
+    );
+
     await waitFor(() => expect(signOut).toHaveBeenCalled());
     await waitFor(() => expect(window.location.href).toBe("/"));
   });
@@ -114,6 +158,37 @@ describe("AccountDangerZone", () => {
     expect(alert).toHaveTextContent(/couldn't delete your account/i);
     expect(signOut).not.toHaveBeenCalled();
     expect(window.location.href).toBe("");
+  });
+
+  it("refuses Escape while the delete is in flight, so a failure is still shown in the dialog", async () => {
+    let failDelete: (error: Error) => void = () => {};
+    vi.mocked(deleteAccount).mockReturnValue(
+      new Promise((_resolve, reject) => {
+        failDelete = reject;
+      }),
+    );
+    const { container } = render(<AccountDangerZone session={SESSION} />);
+    openDialog();
+
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "poet@example.com" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /delete account forever/i }),
+    );
+    await waitFor(() => expect(deleteAccount).toHaveBeenCalled());
+
+    const dialog = container.querySelector("dialog")!;
+    const cancelled = fireEvent(
+      dialog,
+      new Event("cancel", { cancelable: true }),
+    );
+    expect(cancelled).toBe(false);
+
+    failDelete(new Error("Couldn't delete your account — please try again."));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/couldn't delete your account/i);
   });
 
   it("closes the confirmation without deleting when Cancel is clicked", () => {

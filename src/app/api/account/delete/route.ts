@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { reportSwallowedError } from "@/lib/observability";
 
@@ -22,6 +23,17 @@ import { reportSwallowedError } from "@/lib/observability";
  * the row also revokes every refresh token tied to it, so the caller's
  * session is invalid the moment this returns even before the browser calls
  * `signOut()`.
+ *
+ * What the database cascade cannot reach is the share pages' cached renders:
+ * `getCachedSharedPoem` holds each one for up to its 300s fallback expiry, so
+ * a poem whose row is gone would keep serving from cache instead of 404ing
+ * (AC92 asks for "immediately"). The share ids are therefore read *before*
+ * the delete — afterwards there is no row left to read them from — and
+ * returned to the caller, which invalidates each one's cache tag through the
+ * same `revalidateSharedPoem` Server Action that per-poem deletion already
+ * uses (`PoemsDashboard.tsx`). Collecting them is best-effort: a failure here
+ * leaves stale share pages until their natural expiry, which must not turn an
+ * otherwise-fine account deletion into an error.
  */
 export async function DELETE(request: NextRequest) {
   const authHeader = request.headers.get("authorization") ?? "";
@@ -38,6 +50,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
+  const shareIds = await sharedPoemIds(admin, userData.user.id);
+
   const { error: deleteError } = await admin.auth.admin.deleteUser(
     userData.user.id,
   );
@@ -51,5 +65,35 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, shareIds });
+}
+
+/**
+ * Every share id belonging to one account. Scoped to `owner_id` explicitly:
+ * this client bypasses RLS, so the filter that keeps one poet's query off
+ * another poet's rows is the one written here. Resolves to an empty list on
+ * failure rather than throwing — see the note on `DELETE` above.
+ */
+async function sharedPoemIds(
+  admin: SupabaseClient,
+  userId: string,
+): Promise<string[]> {
+  const { data, error } = await admin
+    .from("poems")
+    .select("share_id")
+    .eq("owner_id", userId)
+    .not("share_id", "is", null);
+
+  if (error) {
+    reportSwallowedError(
+      error,
+      "account deletion: couldn't list share ids to invalidate",
+      { user_id: userId },
+    );
+    return [];
+  }
+
+  return (data ?? [])
+    .map((row) => row.share_id)
+    .filter((shareId): shareId is string => typeof shareId === "string");
 }

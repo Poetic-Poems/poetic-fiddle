@@ -22,18 +22,29 @@ function request(headers?: Record<string, string>) {
 function fakeAdmin({
   getUserResult,
   deleteUserResult,
+  poemsResult,
 }: {
   getUserResult: { data: { user: { id: string } | null }; error: unknown };
   deleteUserResult?: { error: unknown };
+  poemsResult?: { data: { share_id: string | null }[] | null; error: unknown };
 }) {
   const deleteUser = vi.fn(() =>
     Promise.resolve(deleteUserResult ?? { error: null }),
   );
+  // The share-id lookup is a PostgREST builder chain, so each link returns
+  // the same recorder and the terminal `.not()` resolves it.
+  const query = {
+    select: vi.fn(() => query),
+    eq: vi.fn(() => query),
+    not: vi.fn(() => Promise.resolve(poemsResult ?? { data: [], error: null })),
+  };
   return {
     auth: {
       getUser: vi.fn(() => Promise.resolve(getUserResult)),
       admin: { deleteUser },
     },
+    from: vi.fn(() => query),
+    query,
   };
 }
 
@@ -76,7 +87,56 @@ describe("DELETE /api/account/delete", () => {
     expect(admin.auth.getUser).toHaveBeenCalledWith("a-real-token");
     expect(admin.auth.admin.deleteUser).toHaveBeenCalledWith("user-123");
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true });
+    await expect(response.json()).resolves.toEqual({ ok: true, shareIds: [] });
+  });
+
+  it("returns the account's share ids, read before the delete and scoped to its own poems", async () => {
+    const admin = fakeAdmin({
+      getUserResult: { data: { user: { id: "user-123" } }, error: null },
+      poemsResult: {
+        data: [{ share_id: "share-a" }, { share_id: "share-b" }],
+        error: null,
+      },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(
+      admin as unknown as ReturnType<typeof getSupabaseAdmin>,
+    );
+
+    const response = await DELETE(
+      request({ Authorization: "Bearer a-real-token" }),
+    );
+
+    expect(admin.from).toHaveBeenCalledWith("poems");
+    // This client bypasses RLS, so the owner filter is the only thing keeping
+    // one poet's lookup off another poet's rows.
+    expect(admin.query.eq).toHaveBeenCalledWith("owner_id", "user-123");
+    expect(admin.query.not).toHaveBeenCalledWith("share_id", "is", null);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      shareIds: ["share-a", "share-b"],
+    });
+  });
+
+  it("still deletes the account when the share-id lookup fails", async () => {
+    const cause = { message: "select failed" };
+    const admin = fakeAdmin({
+      getUserResult: { data: { user: { id: "user-123" } }, error: null },
+      poemsResult: { data: null, error: cause },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(
+      admin as unknown as ReturnType<typeof getSupabaseAdmin>,
+    );
+
+    const response = await DELETE(
+      request({ Authorization: "Bearer a-real-token" }),
+    );
+
+    expect(admin.auth.admin.deleteUser).toHaveBeenCalledWith("user-123");
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true, shareIds: [] });
+    expect(Sentry.captureException).toHaveBeenCalledWith(cause, {
+      tags: { user_id: "user-123" },
+    });
   });
 
   it("reports a failed deletion to Sentry and returns a safe error, without leaking the cause", async () => {

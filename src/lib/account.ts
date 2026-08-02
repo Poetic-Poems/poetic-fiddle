@@ -26,10 +26,15 @@ export class AccountDeleteError extends Error {
  * only confirms the account is gone, and a caller that wants to redirect on
  * success needs to sequence that after its own `signOut()` call, not before.
  *
+ * Resolves to the share ids the deleted account had minted, which the caller
+ * must pass to `revalidateSharedPoem` so those permalinks stop serving from
+ * cache at once rather than at their next natural expiry — the route explains
+ * why it, not this function, is the one that can still see them.
+ *
  * @throws {AccountDeleteError} if there's no active session, or the route
  * reports the deletion failed.
  */
-export async function deleteAccount(): Promise<void> {
+export async function deleteAccount(): Promise<string[]> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -46,4 +51,13 @@ export async function deleteAccount(): Promise<void> {
     const body = await response.json().catch(() => null);
     throw new AccountDeleteError(body?.error ?? response.statusText);
   }
+
+  // The account is already gone by this point, so a body that doesn't parse
+  // or omits `shareIds` costs only the cache invalidation, never the
+  // deletion — degrade to "nothing to invalidate" rather than throwing.
+  const body = await response.json().catch(() => null);
+  const shareIds: unknown = body?.shareIds;
+  return Array.isArray(shareIds)
+    ? shareIds.filter((id): id is string => typeof id === "string")
+    : [];
 }
