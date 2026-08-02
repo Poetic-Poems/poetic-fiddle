@@ -21,7 +21,8 @@ name: CI
 # ruleset keeps requiring `CI` and does not need editing.
 #
 # `workflow-wiring` is that same discipline made automatic (TD-PPpfid-26080105):
-# it fails when a pull_request-triggered job — in this file or any other
+# it fails when a job that runs against pull requests (`pull_request`,
+# `pull_request_target` or `merge_group`) — in this file or any other
 # under .github/workflows/ — isn't reachable from a required check. Wiring it
 # in here, rather than as its own separate always-required workflow, means
 # the guard protects itself through the exact mechanism it's checking,
@@ -121,7 +122,7 @@ jobs:
     name: Check workflow wiring
     runs-on: ubuntu-latest
 
-    # Unconditional, like `changes`: this asserts every pull_request-triggered
+    # Unconditional, like `changes`: this asserts every pull-request-triggered
     # job across .github/workflows/*.yml is reachable from a required check
     # (see .github/required-checks.yml), which is a property of the workflow
     # files themselves, not of what this particular diff touches.

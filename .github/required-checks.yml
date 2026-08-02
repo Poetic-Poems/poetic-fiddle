@@ -1,11 +1,12 @@
-# Checked-in snapshot of the required_status_checks contexts on the
-# branch-protection ruleset that gates merges into main (ruleset 18828479),
-# plus an explicit, justified list of pull_request-triggered jobs that are
-# deliberately not required checks.
+# Checked-in snapshot of the required_status_checks contexts that gate merges
+# into main, aggregated across every active branch-protection ruleset on the
+# branch, plus an explicit, justified list of pull-request-triggered jobs
+# that are deliberately not required checks.
 #
 # scripts/check-workflow-wiring.mjs — run as ci.yml's `workflow-wiring` job,
 # which the required `ci` job depends on — reads this file to confirm that
-# every job triggered on `pull_request` across .github/workflows/*.yml is
+# every job that runs against a pull request (triggered on `pull_request`,
+# `pull_request_target` or `merge_group`) across .github/workflows/*.yml is
 # either reachable via `needs` from a job listed in `required:` below, or
 # explicitly listed in `exempt:` with a reason. That is what stops a new
 # workflow (or a new job in an existing one) from landing without being
@@ -13,11 +14,12 @@
 # tech-debt-register.yml's `register` job ship ungated in PR #145
 # (TD-PPpfid-26080105).
 #
-# `required:` must match the live ruleset exactly. The scheduled
-# .github/workflows/required-checks-drift.yml re-fetches the ruleset via
-# `gh api` and fails if this list has drifted from it — so a required check
-# added or removed only on GitHub's side (not here) gets caught too. Update
-# both this file and the ruleset together when required checks change.
+# `required:` must match the live branch rules exactly. The scheduled
+# .github/workflows/required-checks-drift.yml re-fetches them via `gh api`
+# (aggregated across every active ruleset, no ruleset ID pinned) and fails if
+# this list has drifted — so a required check added or removed only on
+# GitHub's side (not here) gets caught too, whichever ruleset carries it.
+# Update both this file and the ruleset together when required checks change.
 
 required:
   - CI

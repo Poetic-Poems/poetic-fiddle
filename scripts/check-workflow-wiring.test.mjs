@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -183,6 +184,61 @@ describe("checkWorkflowWiring", () => {
     expect(problems[0]).toMatch(/demo-bad\.yml:lint-demo/);
   });
 
+  // `pull_request_target` and `merge_group` jobs run against a pull request
+  // just as `pull_request` ones do; leaving them unrecognised would let a
+  // job on either ship ungated — the exact drift class this check exists to
+  // catch, one trigger keyword away.
+  it("flags an unwired job on pull_request_target or merge_group too", () => {
+    for (const trigger of ["pull_request_target", "merge_group"]) {
+      const workflowFiles = [
+        {
+          file: "queue.yml",
+          doc: {
+            triggers: [trigger],
+            jobs: { gate: { name: null, needs: [] } },
+          },
+        },
+      ];
+
+      const problems = checkWorkflowWiring(workflowFiles, requiredChecks);
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toMatch(
+        new RegExp(`queue\\.yml:gate triggers on ${trigger}`),
+      );
+    }
+  });
+
+  // The required/exempt match is name-based, so without this a new workflow
+  // could count itself protected just by naming a job `CI` — while on
+  // GitHub's side, which of the two same-named check runs satisfies the
+  // requirement is ambiguous.
+  it("flags two jobs carrying the same required context, whatever their triggers", () => {
+    for (const triggers of [["pull_request"], ["push"]]) {
+      const workflowFiles = [
+        {
+          file: "ci.yml",
+          doc: {
+            triggers: ["pull_request"],
+            jobs: { ci: { name: "CI", needs: [] } },
+          },
+        },
+        {
+          file: "sneaky.yml",
+          doc: {
+            triggers,
+            jobs: { impostor: { name: "CI", needs: [] } },
+          },
+        },
+      ];
+
+      const problems = checkWorkflowWiring(workflowFiles, requiredChecks);
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toMatch(/required check "CI" is carried by 2 jobs/);
+      expect(problems[0]).toMatch(/ci\.yml:ci/);
+      expect(problems[0]).toMatch(/sneaky\.yml:impostor/);
+    }
+  });
+
   it("ignores jobs in a workflow that never triggers on pull_request", () => {
     const workflowFiles = [
       {
@@ -262,5 +318,26 @@ describe("parseRequiredChecks", () => {
       expect(entry.job).toBeTruthy();
       expect(entry.reason ?? "").toMatch(/[a-z]{4}/);
     }
+  });
+});
+
+describe("--print-required", () => {
+  // required-checks-drift.yml compares this output line-for-line against the
+  // live branch rules, so its shape — one context per line, de-duplicated,
+  // codepoint-sorted like jq's `unique` — is a contract, not a formatting
+  // nicety.
+  it("prints the sorted required: list, one context per line", () => {
+    const out = execFileSync(
+      process.execPath,
+      [
+        path.join(repoRoot, "scripts/check-workflow-wiring.mjs"),
+        "--print-required",
+      ],
+      { encoding: "utf8" },
+    );
+
+    const expected = [...new Set(loadRepoRequiredChecks().required)].sort();
+    expect(expected.length).toBeGreaterThan(0);
+    expect(out.split("\n").filter(Boolean)).toEqual(expected);
   });
 });

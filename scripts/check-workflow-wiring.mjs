@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // check-workflow-wiring.mjs
 //
-// Fails when a job in .github/workflows/*.yml triggers on `pull_request` but
+// Fails when a job in .github/workflows/*.yml runs against pull requests —
+// triggered on `pull_request`, `pull_request_target` or `merge_group` — but
 // isn't actually wired into what blocks a merge to main. "Wired in" means
 // one of:
 //   - it's reachable via `needs` from a job whose own context (its `name:`,
@@ -31,6 +32,11 @@
 // ruleset.
 //
 // Usage: node scripts/check-workflow-wiring.mjs [workflows-dir] [required-checks-file]
+//
+// With --print-required, instead prints required-checks.yml's parsed,
+// de-duplicated, codepoint-sorted `required:` list (one context per line) and
+// exits — the snapshot side of required-checks-drift.yml's comparison, so
+// that workflow needs no second parser for this file.
 
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -179,12 +185,50 @@ function contextOf(jobs, id) {
   return jobs[id].name || id;
 }
 
+// Every trigger that runs a job against a pull request. `pull_request_target`
+// runs in the base repository's context (this repo deliberately avoids it —
+// see commit-format.yml's header) and `merge_group` is what a merge queue
+// runs before merging; a job on either gates — or silently fails to gate — a
+// merge exactly like a plain `pull_request` job, so all three go through the
+// same required-or-exempt discipline. Neither of the latter two is used here
+// today; recognising them closes the hole before it opens.
+const PR_TRIGGERS = ["pull_request", "pull_request_target", "merge_group"];
+
 export function checkWorkflowWiring(workflowFiles, requiredChecks) {
   const problems = [];
   const requiredSet = new Set(requiredChecks.required || []);
   const exemptSet = new Set(
     (requiredChecks.exempt || []).map((e) => `${e.workflow}::${e.job}`),
   );
+
+  // A job counts as required purely because its context matches an entry in
+  // `required:` — the match is name-based, since a name is all GitHub itself
+  // pins. A second job anywhere carrying the same context would therefore
+  // count itself protected here, while on GitHub's side gating with duplicate
+  // contexts is ambiguous (the requirement can be satisfied by whichever job
+  // reports). Refuse the ambiguity outright: each required context must be
+  // carried by exactly one job, across every workflow file whatever its
+  // triggers — a push-triggered duplicate still reports a check run against
+  // the same head commit.
+  const claimants = new Map();
+  for (const { file, doc } of workflowFiles) {
+    for (const id of Object.keys(doc.jobs)) {
+      const context = contextOf(doc.jobs, id);
+      if (!requiredSet.has(context)) continue;
+      if (!claimants.has(context)) claimants.set(context, []);
+      claimants.get(context).push(`${file}:${id}`);
+    }
+  }
+  for (const [context, sites] of claimants) {
+    if (sites.length > 1) {
+      problems.push(
+        `required check "${context}" is carried by ${sites.length} jobs ` +
+          `(${sites.join(", ")}) — a required context must belong to ` +
+          `exactly one job, or which of them actually gates the merge is ` +
+          `ambiguous`,
+      );
+    }
+  }
 
   for (const { file, doc } of workflowFiles) {
     const jobIds = Object.keys(doc.jobs);
@@ -208,15 +252,17 @@ export function checkWorkflowWiring(workflowFiles, requiredChecks) {
       }
     }
 
-    if (!doc.triggers.includes("pull_request")) continue;
+    const prTriggers = doc.triggers.filter((t) => PR_TRIGGERS.includes(t));
+    if (prTriggers.length === 0) continue;
 
     for (const id of jobIds) {
       if (protectedIds.has(id)) continue;
       if (exemptSet.has(`${file}::${id}`)) continue;
       problems.push(
-        `${file}:${id} triggers on pull_request but is not reachable from a ` +
-          `required check (${[...requiredSet].sort().join(", ")}) and has no ` +
-          `exemption in .github/required-checks.yml`,
+        `${file}:${id} triggers on ${prTriggers.join("/")} but is not ` +
+          `reachable from a required check ` +
+          `(${[...requiredSet].sort().join(", ")}) and has no exemption in ` +
+          `.github/required-checks.yml`,
       );
     }
   }
@@ -315,18 +361,38 @@ export function parseRequiredChecks(text) {
 }
 
 function main() {
+  const args = process.argv.slice(2);
+  const printRequired = args.includes("--print-required");
+  const positional = args.filter((a) => !a.startsWith("--"));
+
   const repoRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     "..",
   );
   const workflowsDir = path.resolve(
     repoRoot,
-    process.argv[2] || ".github/workflows",
+    positional[0] || ".github/workflows",
   );
   const requiredChecksFile = path.resolve(
     repoRoot,
-    process.argv[3] || ".github/required-checks.yml",
+    positional[1] || ".github/required-checks.yml",
   );
+
+  const requiredChecks = parseRequiredChecks(
+    readFileSync(requiredChecksFile, "utf8"),
+  );
+
+  if (printRequired) {
+    // required-checks-drift.yml compares this line-for-line against the live
+    // branch rules' contexts sorted by jq's `unique` — codepoint order — so
+    // sort the same way here. (The shell `sort` this replaces collated by
+    // locale, which can disagree with jq on strings beyond the current
+    // three.)
+    for (const context of [...new Set(requiredChecks.required)].sort()) {
+      console.log(context);
+    }
+    return;
+  }
 
   const workflowFiles = readdirSync(workflowsDir)
     .filter((f) => f.endsWith(".yml") || f.endsWith(".yaml"))
@@ -335,10 +401,6 @@ function main() {
       file,
       doc: parseWorkflow(readFileSync(path.join(workflowsDir, file), "utf8")),
     }));
-
-  const requiredChecks = parseRequiredChecks(
-    readFileSync(requiredChecksFile, "utf8"),
-  );
 
   const problems = checkWorkflowWiring(workflowFiles, requiredChecks);
   if (problems.length > 0) {
