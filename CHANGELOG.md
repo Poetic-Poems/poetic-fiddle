@@ -346,3 +346,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Referrer-Policy: strict-origin-when-cross-origin` closes a theoretical leak
   path where a `/share/[share_id]` URL's token could otherwise reach a
   cross-origin destination in full via the `Referer` header.
+- Raised `minimum_password_length` to 10 in `supabase/config.toml`, matching
+  the sign-up form's `minLength={10}` hint, so a request made straight to
+  Supabase Auth is also rejected below 10 characters rather than only the
+  form enforcing it.
