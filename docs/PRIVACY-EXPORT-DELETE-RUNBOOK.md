@@ -57,8 +57,10 @@ imports it, and it must never be wired into the deployed app.
    `poems` row owned by that id — drafts included, since this is the
    maintainer export, not the public share view.
 4. **It writes a JSON file** named `poet-export-<user-id>-<timestamp>.json`
-   in the current directory (git-ignored — see `.gitignore`). Pass a second
-   argument to choose a different path.
+   in the current directory, owner-readable only (mode `0600`) and
+   git-ignored (see `.gitignore`). Pass a second argument to choose a
+   different path — if you do, and the file already exists, its existing
+   permissions are kept, so pick a path nothing else can read.
 5. **Send it to the poet** at the email address on the account (never a
    different address than the one on file, even if the request came from
    somewhere else) and then delete your local copy — it is a full copy of
@@ -118,7 +120,8 @@ did not have access to when writing it. Until someone with dashboard access
 confirms otherwise, assume only the Pro-plan default: **daily backups, up
 to ~24 hours of data loss on restore, no finer recovery point.** Whoever
 next has dashboard access should check this and update this section with
-the confirmed status (and remove this caveat once it's settled).
+the confirmed status (and remove this caveat once it's settled) — tracked as
+`tech-debt/TD-PPpfid-26080303.md`.
 
 ## Security
 

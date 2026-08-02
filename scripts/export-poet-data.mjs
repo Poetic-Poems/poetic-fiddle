@@ -129,7 +129,10 @@ async function main() {
   const admin = buildAdminClient();
   const payload = await exportPoetData(admin, identifier);
   const outPath = outArg ?? defaultOutputPath(payload.account.id);
-  writeFileSync(outPath, JSON.stringify(payload, null, 2));
+  // Owner-only: the file is a complete copy of one poet's personal data, and
+  // the default 0644 would expose it to every other account on the machine.
+  // (`mode` only applies when the file is created, not when overwriting.)
+  writeFileSync(outPath, JSON.stringify(payload, null, 2), { mode: 0o600 });
 
   console.log(
     `Exported account ${payload.account.id} (${payload.account.email ?? "no email on file"}): ` +
