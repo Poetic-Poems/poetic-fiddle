@@ -1,0 +1,72 @@
+name: Required-checks drift check
+
+# .github/required-checks.yml's `required:` list is a checked-in snapshot of
+# the required_status_checks contexts that gate merges into main, read by
+# scripts/check-workflow-wiring.mjs (ci.yml's `workflow-wiring` job) so that
+# check can run without calling GitHub's API on every pull request. This
+# workflow is what keeps that snapshot honest: it re-fetches the live branch
+# rules on a schedule and fails if the two have drifted — whether because a
+# required check was added or removed on GitHub without updating this file,
+# or vice versa (TD-PPpfid-26080105).
+#
+# The rules/branches/main endpoint aggregates every active ruleset that
+# applies to main — there is more than one — so a required check added under
+# any of them is seen, with no ruleset ID hardcoded here to go stale if a
+# ruleset is ever recreated. The endpoint is readable with the default
+# GITHUB_TOKEN's `contents: read` on this public repository; worth recording,
+# because the per-ruleset admin endpoints want `administration: read`, which
+# is not a permission GITHUB_TOKEN can be granted at all.
+#
+# Scheduled rather than pull_request-triggered, in the same spirit as
+# td-tooling-drift.yml: the branch rules only change when a human deliberately
+# edits branch protection, so there's nothing for a per-PR run to catch that
+# a weekly one wouldn't, and it avoids the recursive problem of this guard
+# itself needing to be wired into required checks.
+
+on:
+  schedule:
+    - cron: "42 6 * * 1" # weekly, Monday 06:42 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Compare required-checks.yml against the live branch rules
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # jq's `unique` rather than `sort`: it de-duplicates a context two
+          # rulesets both require (the snapshot lists it once), and it sorts
+          # by codepoint — the same order --print-required uses, where the
+          # shell's `sort` would collate by locale.
+          live=$(gh api repos/${{ github.repository }}/rules/branches/main \
+            --jq '[.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | unique | .[]')
+
+          # The same parser the workflow-wiring check itself reads the file
+          # with — deliberately not a second grep/sed rendition of it.
+          snapshot=$(node scripts/check-workflow-wiring.mjs --print-required)
+
+          if [ "$live" != "$snapshot" ]; then
+            echo "::error file=.github/required-checks.yml::required-checks.yml's required: list has drifted from the live branch rules"
+            echo "Live required checks (aggregated across every active ruleset on main):"
+            echo "$live"
+            echo "Checked-in snapshot:"
+            echo "$snapshot"
+            exit 1
+          fi
+
+          echo "required-checks.yml matches the live branch rules:"
+          echo "$live"
