@@ -95,6 +95,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the maintainer (AC92, TD26072414). Deleting an already-shared poem also
   invalidates its share page's cache, so the permalink stops serving right
   away rather than staying visible until the cache's next natural expiry.
+- A "Danger zone" section on the My poems dashboard with self-service account
+  deletion (AC92, W13): confirming (by typing the account's own email)
+  deletes the account outright, cascading to every saved poem, share, and
+  profile row, and signs the browser out. Deletion is by irreversible
+  removal, not a soft delete — a deleted account's shares stop resolving
+  immediately.
 
 ### Changed
 
