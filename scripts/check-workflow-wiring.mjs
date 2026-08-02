@@ -47,6 +47,18 @@ function stripQuotes(s) {
   return s;
 }
 
+// Blank lines and whole-line comments carry no structure, and letting either
+// count would be a false *pass*: a comment as the first thing in a block sets
+// the block's indent to the comment's, so every real key under it is read as
+// belonging to something else and the block parses empty. An `on:` block that
+// parses empty has no `pull_request` trigger, and a workflow with no
+// `pull_request` trigger is skipped entirely — the check would report success
+// over exactly the ungated workflow it exists to catch.
+function isContent(line) {
+  const t = line.trim();
+  return t !== "" && !t.startsWith("#");
+}
+
 function parseScalarOrFlowList(inline) {
   const s = inline.trim();
   if (s.startsWith("[") && s.endsWith("]")) {
@@ -67,12 +79,15 @@ function parseFlatMapping(lines, indent) {
   const result = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.trim() === "") continue;
+    if (!isContent(line)) continue;
     const lineIndent = line.match(/^(\s*)/)[1].length;
     if (lineIndent !== indent) continue;
     const m = line.match(/^\s*([^:\s][^:]*):\s*(.*)$/);
     if (!m) continue;
-    const key = m[1].trim();
+    // Quoted keys are the same key: `"on":` is the form linters recommend,
+    // because YAML 1.1 reads a bare `on` as the boolean true. Without this,
+    // `on` is never found and the workflow looks untriggered.
+    const key = stripQuotes(m[1].trim());
     const inline = m[2].trim();
 
     let end = i + 1;
@@ -93,9 +108,9 @@ function parseFlatMapping(lines, indent) {
   return result;
 }
 
-function firstNonBlankIndent(lines) {
+function firstContentIndent(lines) {
   for (const l of lines) {
-    if (l.trim() !== "") return l.match(/^(\s*)/)[1].length;
+    if (isContent(l)) return l.match(/^(\s*)/)[1].length;
   }
   return null;
 }
@@ -105,16 +120,16 @@ function firstNonBlankIndent(lines) {
 function parseTriggers(entry) {
   if (!entry) return [];
   if (entry.inline) return parseScalarOrFlowList(entry.inline);
-  const firstLine = entry.body.find((l) => l.trim() !== "");
+  const firstLine = entry.body.find(isContent);
   if (!firstLine) return [];
   if (/^\s*-\s/.test(firstLine)) {
     return entry.body
-      .filter((l) => l.trim() !== "")
+      .filter(isContent)
       .map((l) => l.match(/^\s*-\s*(.+?)\s*$/))
       .filter(Boolean)
       .map((m) => stripQuotes(m[1]));
   }
-  const indent = firstNonBlankIndent(entry.body);
+  const indent = firstContentIndent(entry.body);
   return parseFlatMapping(entry.body, indent).map((e) => e.key);
 }
 
@@ -123,7 +138,7 @@ function parseNeeds(entry) {
   if (!entry) return [];
   if (entry.inline) return parseScalarOrFlowList(entry.inline);
   return entry.body
-    .filter((l) => l.trim() !== "")
+    .filter(isContent)
     .map((l) => l.match(/^\s*-\s*(.+?)\s*$/))
     .filter(Boolean)
     .map((m) => stripQuotes(m[1]));
@@ -139,10 +154,10 @@ export function parseWorkflow(text) {
 
   const jobs = {};
   if (jobsEntry) {
-    const jobIndent = firstNonBlankIndent(jobsEntry.body);
+    const jobIndent = firstContentIndent(jobsEntry.body);
     if (jobIndent !== null) {
       for (const jobEntry of parseFlatMapping(jobsEntry.body, jobIndent)) {
-        const subIndent = firstNonBlankIndent(jobEntry.body);
+        const subIndent = firstContentIndent(jobEntry.body);
         const children =
           subIndent === null ? [] : parseFlatMapping(jobEntry.body, subIndent);
         const nameEntry = children.find((c) => c.key === "name");
@@ -226,7 +241,7 @@ export function parseRequiredChecks(text) {
 
   const required = requiredEntry
     ? requiredEntry.body
-        .filter((l) => l.trim() !== "")
+        .filter(isContent)
         .map((l) => l.match(/^\s*-\s*(.+?)\s*$/))
         .filter(Boolean)
         .map((m) => stripQuotes(m[1]))
@@ -234,23 +249,64 @@ export function parseRequiredChecks(text) {
 
   const exempt = [];
   if (exemptEntry) {
-    const indent = firstNonBlankIndent(exemptEntry.body);
+    const indent = firstContentIndent(exemptEntry.body);
     if (indent !== null) {
       let current = null;
+      // A `reason:` long enough to need wrapping is written as a block scalar
+      // (`>-`), so its text lives on the *following* lines. Reading only the
+      // `reason:` line would store the "&gt;-" indicator as the reason and drop
+      // every word of the justification — and the justification is the entire
+      // point of an exemption, since it is what a reviewer weighs when asking
+      // whether a job should really be outside the merge gate.
+      let block = null;
+      const closeBlock = () => {
+        if (!block) return;
+        // `>` folds line breaks into spaces, `|` keeps them.
+        const text = block.fold
+          ? block.lines.join(" ").replace(/\s+/g, " ")
+          : block.lines.join("\n");
+        if (current) current[block.key] = text.trim();
+        block = null;
+      };
+
       for (const line of exemptEntry.body) {
-        if (line.trim() === "") continue;
+        if (block) {
+          const bIndent = line.match(/^(\s*)/)[1].length;
+          if (line.trim() === "" || bIndent >= block.indent) {
+            block.lines.push(line.trim());
+            continue;
+          }
+          closeBlock();
+        }
+        if (!isContent(line)) continue;
         const lineIndent = line.match(/^(\s*)/)[1].length;
+
+        const record = (key, value, keyIndent) => {
+          const v = value.trim();
+          if (/^[|>][-+]?\d*$/.test(v)) {
+            block = {
+              key,
+              indent: keyIndent + 1,
+              lines: [],
+              fold: v[0] === ">",
+            };
+          } else {
+            current[key] = stripQuotes(v);
+          }
+        };
+
         if (lineIndent === indent && /^\s*-\s/.test(line)) {
           if (current) exempt.push(current);
           current = {};
           const rest = line.replace(/^\s*-\s*/, "");
           const m = rest.match(/^([^:\s][^:]*):\s*(.*)$/);
-          if (m) current[m[1].trim()] = stripQuotes(m[2].trim());
+          if (m) record(m[1].trim(), m[2], line.indexOf(rest));
           continue;
         }
         const m = line.match(/^\s*([^:\s][^:]*):\s*(.*)$/);
-        if (m && current) current[m[1].trim()] = stripQuotes(m[2].trim());
+        if (m && current) record(m[1].trim(), m[2], lineIndent);
       }
+      closeBlock();
       if (current) exempt.push(current);
     }
   }

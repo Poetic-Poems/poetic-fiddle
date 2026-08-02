@@ -78,6 +78,54 @@ describe("parseWorkflow", () => {
     );
     expect(doc.triggers).toEqual(["pull_request"]);
   });
+
+  // Each of the three below used to make a pull_request-triggered workflow
+  // parse as untriggered or job-less, which this check treats as "nothing to
+  // see here" — a silent pass over exactly the ungated workflow it exists to
+  // catch. They are false *negatives*, so no failing run would reveal them.
+  it('reads the quoted "on": key, which YAML 1.1 linters recommend', () => {
+    // Bare `on` is the boolean true in YAML 1.1, so quoting it is a common
+    // convention — and Prettier leaves the quotes alone.
+    for (const key of ['"on"', "'on'"]) {
+      const doc = parseWorkflow(
+        [
+          `${key}:`,
+          "  pull_request:",
+          "jobs:",
+          "  a:",
+          "    runs-on: x",
+          "",
+        ].join("\n"),
+      );
+      expect(doc.triggers).toEqual(["pull_request"]);
+      expect(Object.keys(doc.jobs)).toEqual(["a"]);
+    }
+  });
+
+  it("ignores comments when working out a block's indentation", () => {
+    const doc = parseWorkflow(
+      [
+        "on:",
+        "    # A comment indented differently to the triggers below.",
+        "  pull_request:",
+        "jobs:",
+        "      # note: a comment is not a job",
+        "  a:",
+        "    runs-on: x",
+        "",
+      ].join("\n"),
+    );
+
+    expect(doc.triggers).toEqual(["pull_request"]);
+    expect(Object.keys(doc.jobs)).toEqual(["a"]);
+  });
+
+  it("strips quotes from a quoted job id", () => {
+    const doc = parseWorkflow(
+      ["on: pull_request", "jobs:", '  "a":', "    runs-on: x", ""].join("\n"),
+    );
+    expect(Object.keys(doc.jobs)).toEqual(["a"]);
+  });
 });
 
 describe("checkWorkflowWiring", () => {
@@ -178,5 +226,41 @@ describe("parseRequiredChecks", () => {
     expect(parsed.exempt).toEqual([
       { workflow: "codeql.yml", job: "analyze", reason: "advisory only" },
     ]);
+  });
+
+  // A reason long enough to be worth reading is long enough to need wrapping,
+  // so the block-scalar form is the one real entries use. Reading only the
+  // `reason:` line stores the ">-" indicator and drops the justification.
+  it("reads a folded block-scalar reason", () => {
+    const parsed = parseRequiredChecks(
+      [
+        "required:",
+        "  - CI",
+        "exempt:",
+        "  - workflow: codeql.yml",
+        "    job: analyze",
+        "    reason: >-",
+        "      Advisory by design: findings post to the Security tab",
+        "      rather than blocking a merge.",
+        "",
+      ].join("\n"),
+    );
+
+    expect(parsed.exempt).toEqual([
+      {
+        workflow: "codeql.yml",
+        job: "analyze",
+        reason:
+          "Advisory by design: findings post to the Security tab rather than blocking a merge.",
+      },
+    ]);
+  });
+
+  it("gives every exemption in the checked-in file a readable reason", () => {
+    for (const entry of loadRepoRequiredChecks().exempt) {
+      expect(entry.workflow).toBeTruthy();
+      expect(entry.job).toBeTruthy();
+      expect(entry.reason ?? "").toMatch(/[a-z]{4}/);
+    }
   });
 });
