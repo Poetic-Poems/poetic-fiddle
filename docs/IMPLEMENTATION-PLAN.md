@@ -514,11 +514,16 @@ public launch, **P2** soon after, **P3** insurance/polish.
   TD26072414): `deletePoem()` in `poems-store.ts`, a confirmed delete action
   in `PoemsDashboard.tsx`; deleting an already-shared poem invalidates its
   share cache tag so the permalink stops serving immediately.
-- **W13 (P1, L)** — **Account deletion** (AC92, second half). Today deletion
-  is by email request only. Add self-service account deletion propagating to
-  all surfaces (poems, shares, profile) — needs a server-side route using the
-  service-role key, so treat as a security-sensitive change with its own
-  careful review.
+- **W13 (P1, L)** — **Account deletion** (AC92, second half) — **done** (PR
+  #185): `DELETE /api/account/delete` verifies the caller's access token
+  server-side (via the service-role key's `auth.getUser()` and
+  `auth.admin.deleteUser()`) and deletes only the token's own account — never
+  a client-supplied id — cascading to `poems`/`profiles` via the existing `on
+  delete cascade` foreign keys (§6.2). The route returns the account's share
+  ids so the caller can invalidate their cache tags, the same way per-poem
+  deletion does (W12), and a deleted poet's permalinks 404 at once rather than
+  at the share cache's next expiry. A "Danger zone" section on the My poems
+  dashboard gates the whole thing behind a type-your-email confirmation.
 - **W14 (P2, M)** — **Data export** (AC92). No export flow exists. Add
   download-my-data (poems + profile as JSON/`.poem` files).
 - **W15 (P2, S–M)** — **Branding: theme-aware logo + favicon set** (AC106).
@@ -718,10 +723,12 @@ every account has one before M7 reads `remix_default`.
    page, whereas this degrades to `allow_remix = false` — the safe direction
    (D38).
 4. **No service-role key for M6.** Because the RPC runs safely under the anon
-   key, the SSR share page needs no privileged credential —
-   `SUPABASE_SERVICE_ROLE_KEY` stays unset (as `.env.example` advises) until
-   account deletion (AC92, M9) genuinely requires `auth.admin`. A key that is
-   never set is a key that cannot leak (AC88).
+   key, the SSR share page needs no privileged credential.
+   `SUPABASE_SERVICE_ROLE_KEY` (server-only, per `.env.example`) is used by
+   exactly one route: `DELETE /api/account/delete` (W13), which needs
+   `auth.admin.deleteUser()` to remove an `auth.users` row outright. Nothing
+   else in the codebase reads it — a key used by a single, narrowly-scoped
+   route is a key with one place to audit (AC88).
 5. **Title is derived app-side at save** (AC23), using the `poetic` parser
    Fiddle already imports, and stored as a plain column — a cache of the
    `.poem` header, never separately editable. A generated column is impossible

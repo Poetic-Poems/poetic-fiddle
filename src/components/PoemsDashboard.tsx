@@ -12,6 +12,7 @@ import {
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { useSession } from "@/lib/use-session";
 import { errorMessage } from "@/lib/errors";
+import { AccountDangerZone } from "@/components/AccountDangerZone";
 
 type LoadState =
   | { kind: "loading" }
@@ -343,6 +344,7 @@ export function PoemsDashboard() {
           ))}
         </ul>
       )}
+      <AccountDangerZone session={session} />
     </div>
   );
 }
