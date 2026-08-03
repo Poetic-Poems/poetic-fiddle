@@ -336,6 +336,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   via an `overrides` entry, resolving a medium-severity XSS via unescaped
   `</style>` in CSS Stringify Output
   ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)).
+- Bumped `postcss` further, to 8.5.23, resolving a medium-severity incomplete
+  fix of the above: an attacker-controlled `sourceMappingURL` could read
+  arbitrary `.map` files when PostCSS's `from` option is unset
+  ([GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp)).
 - Added a site-wide `Content-Security-Policy` header (`next.config.ts`) for
   the app's own pages (editor, dashboard, legal), restricting scripts,
   styles, connections, and framing to the app's own origin plus Supabase.
