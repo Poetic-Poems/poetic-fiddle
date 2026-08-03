@@ -39,6 +39,15 @@ authenticating with two repo secrets (Settings → Secrets and variables →
 Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account → Access
 Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
 
+## Backups
+
+The Supabase project runs on the organisation's Pro plan, which includes
+automatic daily backups with 7 days' retention by default; Point-in-Time
+Recovery is available as a separate paid add-on. See
+[`docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`](docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md#backup--pitr-coverage)
+for the full guarantee, its restore procedure, and how to fulfil a poet's
+export/delete request.
+
 ## Development
 
 Requires Node.js 22.x. Install dependencies with `npm install`, then:

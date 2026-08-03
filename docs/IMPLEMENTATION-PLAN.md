@@ -726,9 +726,12 @@ every account has one before M7 reads `remix_default`.
    key, the SSR share page needs no privileged credential.
    `SUPABASE_SERVICE_ROLE_KEY` (server-only, per `.env.example`) is used by
    exactly one route: `DELETE /api/account/delete` (W13), which needs
-   `auth.admin.deleteUser()` to remove an `auth.users` row outright. Nothing
-   else in the codebase reads it — a key used by a single, narrowly-scoped
-   route is a key with one place to audit (AC88).
+   `auth.admin.deleteUser()` to remove an `auth.users` row outright. The only
+   other reader is `scripts/export-poet-data.mjs`, the maintainer-run
+   data-subject export (`docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`), which is
+   never deployed and is imported by nothing under `src/`. So the deployed
+   surface for this key is still a single, narrowly-scoped route — one place
+   to audit (AC88).
 5. **Title is derived app-side at save** (AC23), using the `poetic` parser
    Fiddle already imports, and stored as a plain column — a cache of the
    `.poem` header, never separately editable. A generated column is impossible

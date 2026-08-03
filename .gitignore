@@ -76,6 +76,9 @@ src/lib/poetic-css.generated.ts
 .env.*
 !.env.example
 
+# Output of scripts/export-poet-data.mjs — a poet's personal data, never committed
+poet-export-*
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
