@@ -266,6 +266,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
@@ -273,6 +278,14 @@ jobs:
 
       - name: Link live project
         run: supabase link --project-ref ixerygypaevxzmiknokg
+
+      # TD-PPpfid-26080301: catches the same drift
+      # .github/workflows/supabase-auth-drift.yml checks on a schedule, but
+      # before a migration push rather than after — no node_modules needed,
+      # see the script's own header comment for why this asserts rather than
+      # pushes config.toml's [auth] block.
+      - name: Check Supabase auth-config drift
+        run: node scripts/check-supabase-auth-drift.mjs
 
       # --yes skips the interactive "push these migrations?" confirmation,
       # which otherwise stalls a non-interactive CI shell.
