@@ -14,11 +14,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  // "github" alone (as before) annotates the Actions log but writes nothing
-  // to disk, so ci.yml's "Upload Playwright report" step had no report to
-  // upload even when it ran on failure (TD-PPpfid-26080304). "html" writes a
-  // self-contained playwright-report/ — traces and error context included —
-  // which is what that step actually archives.
+  // "github" annotates the Actions log but writes nothing to disk, so it
+  // leaves ci.yml's "Upload Playwright report" step nothing to archive.
+  // "html" writes the self-contained playwright-report/ that step uploads on
+  // every run — per-attempt error context and the retry's trace included, so
+  // a flaky-then-green run keeps its evidence (TD-PPpfid-26080304).
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: BASE_URL,
