@@ -18,7 +18,10 @@ export default defineConfig({
   // leaves ci.yml's "Upload Playwright report" step nothing to archive.
   // "html" writes the self-contained playwright-report/ that step uploads on
   // every run — per-attempt error context and the retry's trace included, so
-  // a flaky-then-green run keeps its evidence (TD-PPpfid-26080304).
+  // a flaky-then-green run keeps its evidence (TD-PPpfid-26080304). The
+  // artifact is named per attempt (playwright-report-${{ github.run_attempt }})
+  // to preserve evidence when a job is re-run via GitHub's "Re-run failed jobs"
+  // button, keeping earlier attempts' reports accessible (TD-PPpfid-26080305).
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: BASE_URL,
