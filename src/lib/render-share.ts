@@ -12,6 +12,7 @@ import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
 import { reportSwallowedError } from "@/lib/observability";
 import { EMBED_ALLOWED_HOSTS } from "@/lib/embed-hosts";
+import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
 /**
  * Sandboxed just enough for a media player to work (script execution, and
@@ -35,12 +36,16 @@ export function sanitizeSharedPoemHtml(rawHtml: string): string {
   const purify = DOMPurify(window);
   const document = window.document;
 
-  // Default config: no <script>, no on* handlers, no <iframe> — the poem's
-  // own song-embed markup is just buttons/divs with data-* attributes at
-  // this point (poetic.js, which Fiddle never loads, is what would normally
-  // turn them into iframes — see poetic's song-handlers.js), so it survives
-  // sanitisation intact and unexploitable.
-  const clean = purify.sanitize(rawHtml, { RETURN_DOM_FRAGMENT: true });
+  // POEM_SANITIZE_CONFIG (src/lib/sanitize-poem.ts): no <script>, no on*
+  // handlers, no <iframe> — the poem's own song-embed markup is just
+  // buttons/divs with data-* attributes at this point (poetic.js, which
+  // Fiddle never loads, is what would normally turn them into iframes — see
+  // poetic's song-handlers.js), so it survives sanitisation intact and
+  // unexploitable.
+  const clean = purify.sanitize(rawHtml, {
+    ...POEM_SANITIZE_CONFIG,
+    RETURN_DOM_FRAGMENT: true,
+  });
 
   const container = document.createElement("div");
   container.appendChild(clean);
