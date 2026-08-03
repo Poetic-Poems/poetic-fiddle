@@ -45,13 +45,6 @@ for (const { name, path, waitForReady, axeOptions, legacyMode } of PAGES) {
   test(`${name} (signed out) has no automatically detectable accessibility violations`, async ({
     page,
   }) => {
-    // TEMPORARY: Intentional failure to verify per-attempt artifact preservation
-    // (TD-PPpfid-26080305). This line should be removed after verifying the fix
-    // works when the job is re-run via GitHub's "Re-run failed jobs" button.
-    if (name === "editor") {
-      throw new Error("Temporary test failure for artifact verification");
-    }
-
     await page.goto(path);
     await waitForReady(page);
 
