@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Fails a pull request that bumps package.json's version without renaming
-// CHANGELOG.md's "## [Unreleased]" heading to "## [<newVersion>]" and
-// opening a fresh, empty "## [Unreleased]" above it — the convention
+// CHANGELOG.md's "## [Unreleased]" heading to "## [<newVersion>]", opening a
+// fresh, empty "## [Unreleased]" above it, and carrying at least one line of
+// content into the renamed section — the convention
 // scripts/extract-changelog-notes.mjs's "## [<version>]" preference assumes.
 // Passes untouched when the version is unchanged, since there is then
 // nothing to rename.
@@ -43,6 +44,25 @@ export function checkChangelogRename(
         `CHANGELOG.md has a "## [${headVersion}]" heading, but no fresh ` +
         `"## [Unreleased]" heading above it. Open a new, empty ` +
         `"## [Unreleased]" section above "## [${headVersion}]".`,
+    };
+  }
+
+  const nextHeadingOffset = lines
+    .slice(versionIndex + 1)
+    .findIndex((line) => line.match(/^## \[/));
+  const nextHeadingIndex =
+    nextHeadingOffset === -1
+      ? lines.length
+      : versionIndex + 1 + nextHeadingOffset;
+  const sectionIsEmpty = lines
+    .slice(versionIndex + 1, nextHeadingIndex)
+    .every((line) => line.trim() === "");
+  if (sectionIsEmpty) {
+    return {
+      pass: false,
+      message:
+        `CHANGELOG.md's "## [${headVersion}]" section has no content. Move ` +
+        `the release's entries into it from "## [Unreleased]" before renaming.`,
     };
   }
 

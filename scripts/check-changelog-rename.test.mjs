@@ -82,4 +82,40 @@ describe("checkChangelogRename", () => {
 
     expect(result.pass).toBe(false);
   });
+
+  it("fails when the [<newVersion>] section is empty and is the last section in the file", () => {
+    const changelog = [
+      "# Changelog",
+      "",
+      "## [Unreleased]",
+      "",
+      "## [0.2.0]",
+      "",
+    ].join("\n");
+
+    const result = checkChangelogRename("0.1.0", "0.2.0", changelog);
+
+    expect(result.pass).toBe(false);
+    expect(result.message).toMatch(/no content/);
+  });
+
+  it("fails when the [<newVersion>] section is empty but another heading follows it", () => {
+    const changelog = [
+      "# Changelog",
+      "",
+      "## [Unreleased]",
+      "",
+      "## [0.2.0]",
+      "",
+      "## [0.1.0]",
+      "",
+      "- earlier things",
+      "",
+    ].join("\n");
+
+    const result = checkChangelogRename("0.1.0", "0.2.0", changelog);
+
+    expect(result.pass).toBe(false);
+    expect(result.message).toMatch(/no content/);
+  });
 });
