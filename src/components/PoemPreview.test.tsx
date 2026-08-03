@@ -4,6 +4,7 @@ import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
 import { PoemPreview, wirePoemToggles } from "./PoemPreview";
 import { NonceProvider } from "@/lib/nonce-context";
+import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
 // Mirrors the markup poetic's _poem-content.pug emits for an Analysis
 // section (github.com/Poetic-Poems/poetic src/templates/_poem-content.pug).
@@ -222,7 +223,7 @@ The full analysis text.
 describe("wirePoemToggles against real poetic output", () => {
   function realAnalysisDocument(): Document {
     const html = renderPoem(POEM_WITH_ANALYSIS);
-    const sanitised = DOMPurify.sanitize(html);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
     const doc = document.implementation.createHTMLDocument("preview");
     doc.body.innerHTML = sanitised;
     return doc;
@@ -354,7 +355,7 @@ ${Array.from({ length: 12 }, (_, line) => `Postscript line ${line + 1}.`).join("
 describe("wirePoemToggles postscript against real poetic output", () => {
   function realPostscriptDocument(): Document {
     const html = renderPoem(POEM_WITH_LONG_POSTSCRIPT);
-    const sanitised = DOMPurify.sanitize(html);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
     const doc = document.implementation.createHTMLDocument("preview");
     doc.body.innerHTML = sanitised;
     return doc;
@@ -423,9 +424,9 @@ describe("PoemPreview srcDoc nonce", () => {
   });
 
   // poetic's rendered markup carries per-instance sizing as inline `style`
-  // attributes (issue #119) — DOMPurify's default config (used here) keeps
-  // them, so this asserts the value genuinely survives the sanitisation
-  // step, not just that the site CSP (unexercised by jsdom) would allow it.
+  // attributes (issue #119) — POEM_SANITIZE_CONFIG keeps them, so this
+  // asserts the value genuinely survives the sanitisation step, not just
+  // that the site CSP (unexercised by jsdom) would allow it.
   it("keeps an inline style attribute through DOMPurify sanitisation", () => {
     const { container } = render(
       <NonceProvider nonce="test-nonce-123">

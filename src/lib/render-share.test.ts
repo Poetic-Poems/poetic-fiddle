@@ -119,10 +119,10 @@ describe("sanitizeSharedPoemHtml", () => {
 
     const clean = sanitizeSharedPoemHtml(html);
 
-    // DOMPurify's default config (used here, and by the live PoemPreview
-    // iframe) keeps these three tags — sanitisation is not what would strip
-    // them, so this asserts the title markup genuinely survives the
-    // untrusted-content boundary, not just the renderer's own output.
+    // POEM_SANITIZE_CONFIG (shared with the live PoemPreview iframe) keeps
+    // these three tags — sanitisation is not what would strip them, so this
+    // asserts the title markup genuinely survives the untrusted-content
+    // boundary, not just the renderer's own output.
     expect(clean).toContain(
       '<h2 class="poem-title"><em>Em</em> <strong>Strong</strong> <s>Struck</s> Title</h2>',
     );
