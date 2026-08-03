@@ -204,6 +204,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The Analysis section's "Synopsis"/"Full Analysis" selector buttons (shown
   when an analysis has both forms) now work in the live preview, for the
   same reason and via the same rewiring approach as the show/hide buttons.
+- A poem's song-embed button ("Load Audiomack Player" etc.) now works in the
+  live preview instead of doing nothing when clicked. The preview can't run
+  an in-place player (poetic.js, which normally activates the button, is
+  never loaded, and the preview iframe's sandbox has no `allow-scripts`), so
+  a click opens the embed URL in a new tab instead, checked against the same
+  host allow-list (`src/lib/embed-hosts.ts`) the share page's player uses.
 - "My Poems" no longer 404s. The M5 schema migrations had been merged but
   never applied to the live Supabase project, so `poems`/`profiles` were
   missing from its schema cache; the migrations are now pushed and the

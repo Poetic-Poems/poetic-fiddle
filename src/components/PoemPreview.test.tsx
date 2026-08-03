@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
@@ -386,6 +386,116 @@ describe("wirePoemToggles postscript against real poetic output", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(content.classList.contains("postscript-expanded")).toBe(true);
     expect(content.textContent).toContain("Postscript line 12.");
+  });
+});
+
+// Mirrors render-share.test.ts's POEM_WITH_EMBEDS: one handler per builtin
+// embed style (a fixed height, an aspect ratio) plus a link-only handler
+// (Suno) that never renders a button at all.
+const POEM_WITH_EMBEDS = `Embed Test
+A Poet
+2026-07-17
+
+{Verse}
+Hello world.
+
+====
+
+Audiomack: my-artist/my-song
+Mega: FileId123#Key456 (audio)
+Suno: s/SongLink12345678
+
+====
+`;
+
+describe("wirePoemToggles song-embed buttons", () => {
+  const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+  afterEach(() => {
+    openSpy.mockClear();
+  });
+
+  function embedDocument(dataEmbedSrc: string): Document {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = `<button class="song-embed-btn" data-embed-src="${dataEmbedSrc}">Load player</button>`;
+    return doc;
+  }
+
+  it("opens an allow-listed embed URL in a new tab", () => {
+    const doc = embedDocument("https://audiomack.com/embed/my-artist/my-song");
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://audiomack.com/embed/my-artist/my-song",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("does not open a URL whose host is not on the allow-list", () => {
+    const doc = embedDocument("https://evil.example/embed");
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not open a non-https URL even for an allow-listed host", () => {
+    const doc = embedDocument("http://audiomack.com/embed/my-artist/my-song");
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not throw and does not open on an unparseable embed URL", () => {
+    const doc = embedDocument("not a url");
+    wirePoemToggles(doc);
+
+    expect(() =>
+      (doc.querySelector(".song-embed-btn") as HTMLElement).click(),
+    ).not.toThrow();
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the button carries no data-embed-src", () => {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = `<button class="song-embed-btn">Load player</button>`;
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("opens the right host for each embed button against real poetic output", () => {
+    const html = renderPoem(POEM_WITH_EMBEDS);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = sanitised;
+    wirePoemToggles(doc);
+
+    const buttons = doc.querySelectorAll<HTMLElement>(".song-embed-btn");
+    // Audiomack and Mega both declare embed_url and get a button; Suno is
+    // link-only and renders a plain anchor instead.
+    expect(buttons.length).toBe(2);
+
+    buttons.forEach((button) => button.click());
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://audiomack.com/embed/my-artist/song/my-song",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://mega.nz/embed/FileId123#Key456",
+      "_blank",
+      "noopener,noreferrer",
+    );
   });
 });
 

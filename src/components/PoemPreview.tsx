@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef } from "react";
 import DOMPurify from "dompurify";
 import { useNonce } from "@/lib/nonce-context";
 import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
+import { EMBED_ALLOWED_HOSTS } from "@/lib/embed-hosts";
 
 interface PoemPreviewProps {
   html: string;
@@ -67,13 +68,48 @@ export function wirePoemToggles(doc: Document) {
 
     const selectButton = target.closest(".analysis.selector");
     const group = selectButton?.closest(".full-or-synopsis-selector");
-    if (!selectButton || !group) return;
+    if (selectButton && group) {
+      const panel = selectButton.getAttribute("data-analysis-select");
+      if (panel) group.setAttribute("data-selected", panel);
+      group.querySelectorAll(".analysis.selector").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button === selectButton));
+      });
+      return;
+    }
 
-    const panel = selectButton.getAttribute("data-analysis-select");
-    if (panel) group.setAttribute("data-selected", panel);
-    group.querySelectorAll(".analysis.selector").forEach((button) => {
-      button.setAttribute("aria-pressed", String(button === selectButton));
-    });
+    // poetic.js (never loaded here) is what would normally turn this button
+    // into an always-visible player (see render-share.ts, which does the same
+    // server-side for the share page's "full player", AC25). The editor
+    // preview only owes a best-effort representation, so instead of loading a
+    // player script into the preview sandbox (which would need allow-scripts,
+    // weighed against AC86 and out of scope here), a click opens the embed in
+    // a new tab — keeping the button's clickable styling honest rather than
+    // leaving it dead (TD-PPpfid-26072603). window.open runs here in the
+    // parent page's own realm, not the sandboxed preview's, so this new tab is
+    // Fiddle's own doing, not the iframe content's.
+    const embedButton = target.closest(".song-embed-btn[data-embed-src]");
+    if (embedButton) {
+      const src = embedButton.getAttribute("data-embed-src");
+      if (!src) return;
+
+      let url: URL;
+      try {
+        url = new URL(src);
+      } catch {
+        return;
+      }
+      // Same allow-list enforcement as render-share.ts's activation gate
+      // (embed-hosts.ts) — a poet's audio value can only ever fill the URL's
+      // path, never its origin, but this is still checked explicitly rather
+      // than trusted implicitly.
+      if (
+        url.protocol !== "https:" ||
+        !EMBED_ALLOWED_HOSTS.has(url.hostname.toLowerCase())
+      ) {
+        return;
+      }
+      window.open(url.toString(), "_blank", "noopener,noreferrer");
+    }
   });
 }
 
