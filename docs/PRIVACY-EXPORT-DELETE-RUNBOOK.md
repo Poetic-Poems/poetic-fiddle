@@ -56,11 +56,16 @@ imports it, and it must never be wired into the deployed app.
    "find by email" call), then reads the account, `profiles` row, and every
    `poems` row owned by that id — drafts included, since this is the
    maintainer export, not the public share view.
-4. **It writes a JSON file** named `poet-export-<user-id>-<timestamp>.json`
-   in the current directory, owner-readable only (mode `0600`) and
-   git-ignored (see `.gitignore`). Pass a second argument to choose a
-   different path — if you do, and the file already exists, its existing
-   permissions are kept, so pick a path nothing else can read.
+4. **It writes a gzipped tar archive** named
+   `poet-export-<user-id>-<timestamp>.tar.gz` in the current directory,
+   owner-readable only (mode `0600`) and git-ignored (see `.gitignore`).
+   It contains `export.json` — the complete payload (account, `profiles`
+   row, `poems` rows) as machine-readable JSON — plus
+   `poems/NNN-<title-slug>.poem`, each poem's `source_text` verbatim, so
+   the poet can read their poems as poems rather than as escaped strings
+   inside the JSON. Pass a second argument to choose a different path — if
+   you do, and the file already exists, its existing permissions are kept,
+   so pick a path nothing else can read.
 5. **Send it to the poet** at the email address on the account (never a
    different address than the one on file, even if the request came from
    somewhere else) and then delete your local copy — it is a full copy of

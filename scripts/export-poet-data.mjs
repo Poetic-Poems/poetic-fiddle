@@ -8,6 +8,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -95,6 +96,64 @@ export async function exportPoetData(admin, identifier) {
   };
 }
 
+export function poemFileName(poem, index) {
+  const slug = (poem.title ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40)
+    .replace(/-+$/, "");
+  const ordinal = String(index + 1).padStart(3, "0");
+  return `poems/${ordinal}${slug ? `-${slug}` : ""}.poem`;
+}
+
+// A minimal POSIX-ustar header. Hand-rolled rather than a dependency because
+// the inputs are fully under our control (short ASCII names, small files) and
+// building the archive in memory means the poet's data never touches disk in
+// an intermediate world-readable temp file.
+function tarHeader(name, size, mtimeSeconds) {
+  const header = Buffer.alloc(512);
+  header.write(name, 0, 100, "utf8");
+  header.write("0000600 ", 100); // mode — matches the 0600 the outer file gets
+  header.write("0000000 ", 108); // uid
+  header.write("0000000 ", 116); // gid
+  header.write(`${size.toString(8).padStart(11, "0")} `, 124);
+  header.write(`${mtimeSeconds.toString(8).padStart(11, "0")} `, 136);
+  header.write("        ", 148); // checksum is computed with its field blank
+  header.write("0", 156); // typeflag: regular file
+  header.write("ustar", 257);
+  header.write("00", 263);
+  let sum = 0;
+  for (const byte of header) sum += byte;
+  header.write(`${sum.toString(8).padStart(6, "0")}\0 `, 148);
+  return header;
+}
+
+/**
+ * The export as a gzipped tar: `export.json` (the whole payload,
+ * machine-readable) plus one `poems/NNN-<title-slug>.poem` per poem row,
+ * `source_text` verbatim — so the poet can read their poems as poems without
+ * parsing JSON out of the payload.
+ */
+export function buildExportArchive(payload) {
+  const mtimeSeconds = Math.floor(Date.parse(payload.exported_at) / 1000);
+  const files = [
+    { name: "export.json", body: JSON.stringify(payload, null, 2) },
+    ...payload.poems.map((poem, index) => ({
+      name: poemFileName(poem, index),
+      body: poem.source_text ?? "",
+    })),
+  ];
+  const blocks = [];
+  for (const { name, body } of files) {
+    const data = Buffer.from(body, "utf8");
+    blocks.push(tarHeader(name, data.length, mtimeSeconds), data);
+    blocks.push(Buffer.alloc((512 - (data.length % 512)) % 512));
+  }
+  blocks.push(Buffer.alloc(1024)); // end-of-archive marker
+  return gzipSync(Buffer.concat(blocks));
+}
+
 function buildAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -113,14 +172,14 @@ function buildAdminClient() {
 
 function defaultOutputPath(userId) {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  return `poet-export-${userId}-${stamp}.json`;
+  return `poet-export-${userId}-${stamp}.tar.gz`;
 }
 
 async function main() {
   const [identifier, outArg] = process.argv.slice(2);
   if (!identifier) {
     console.error(
-      "Usage: node --env-file=.env.local scripts/export-poet-data.mjs <email-or-user-id> [output-file.json]",
+      "Usage: node --env-file=.env.local scripts/export-poet-data.mjs <email-or-user-id> [output-file.tar.gz]",
     );
     process.exitCode = 1;
     return;
@@ -132,11 +191,11 @@ async function main() {
   // Owner-only: the file is a complete copy of one poet's personal data, and
   // the default 0644 would expose it to every other account on the machine.
   // (`mode` only applies when the file is created, not when overwriting.)
-  writeFileSync(outPath, JSON.stringify(payload, null, 2), { mode: 0o600 });
+  writeFileSync(outPath, buildExportArchive(payload), { mode: 0o600 });
 
   console.log(
     `Exported account ${payload.account.id} (${payload.account.email ?? "no email on file"}): ` +
-      `${payload.poems.length} poem(s) -> ${outPath}`,
+      `${payload.poems.length} poem(s) -> ${outPath} (export.json + poems/*.poem)`,
   );
 }
 
