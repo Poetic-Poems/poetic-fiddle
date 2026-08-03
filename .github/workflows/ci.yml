@@ -172,11 +172,14 @@ jobs:
     name: Check CHANGELOG.md rename
     runs-on: ubuntu-latest
 
-    # Not gated on `changes`, unlike `build` and `database`: a release-bump PR
-    # most often touches only package.json and CHANGELOG.md, neither of which
-    # the `changes` classifier treats as app-relevant (CHANGELOG.md is *.md),
-    # and this guard must never be skipped on exactly the PR it exists to
-    # check. The script is cheap enough to need no npm install.
+    # Not gated on `changes`, unlike `build` and `database`: this guard must
+    # never be skipped on exactly the pull request it exists to check. A
+    # release-bump PR does reach the app-relevant classification anyway —
+    # `changes` is a deny-list and package.json is not on it (CHANGELOG.md
+    # is, being *.md) — but that is incidental, and tying this guard to a
+    # classifier tuned for "does the app need rebuilding" would let one edit
+    # to that deny-list switch the release gate off silently. The script is
+    # cheap enough to need no npm install.
     #
     # The one condition is the event: `push` and `workflow_dispatch` have no
     # base branch to read the previous version from, and a skipped dependency
