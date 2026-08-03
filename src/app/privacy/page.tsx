@@ -86,9 +86,9 @@ export default function PrivacyPolicy() {
             My poems dashboard — this removes it permanently, immediately. You
             can also delete your entire account yourself from that same
             dashboard&rsquo;s Danger zone — which removes your email address,
-            all poems you wrote, and all share links you created,
-            permanently and immediately. If you can&rsquo;t sign in to do this
-            yourself, email{" "}
+            all poems you wrote, and all share links you created, permanently
+            and immediately. If you can&rsquo;t sign in to do this yourself,
+            email{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
               className="text-link underline underline-offset-2"
