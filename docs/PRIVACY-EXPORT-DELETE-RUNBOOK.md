@@ -112,21 +112,20 @@ requirement). Per Supabase's published plan documentation:
 - **Point-in-Time Recovery (PITR)** is a separate paid add-on (from
   US$0.137/hour, ≈US$100/month, for a 7-day recovery window, on top of at
   least a Small compute add-on) that restores to any second within the
-  window rather than only to the last nightly snapshot.
+  window rather than only to the last nightly snapshot — **not enabled for
+  this project**.
 - A restore of either kind is dashboard-driven (**Database → Backups**),
   takes the project offline for its duration (Supabase downloads the latest
   physical backup, then replays the write-ahead log up to the chosen
   point), and downtime scales with database size.
 
-**Whether the PITR add-on is actually enabled for this specific project is
-not confirmed by this document** — that requires **Project Settings →
-Database → Backups** in the Supabase dashboard, which this runbook's author
-did not have access to when writing it. Until someone with dashboard access
-confirms otherwise, assume only the Pro-plan default: **daily backups, up
-to ~24 hours of data loss on restore, no finer recovery point.** Whoever
-next has dashboard access should check this and update this section with
-the confirmed status (and remove this caveat once it's settled) — tracked as
-`tech-debt/TD-PPpfid-26080303.md`.
+**PITR is not enabled for this project.** The project runs on Supabase's
+Pro-plan default: daily backups taken at approximately **23:44 UTC** with
+**7 days' retention**, giving a worst case of up to ~24 hours of data loss
+on restore (confirmed from the Supabase dashboard on 2026-08-03; see
+[issue #199](https://github.com/Poetic-Poems/poetic-fiddle/issues/199#issuecomment-5165206422)
+for the confirmation details). The add-on status can change, so refer to
+the issue for when this was last checked.
 
 ## Security
 
