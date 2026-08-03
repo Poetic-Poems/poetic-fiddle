@@ -310,6 +310,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   confirmation's "Cancel" button, Escape cancels it, and focus returns to a
   sensible target (the row's own "Delete" button on cancel; the next row's,
   else the previous row's, else the page heading, after a successful delete).
+- Two dark-mode contrast bugs in the editor, caught by wiring axe-core into a
+  real browser rather than Vitest's `jsdom` (which can't run its
+  `color-contrast` rule at all; TD-PPpfid-26080109). `theme="dark"` was
+  pulling in `@codemirror/theme-one-dark`'s own syntax-highlight rules
+  alongside the app's own, and for tags both style — like a `{...}` section
+  label — its coral (4.38:1 on the editor's dark background) could outrank
+  the app's AA-checked colour; the editor now uses only the theme's chrome
+  colours. Its line-number gutter was also 3.86:1, short of the 4.5:1
+  threshold; it's now the same muted grey the editor already uses for
+  comments.
 
 ### Security
 
