@@ -1,0 +1,64 @@
+name: Dependency audit
+
+# Catches a high-severity advisory published while no pull request happens to
+# be open to run ci.yml's `audit` job. Runs the same `npm run audit` gate
+# weekly, on a schedule, and files a deduplicated issue on failure, mirroring
+# td-tooling-drift.yml's pattern.
+
+on:
+  schedule:
+    - cron: "34 5 * * 1" # weekly, Monday 05:34 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Update npm
+        run: npm install -g npm@11.17.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm run audit
+
+      - name: File an issue if the audit failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Weekly dependency audit found a high-severity advisory"
+
+          # Dedup on open issues only, like td-tooling-drift.yml: once an open
+          # report is resolved and closed, a fresh occurrence is news again
+          # and should file a new issue.
+          already_filed=$(gh issue list --state open --limit 200 --json title \
+            | jq --arg title "$title" 'any(.[]; .title == $title)')
+          if [ "$already_filed" = "true" ]; then
+            echo "Advisory already reported; skipping."
+            exit 0
+          fi
+
+          body_file=$(mktemp)
+          {
+            printf 'The weekly dependency audit (`npm run audit`) failed on '
+            printf '`main`. Run the audit locally to see the advisory, and '
+            printf 'the run that detected it has the log:\n%s\n' "$RUN_URL"
+          } > "$body_file"
+          gh issue create --title "$title" --body-file "$body_file"
