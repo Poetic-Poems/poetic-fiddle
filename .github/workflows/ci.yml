@@ -172,11 +172,15 @@ jobs:
     name: Check CHANGELOG.md rename
     runs-on: ubuntu-latest
 
-    # Unconditional, like `workflow-wiring`: a release-bump PR most often
-    # touches only package.json and CHANGELOG.md, neither of which the
-    # `changes` classifier treats as app-relevant (CHANGELOG.md is *.md,
+    # Not gated on `changes`, unlike `build` and `database`: a release-bump PR
+    # most often touches only package.json and CHANGELOG.md, neither of which
+    # the `changes` classifier treats as app-relevant (CHANGELOG.md is *.md),
     # and this guard must never be skipped on exactly the PR it exists to
-    # check), and the script itself is cheap enough to need no npm install.
+    # check. The script is cheap enough to need no npm install.
+    #
+    # The one condition is the event: `push` and `workflow_dispatch` have no
+    # base branch to read the previous version from, and a skipped dependency
+    # is a pass to the `ci` job below.
     if: github.event_name == 'pull_request'
 
     steps:
