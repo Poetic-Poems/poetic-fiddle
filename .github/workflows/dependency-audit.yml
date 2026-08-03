@@ -33,11 +33,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # continue-on-error records the verdict in `outcome` without ending the
+      # job, so the two steps below key off the audit itself rather than off
+      # `failure()` — which would also fire when the checkout, the toolchain
+      # setup or `npm ci` broke, filing an advisory report for what was really
+      # an infrastructure flake. Same capture-then-report-then-fail shape as
+      # td-tooling-drift.yml.
       - name: Audit dependencies
+        id: audit
+        continue-on-error: true
         run: npm run audit
 
       - name: File an issue if the audit failed
-        if: failure()
+        if: steps.audit.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -62,3 +70,7 @@ jobs:
             printf 'the run that detected it has the log:\n%s\n' "$RUN_URL"
           } > "$body_file"
           gh issue create --title "$title" --body-file "$body_file"
+
+      - name: Fail if the audit failed
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
