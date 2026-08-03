@@ -14,7 +14,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? "github" : "list",
+  // "github" annotates the Actions log but writes nothing to disk, so it
+  // leaves ci.yml's "Upload Playwright report" step nothing to archive.
+  // "html" writes the self-contained playwright-report/ that step uploads on
+  // every run — per-attempt error context and the retry's trace included, so
+  // a flaky-then-green run keeps its evidence (TD-PPpfid-26080304).
+  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
