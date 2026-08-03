@@ -377,3 +377,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sign-up form's `minLength={10}` asks for. The live project's minimum is an
   Auth dashboard setting that neither this file nor `supabase db push`
   applies (TD-PPpfid-26080301).
+- CI's `npm audit` gate now covers the whole dependency tree, including
+  devDependencies, and runs on every pull request (even a prose-only one)
+  rather than only when the diff touches the app. The gate had carried a
+  blanket `--omit=dev` since #176, meant to tolerate one tracked advisory
+  chain (`eslint` → `minimatch` → `brace-expansion`,
+  [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg),
+  TD-PPpfid-26072429) but exempting the entire dev toolchain from the gate
+  in the process. `brace-expansion` under `minimatch@3.1.5` moves to
+  `1.1.18`, the patched 1.x release, clearing that advisory without an
+  `eslint` major bump, so `npm run audit` (the gate's new single definition,
+  used by both `ci.yml` and the new weekly `dependency-audit.yml`) now runs
+  with no exemption and passes clean (TD-PPpfid-26080110).
