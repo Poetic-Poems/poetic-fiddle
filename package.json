@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "audit": "npm audit --audit-level=high",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
