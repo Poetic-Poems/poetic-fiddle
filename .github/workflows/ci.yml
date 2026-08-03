@@ -181,6 +181,49 @@ jobs:
       - name: Build
         run: npm run build
 
+  a11y-contrast:
+    name: Real-browser a11y contrast check
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+
+    # jest-axe's smoke tests (src/components/*.a11y.test.tsx) run under
+    # Vitest's jsdom environment, which has no real layout/paint — axe-core's
+    # color-contrast rule silently doesn't execute there at all
+    # (TD-PPpfid-26080109). This job runs the same default axe-core rule set
+    # against a production build in real Chromium (e2e/a11y.spec.ts), so
+    # contrast regressions actually get caught, alongside — not instead of —
+    # the jsdom suites the `build` job already runs.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Update npm
+        run: npm install -g npm@11.17.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run real-browser a11y checks
+        run: npm run test:a11y
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   database:
     name: Test the data layer
     needs: changes
@@ -242,7 +285,7 @@ jobs:
     # without it, a skipped dependency would skip this job too, and a required
     # check that never reports blocks the merge instead of passing it.
     if: always()
-    needs: [changes, workflow-wiring, build, database, deploy]
+    needs: [changes, workflow-wiring, build, a11y-contrast, database, deploy]
     runs-on: ubuntu-latest
 
     steps:

@@ -101,7 +101,7 @@ export const poemLanguage = StreamLanguage.define(poemStreamParser);
  * Two colour sets, not one: the editor's "light" preset renders on a white
  * (`#fff`) background and "dark" on one-dark's `#282c34`
  * (`@codemirror/theme-one-dark`) — see Editor.tsx's `theme={prefersDark ?
- * "dark" : "light"}`. No single hex clears WCAG AA 4.5:1 against both a
+ * oneDarkTheme : "light"}`. No single hex clears WCAG AA 4.5:1 against both a
  * near-white and a near-black background at once, so each tag needs a light
  * value and a dark value (verified in contrast.test.ts).
  */

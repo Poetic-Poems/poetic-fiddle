@@ -63,6 +63,7 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | `npm test` | Vitest |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run coverage` | Vitest with coverage reporting |
+| `npm run test:a11y` | Real-browser axe-core accessibility checks against a production build, via Playwright (`npx playwright install chromium` first) |
 | `npm run test:db` | pgTAP data-layer tests, via the Supabase CLI (`supabase start` first) |
 
 On WSL, npm/node commands can pick up the Windows binaries ahead of the
