@@ -82,6 +82,19 @@ export default function Editor({
         "aria-label": "Your poem",
         tabindex: "0",
       }),
+      // oneDarkTheme's own line-number colour (#7d8799 on #282c34) is
+      // 3.86:1, short of WCAG AA's 4.5:1 — an upstream contrast gap, not
+      // something poemSyntaxHighlighting governs (TD-PPpfid-26080109).
+      // `!important` guarantees this wins over oneDarkTheme's rule
+      // regardless of the two theme() calls' relative stylesheet order.
+      ...(prefersDark
+        ? [
+            EditorView.theme(
+              { ".cm-gutters": { color: "#929cad !important" } },
+              { dark: true },
+            ),
+          ]
+        : []),
     ],
     [nonce, prefersDark],
   );
