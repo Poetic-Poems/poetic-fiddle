@@ -135,6 +135,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   live Save/Share feature (Supabase storage, row-level security, share-link
   revocation, and deletion by request) instead of saying storage "isn't
   available yet".
+- The Privacy Policy's "Saving and sharing poems" section now describes
+  self-service account deletion from the My poems dashboard's Danger zone,
+  keeping the mailto address as a fallback for poets who can't sign in,
+  instead of saying account deletion requires emailing the maintainer.
 - The Acceptable Use Policy and Privacy Policy publish a designated takedown
   address (`takedown@poeticfiddle.com`) and describe the removal process:
   valid requests result in content being removed from every surface — the
