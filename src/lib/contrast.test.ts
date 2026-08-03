@@ -157,9 +157,9 @@ describe("status-text colour pairings meet WCAG AA (>= 4.5:1)", () => {
 
 /**
  * The backgrounds the CodeMirror editor actually renders, per Editor.tsx's
- * `theme={prefersDark ? "dark" : "light"}`: `@uiw/react-codemirror`'s
- * built-in light preset paints `#fff`, and its dark preset is
- * `@codemirror/theme-one-dark`, whose background is `#282c34`. Neither is a
+ * `theme={prefersDark ? oneDarkTheme : "light"}`: `@uiw/react-codemirror`'s
+ * built-in light preset paints `#fff`, and `oneDarkTheme`
+ * (`@codemirror/theme-one-dark`) paints `#282c34`. Neither is a
  * `globals.css` token, so these are literal, not extracted.
  */
 const CODEMIRROR_LIGHT_BG = "#ffffff";

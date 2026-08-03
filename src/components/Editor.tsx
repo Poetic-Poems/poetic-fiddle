@@ -343,11 +343,12 @@ export default function Editor({
               // tags like `heading` can outrank, poemHighlightStyleDark's
               // colours — e.g. its `heading` (coral, #e06c75) fails AA on
               // this background against a `{...}` label styled by our own
-              // `heading2` rule (TD-PPpfid-26080109, caught by the
-              // real-browser a11y suite contrast.test.ts's static check
-              // can't see). `oneDarkTheme` is one-dark's chrome/UI colours
-              // only, leaving poemSyntaxHighlighting as the sole source of
-              // syntax colour.
+              // `heading2` rule. Only the real-browser suite
+              // (e2e/a11y.spec.ts) can see that: contrast.test.ts measures
+              // the colours poemHighlightStyleDark declares, not the ones two
+              // stacked highlight styles end up painting (TD-PPpfid-26080109).
+              // `oneDarkTheme` is one-dark's chrome/UI colours only, leaving
+              // poemSyntaxHighlighting as the sole source of syntax colour.
               theme={prefersDark ? oneDarkTheme : "light"}
               extensions={extensions}
               onChange={handleChange}

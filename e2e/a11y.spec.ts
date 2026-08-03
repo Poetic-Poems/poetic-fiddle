@@ -53,6 +53,23 @@ for (const { name, path, waitForReady, axeOptions, legacyMode } of PAGES) {
     if (legacyMode) builder.setLegacyMode();
 
     const results = await builder.analyze();
+
+    // The whole point of this suite: under jsdom, `color-contrast` doesn't
+    // report at all — not as a pass, a violation or an incomplete — so a
+    // green run there says nothing about contrast (TD-PPpfid-26080109).
+    // Assert the rule actually reported something here, so this suite can't
+    // regress into the same silent no-op if a future option (an `exclude`, a
+    // `disableRules`, a page that renders no text) stops it running.
+    const contrastResults = [
+      ...results.passes,
+      ...results.violations,
+      ...results.incomplete,
+    ].filter((result) => result.id === "color-contrast");
+    expect(
+      contrastResults,
+      "axe-core's color-contrast rule reported no results — it did not run",
+    ).not.toEqual([]);
+
     expect(results.violations).toEqual([]);
   });
 }
