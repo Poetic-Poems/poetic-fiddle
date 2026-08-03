@@ -213,6 +213,7 @@ subagent.
 | `docs/IMPLEMENTATION-PLAN.md` | Milestone sequencing / build plan (living) |
 | `docs/OBSERVABILITY-PLAN.md` | Error-reporting / logging / agent-triage plan (living) |
 | `docs/TRIAGE.md` | How to read production errors/logs; agent read-access runbook |
+| `docs/RELEASE-RUNBOOK.md` | How to publish a release (version bump, CHANGELOG rename) |
 | `docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md` | How to fulfil a poet's data export/delete request |
 | `docs/CSP-REVIEW-CHECKLIST.md` | Manual browser checks for PRs touching CSP/srcDoc rendering |
 | `SECURITY.md` | Vulnerability reporting, CodeQL scanning |
