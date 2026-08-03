@@ -290,6 +290,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
@@ -297,6 +302,17 @@ jobs:
 
       - name: Link live project
         run: supabase link --project-ref ixerygypaevxzmiknokg
+
+      # TD-PPpfid-26080301: the same check
+      # .github/workflows/supabase-auth-drift.yml runs daily, asserted here at
+      # the moment it matters most — immediately before this job is about to
+      # change the live project. Failing ahead of the push means a live auth
+      # config that disagrees with the committed one is dealt with before more
+      # changes land on top of it. The script imports only `node:` builtins, so
+      # this needs no `npm ci`; see its header comment for why it asserts
+      # config.toml's [auth] block rather than pushing it.
+      - name: Check Supabase auth-config drift
+        run: node scripts/check-supabase-auth-drift.mjs
 
       # --yes skips the interactive "push these migrations?" confirmation,
       # which otherwise stalls a non-interactive CI shell.

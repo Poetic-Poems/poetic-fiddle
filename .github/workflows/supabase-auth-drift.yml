@@ -1,0 +1,57 @@
+name: Supabase auth-config drift check
+
+# TD-PPpfid-26080301: supabase/config.toml's [auth] block only ever reaches
+# the local Supabase stack `supabase start` brings up for `npm run test:db`
+# — the live project's equivalents are dashboard settings that no commit
+# here can change, and nothing used to notice when the two disagreed. This
+# runs scripts/check-supabase-auth-drift.mjs, which reads the live project's
+# auth settings through the Management API and fails when they disagree
+# with the committed file.
+#
+# Assert, not push: the maintainer settled this in
+# https://github.com/Poetic-Poems/poetic-fiddle/issues/198#issuecomment-5164921286.
+# The dashboard stays authoritative — a red run means a human decides which
+# side is right, not that CI overwrites either one. Pushing config.toml as a
+# whole was rejected there too: it carries local-stack-only values
+# (site_url, redirect URLs, SMTP, OAuth secrets) that must never land on the
+# live project, so the script reads and compares only the individually
+# reviewed keys in its ALLOWLIST — everything else in config.toml's [auth]
+# tree is silently ignored, not merely unreported.
+#
+# Reuses the existing SUPABASE_ACCESS_TOKEN repository secret rather than
+# adding a new one: Supabase personal access tokens cannot be scoped to a
+# single project or to read-only, so a second token would only widen the
+# credential surface for no gain. That is also why this workflow is
+# scheduled/dispatch-only and never `pull_request`-triggered — the same
+# discipline ci.yml's `deploy` job (which holds the same token, to push
+# migrations) already follows.
+#
+# Scheduled rather than pull_request-triggered, in the same spirit as
+# required-checks-drift.yml: the live project's dashboard settings only
+# change when a human deliberately edits them there, so there's nothing for
+# a per-PR run to catch that a daily one wouldn't.
+
+on:
+  schedule:
+    - cron: "27 6 * * *" # daily, 06:27 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check Supabase auth-config drift
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/check-supabase-auth-drift.mjs
