@@ -310,7 +310,13 @@ jobs:
     # check that never reports blocks the merge instead of passing it.
     if: always()
     needs:
-      [changes, workflow-wiring, audit, build, a11y-contrast, database, deploy]
+      - changes
+      - workflow-wiring
+      - audit
+      - build
+      - a11y-contrast
+      - database
+      - deploy
     runs-on: ubuntu-latest
 
     steps:
