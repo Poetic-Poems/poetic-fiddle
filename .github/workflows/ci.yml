@@ -138,6 +138,36 @@ jobs:
       - name: Check workflow wiring
         run: node scripts/check-workflow-wiring.mjs
 
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+
+    # Unconditional, like `changes` and `workflow-wiring`: a prose-only pull
+    # request must still audit the full dependency tree (including
+    # devDependencies — the code that runs in CI and on maintainer machines)
+    # rather than skip it because the diff classifier found nothing
+    # app-relevant to build. .github/workflows/dependency-audit.yml runs the
+    # same `npm run audit` weekly on a schedule, to catch advisories
+    # published while no pull request is open to run this job at all.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Update npm
+        run: npm install -g npm@11.17.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm run audit
+
   build:
     name: Build the app
     needs: changes
@@ -159,12 +189,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      # --omit=dev excludes the tracked eslint/minimatch/brace-expansion
-      # advisory chain (TD-PPpfid-26072429, dev-only, fix pending upstream)
-      # so this gate doesn't fail CI on already-known debt.
-      - name: Audit dependencies
-        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -301,7 +325,14 @@ jobs:
     # without it, a skipped dependency would skip this job too, and a required
     # check that never reports blocks the merge instead of passing it.
     if: always()
-    needs: [changes, workflow-wiring, build, a11y-contrast, database, deploy]
+    needs:
+      - changes
+      - workflow-wiring
+      - audit
+      - build
+      - a11y-contrast
+      - database
+      - deploy
     runs-on: ubuntu-latest
 
     steps:
