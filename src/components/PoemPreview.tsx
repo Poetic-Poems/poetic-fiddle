@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import DOMPurify from "dompurify";
 import { useNonce } from "@/lib/nonce-context";
+import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
 interface PoemPreviewProps {
   html: string;
@@ -94,7 +95,7 @@ export function PoemPreview({ html, css }: PoemPreviewProps) {
   const nonce = useNonce();
 
   const srcDoc = useMemo(() => {
-    const sanitised = DOMPurify.sanitize(html);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
     const styleTag = nonce
       ? `<style nonce="${nonce}">${css}</style>`
       : `<style>${css}</style>`;
