@@ -279,11 +279,14 @@ jobs:
       - name: Link live project
         run: supabase link --project-ref ixerygypaevxzmiknokg
 
-      # TD-PPpfid-26080301: catches the same drift
-      # .github/workflows/supabase-auth-drift.yml checks on a schedule, but
-      # before a migration push rather than after — no node_modules needed,
-      # see the script's own header comment for why this asserts rather than
-      # pushes config.toml's [auth] block.
+      # TD-PPpfid-26080301: the same check
+      # .github/workflows/supabase-auth-drift.yml runs daily, asserted here at
+      # the moment it matters most — immediately before this job is about to
+      # change the live project. Failing ahead of the push means a live auth
+      # config that disagrees with the committed one is dealt with before more
+      # changes land on top of it. The script imports only `node:` builtins, so
+      # this needs no `npm ci`; see its header comment for why it asserts
+      # config.toml's [auth] block rather than pushing it.
       - name: Check Supabase auth-config drift
         run: node scripts/check-supabase-auth-drift.mjs
 
