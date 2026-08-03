@@ -54,7 +54,11 @@ verify_enabled = false
 // is applied.
 const MATCHING_LIVE_CONFIG = {
   password_min_length: 10,
-  password_required_characters: "",
+  // The live Management API reads back `null` here rather than `""` for a
+  // project whose dashboard field was never explicitly saved, even though it
+  // enforces the same "no required character classes" as config.toml's `""`
+  // — see ALLOWLIST's `liveNullEquals` comment.
+  password_required_characters: null,
   disable_signup: false, // inverted: config's enable_signup = true
   external_anonymous_users_enabled: false,
   jwt_exp: 3600,
@@ -136,6 +140,25 @@ describe("buildAuthDriftReport", () => {
     const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, drifted);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatch(/auth\.enable_signup/);
+  });
+
+  it('treats a null live password_required_characters as matching config.toml\'s ""', () => {
+    const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, {
+      ...MATCHING_LIVE_CONFIG,
+      password_required_characters: null,
+    });
+    expect(problems).toEqual([]);
+  });
+
+  it("still flags a genuine password_requirements mismatch", () => {
+    const drifted = {
+      ...MATCHING_LIVE_CONFIG,
+      password_required_characters:
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789",
+    };
+    const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, drifted);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/auth\.password_requirements/);
   });
 
   it("compares a duration-string key against the live integer-seconds field", () => {
