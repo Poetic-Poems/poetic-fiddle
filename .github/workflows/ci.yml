@@ -168,6 +168,44 @@ jobs:
       - name: Audit dependencies
         run: npm run audit
 
+  changelog-rename:
+    name: Check CHANGELOG.md rename
+    runs-on: ubuntu-latest
+
+    # Not gated on `changes`, unlike `build` and `database`: this guard must
+    # never be skipped on exactly the pull request it exists to check. A
+    # release-bump PR does reach the app-relevant classification anyway —
+    # `changes` is a deny-list and package.json is not on it (CHANGELOG.md
+    # is, being *.md) — but that is incidental, and tying this guard to a
+    # classifier tuned for "does the app need rebuilding" would let one edit
+    # to that deny-list switch the release gate off silently. The script is
+    # cheap enough to need no npm install.
+    #
+    # The one condition is the event: `push` and `workflow_dispatch` have no
+    # base branch to read the previous version from, and a skipped dependency
+    # is a pass to the `ci` job below.
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # Reads the base branch's package.json below.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check CHANGELOG.md was renamed if the version bumped
+        run: |
+          set -euo pipefail
+          git show "origin/${GITHUB_BASE_REF}:package.json" > /tmp/base-package.json
+          base_version=$(node -p "require('/tmp/base-package.json').version")
+          head_version=$(node -p "require('./package.json').version")
+          node scripts/check-changelog-rename.mjs "$base_version" "$head_version" CHANGELOG.md
+
   build:
     name: Build the app
     needs: changes
@@ -329,6 +367,7 @@ jobs:
       - changes
       - workflow-wiring
       - audit
+      - changelog-rename
       - build
       - a11y-contrast
       - database
