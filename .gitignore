@@ -88,6 +88,12 @@ poet-export-*
 out
 next-env.d.ts
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Vercel
 .vercel
 

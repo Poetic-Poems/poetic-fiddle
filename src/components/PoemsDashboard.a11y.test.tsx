@@ -26,9 +26,6 @@ beforeEach(() => {
   vi.mocked(getRemixDefault).mockResolvedValue(false);
 });
 
-// jsdom has no real layout/rendering engine, so axe-core's color-contrast
-// rule silently doesn't run under it at all (TD-PPpfid-26080109) — this
-// suite catches labelling/structure defects, not contrast regressions.
 describe("PoemsDashboard accessibility (TD-PPpfid-26072435)", () => {
   it("has no axe violations when signed out", async () => {
     vi.mocked(useSession).mockReturnValue({ session: null, loading: false });

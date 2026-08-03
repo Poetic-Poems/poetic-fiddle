@@ -21,10 +21,6 @@ vi.mock("@/lib/supabase-client", () => ({
 // into frames rather than into the iframe element itself.
 const AXE_OPTIONS = { iframes: false };
 
-// jsdom has no real layout/rendering engine, so axe-core's color-contrast
-// rule silently doesn't run under it at all (TD-PPpfid-26080109) — this
-// suite catches labelling/structure defects, not contrast regressions.
-
 describe("Editor accessibility (TD-PPpfid-26072435)", () => {
   it("has no axe violations when signed out", async () => {
     resetEditorTestState();
