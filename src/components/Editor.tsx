@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
+import { oneDarkTheme } from "@codemirror/theme-one-dark";
 import { poemLanguage, poemSyntaxHighlighting } from "@/lib/poem-syntax";
 import { PoemPreview } from "@/components/PoemPreview";
 import { SignInPrompt } from "@/components/SignInPrompt";
@@ -69,7 +70,18 @@ export default function Editor({
       // outer wrapper div, not on this content-editable element (role="textbox"),
       // so the visible <label>'s htmlFor never reaches it — an aria-label here
       // is what actually gives screen readers an accessible name (AC79).
-      EditorView.contentAttributes.of({ "aria-label": "Your poem" }),
+      //
+      // `tabindex="0"` is a no-op for real browsers — a contenteditable
+      // element is natively part of the tab order — but axe-core's
+      // scrollable-region-focusable check only recognises a handful of
+      // hardcoded tags as natively focusable and doesn't special-case
+      // `contenteditable`, so without it the check can't see past
+      // `.cm-scroller` (CodeMirror sets that to `tabIndex = -1` deliberately,
+      // to avoid a second tab stop) to this element (TD-PPpfid-26080109).
+      EditorView.contentAttributes.of({
+        "aria-label": "Your poem",
+        tabindex: "0",
+      }),
     ],
     [nonce, prefersDark],
   );
@@ -312,7 +324,18 @@ export default function Editor({
               id="poem-source"
               value={source}
               height="100%"
-              theme={prefersDark ? "dark" : "light"}
+              // `theme="dark"` would also pull in oneDark's own
+              // syntax-highlight rules (@codemirror/theme-one-dark's
+              // `oneDark` bundles both); those combine with, and for shared
+              // tags like `heading` can outrank, poemHighlightStyleDark's
+              // colours — e.g. its `heading` (coral, #e06c75) fails AA on
+              // this background against a `{...}` label styled by our own
+              // `heading2` rule (TD-PPpfid-26080109, caught by the
+              // real-browser a11y suite contrast.test.ts's static check
+              // can't see). `oneDarkTheme` is one-dark's chrome/UI colours
+              // only, leaving poemSyntaxHighlighting as the sole source of
+              // syntax colour.
+              theme={prefersDark ? oneDarkTheme : "light"}
               extensions={extensions}
               onChange={handleChange}
             />
