@@ -31,16 +31,16 @@ name: Supabase auth-config drift check
 # change when a human deliberately edits them there, so there's nothing for
 # a per-PR run to catch that a daily one wouldn't.
 #
-# TD-PPpfid-26080402: a detected drift used to be only a red run in the
-# Actions tab plus GitHub's default scheduled-failure email, and this
-# repository's work is largely dispatched from open issues — so it files a
-# deduplicated issue on failure, mirroring td-tooling-drift.yml's pattern.
-# That step needs `issues: write`, a deliberate widening of this workflow's
-# token permissions beyond `contents: read` alone, accepted as the cost of
-# a scheduled guard nobody would otherwise see. Dedup is against open
-# issues only, unlike a one-off event: drift is a recurring condition, so
-# once an open report is resolved and closed, a fresh occurrence is news
-# again and should file a new issue.
+# TD-PPpfid-26080402: a failing run files a deduplicated issue, mirroring
+# td-tooling-drift.yml's pattern. On its own a detected drift would be only
+# a red run in the Actions tab plus GitHub's default scheduled-failure
+# email, and this repository's work is largely dispatched from open issues,
+# so a scheduled guard that files nothing is one nobody acts on. That step
+# needs `issues: write`, a deliberate widening of this workflow's token
+# permissions beyond `contents: read` alone, accepted as the cost of the
+# notification. Dedup is against open issues only, unlike a one-off event:
+# drift is a recurring condition, so once an open report is resolved and
+# closed, a fresh occurrence is news again and should file a new issue.
 #
 # Unlike td-tooling-drift.yml, scripts/check-supabase-auth-drift.mjs exits
 # non-zero for both a genuine config disagreement and an operational
