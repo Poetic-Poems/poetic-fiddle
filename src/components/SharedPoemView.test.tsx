@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
-import { evaluatePostscriptPreviews } from "./PoemPreview";
+import { fireEvent, render } from "@testing-library/react";
+import { POSTSCRIPT_RESIZE_DEBOUNCE_MS } from "./PoemPreview";
 import { SharedPoemView } from "./SharedPoemView";
 import { NonceProvider } from "@/lib/nonce-context";
 
@@ -121,45 +121,127 @@ describe("SharedPoemView srcDoc frame-src", () => {
   });
 });
 
-// SharedPoemView's handleLoad calls the same evaluatePostscriptPreviews
-// PoemPreview.test.tsx exercises in full (short/long/fallback/data-preview-
-// lines cases) — this confirms the share view is wired to it too, against
-// markup shaped like what sanitizeSharedPoemHtml (render-share.ts) actually
-// emits into `html`, so the share page and the editor preview agree on a
-// short postscript exactly as AC2/AC3 require.
-describe("evaluatePostscriptPreviews against SharedPoemView's markup", () => {
+// The share page owes the same clamp the editor preview does, so it has to
+// reach for its iframe's document on load and again on resize — the wiring,
+// not evaluatePostscriptPreviews itself, which PoemPreview.test.tsx exercises
+// in full (short/long/fallback/data-preview-lines cases). jsdom never loads a
+// srcdoc iframe's content, so the document a real browser would build is
+// stubbed onto the iframe, shaped like what sanitizeSharedPoemHtml
+// (render-share.ts) emits into `html`, and the `load` event fired by hand.
+describe("SharedPoemView postscript wiring", () => {
   afterEach(() => {
-    document.body.innerHTML = "";
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
-  it("does not clamp a postscript short enough that hiding it would show one line or less", () => {
-    const container = document.createElement("div");
-    container.innerHTML = `
+  // A 5-line budget at 20px per line is 100px, so a `contentBottom` above
+  // 120px is more than a line hidden and clamps; jsdom computes no layout, so
+  // both rects the measurement reads are stubbed.
+  function stubShareDocument(
+    iframe: HTMLIFrameElement,
+    contentBottom: number,
+  ): HTMLElement {
+    const doc = document.implementation.createHTMLDocument("share");
+    doc.body.innerHTML = `
       <div class="postscript-content" style="--preview-lines: 5" data-preview-lines="5">
-        <p>A short postscript.</p>
+        <p>A postscript.</p>
       </div>
     `;
-    document.body.appendChild(container);
-    const content = container.querySelector<HTMLElement>(
-      ".postscript-content",
-    )!;
+    // createHTMLDocument() has no browsing context, so no defaultView — the
+    // one thing a live iframe's contentDocument has that this fixture lacks.
+    Object.defineProperty(doc, "defaultView", {
+      value: window,
+      configurable: true,
+    });
+    Object.defineProperty(iframe, "contentDocument", {
+      value: doc,
+      configurable: true,
+    });
 
     vi.spyOn(window, "getComputedStyle").mockReturnValue({
       lineHeight: "20px",
       fontSize: "16px",
     } as CSSStyleDeclaration);
+
+    const content = doc.querySelector<HTMLElement>(".postscript-content")!;
     vi.spyOn(content, "getBoundingClientRect").mockReturnValue({
       top: 0,
     } as DOMRect);
-    // 100px budget (5 * 20px); 105px of content leaves only 5px hidden.
     vi.spyOn(
       content.lastElementChild!,
       "getBoundingClientRect",
-    ).mockReturnValue({ bottom: 105 } as DOMRect);
+    ).mockReturnValue({ bottom: contentBottom } as DOMRect);
+    return content;
+  }
 
-    evaluatePostscriptPreviews(document);
+  function renderShare(): HTMLIFrameElement {
+    const { container } = render(
+      <NonceProvider nonce="test-nonce-456">
+        <SharedPoemView html="<p>A poem.</p>" css="" title="A shared poem" />
+      </NonceProvider>,
+    );
+    return container.querySelector("iframe")!;
+  }
+
+  it("clamps a long postscript when the share iframe loads", () => {
+    const iframe = renderShare();
+    const content = stubShareDocument(iframe, 130);
+
+    fireEvent.load(iframe);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("does not clamp a postscript short enough that hiding it would show one line or less", () => {
+    const iframe = renderShare();
+    // 100px budget (5 * 20px); 110px of content leaves only 10px hidden.
+    const content = stubShareDocument(iframe, 110);
+
+    fireEvent.load(iframe);
 
     expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("re-evaluates on a window resize, debounced", () => {
+    vi.useFakeTimers();
+    const iframe = renderShare();
+    const content = stubShareDocument(iframe, 110);
+    fireEvent.load(iframe);
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: 130 } as DOMRect);
+    fireEvent(window, new Event("resize"));
+
+    vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS - 1);
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  // Asserted against the listener identity rather than "nothing happens after
+  // unmount": the ref is null by then, so a leaked listener would find no
+  // document and look identical — while still accumulating one listener per
+  // mount for the life of the page.
+  it("removes its resize listener on unmount", () => {
+    const addSpy = vi.spyOn(window, "addEventListener");
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+
+    const { unmount } = render(
+      <NonceProvider nonce="test-nonce-456">
+        <SharedPoemView html="<p>A poem.</p>" css="" title="A shared poem" />
+      </NonceProvider>,
+    );
+    const handler = addSpy.mock.calls.find(
+      ([type]) => type === "resize",
+    )?.[1] as EventListener;
+    expect(handler).toBeDefined();
+
+    unmount();
+
+    expect(removeSpy).toHaveBeenCalledWith("resize", handler);
   });
 });
