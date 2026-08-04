@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
+import { evaluatePostscriptPreviews } from "./PoemPreview";
 import { SharedPoemView } from "./SharedPoemView";
 import { NonceProvider } from "@/lib/nonce-context";
 
@@ -117,5 +118,48 @@ describe("SharedPoemView srcDoc frame-src", () => {
 
     expect(frameSrc).toContain("https://mega.nz");
     expect(frameSrc).toContain("https://audiomack.com");
+  });
+});
+
+// SharedPoemView's handleLoad calls the same evaluatePostscriptPreviews
+// PoemPreview.test.tsx exercises in full (short/long/fallback/data-preview-
+// lines cases) — this confirms the share view is wired to it too, against
+// markup shaped like what sanitizeSharedPoemHtml (render-share.ts) actually
+// emits into `html`, so the share page and the editor preview agree on a
+// short postscript exactly as AC2/AC3 require.
+describe("evaluatePostscriptPreviews against SharedPoemView's markup", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+    vi.restoreAllMocks();
+  });
+
+  it("does not clamp a postscript short enough that hiding it would show one line or less", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <div class="postscript-content" style="--preview-lines: 5" data-preview-lines="5">
+        <p>A short postscript.</p>
+      </div>
+    `;
+    document.body.appendChild(container);
+    const content = container.querySelector<HTMLElement>(
+      ".postscript-content",
+    )!;
+
+    vi.spyOn(window, "getComputedStyle").mockReturnValue({
+      lineHeight: "20px",
+      fontSize: "16px",
+    } as CSSStyleDeclaration);
+    vi.spyOn(content, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+    } as DOMRect);
+    // 100px budget (5 * 20px); 105px of content leaves only 5px hidden.
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: 105 } as DOMRect);
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
   });
 });

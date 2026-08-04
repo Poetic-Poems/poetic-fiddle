@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import DOMPurify from "dompurify";
 import { useNonce } from "@/lib/nonce-context";
 import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
@@ -28,10 +28,11 @@ export function wirePoemToggles(doc: Document) {
     const target = event.target as Element | null;
     if (typeof target?.closest !== "function") return;
 
-    // Without this, a postscript longer than its `--preview-lines` budget stays
-    // clamped by `.postscript-content`'s max-height with no way to read the
-    // rest: poetic's control was a CSS-only checkbox until v6.2.0 made it a
-    // scripted button (TD-PPpfid-26080108 covers what is still missing).
+    // poetic.css leaves `.postscript-content` unclamped by default and only
+    // clamps (and reveals this toggle) once `evaluatePostscriptPreviews`
+    // below has added `.postscript-clamped` — so a postscript short enough to
+    // need no preview never reaches this handler with a visible control at
+    // all.
     const postscriptToggle = target.closest(".postscript-toggle");
     if (postscriptToggle) {
       const contentId = postscriptToggle.getAttribute("aria-controls");
@@ -113,6 +114,50 @@ export function wirePoemToggles(doc: Document) {
   });
 }
 
+// The debounce interval poetic.js itself uses for its resize listener —
+// kept in step with published pages rather than chosen independently.
+export const POSTSCRIPT_RESIZE_DEBOUNCE_MS = 150;
+
+// Mirrors poetic.js's evaluatePostscriptPreview()/evaluateAllPostscriptPreviews():
+// poetic.css leaves `.postscript-content` unclamped by default so a
+// postscript degrades to fully expanded with no script, and this adds
+// `.postscript-clamped` (which both applies the clamp and, via poetic.css's
+// adjacent-sibling selector, reveals the toggle) once rendered layout is
+// known. Fiddle never loads poetic.js (see wirePoemToggles above), so this
+// has to run here instead, driven by the same iframe `load` and `resize`
+// events poetic.js itself listens for. Reaches computed style and layout
+// through `doc.defaultView`, not the parent window's globals: these nodes
+// come from another realm, the same reason wirePoemToggles avoids
+// `instanceof Element`.
+export function evaluatePostscriptPreviews(doc: Document) {
+  const view = doc.defaultView;
+  if (!view) return;
+
+  doc.querySelectorAll(".postscript-content").forEach((el) => {
+    const previewLines =
+      parseFloat(el.getAttribute("data-preview-lines") ?? "") || 5;
+    const style = view.getComputedStyle(el);
+    let lineHeightPx = parseFloat(style.lineHeight);
+    if (Number.isNaN(lineHeightPx)) {
+      lineHeightPx = 1.2 * parseFloat(style.fontSize);
+    }
+    const budgetPx = previewLines * lineHeightPx;
+
+    // Measure the true bottom of rendered content, excluding the trailing
+    // margin of the last child, which scrollHeight would count as hidden
+    // and show a pointless toggle for.
+    const last = el.lastElementChild;
+    const contentPx = last
+      ? last.getBoundingClientRect().bottom - el.getBoundingClientRect().top
+      : el.scrollHeight;
+    const hiddenPx = contentPx - budgetPx;
+
+    // Only clamp — and so offer the toggle — when it would reveal at least a
+    // full line of real text.
+    el.classList.toggle("postscript-clamped", hiddenPx > lineHeightPx);
+  });
+}
+
 /**
  * Renders sanitised poem HTML inside an isolated iframe, bundling poetic's
  * own CSS so page-level selectors (`body`, `h1`, …) style the preview
@@ -140,7 +185,25 @@ export function PoemPreview({ html, css }: PoemPreviewProps) {
 
   const handleLoad = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
-    if (doc) wirePoemToggles(doc);
+    if (!doc) return;
+    wirePoemToggles(doc);
+    evaluatePostscriptPreviews(doc);
+  }, []);
+
+  useEffect(() => {
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const doc = iframeRef.current?.contentDocument;
+        if (doc) evaluatePostscriptPreviews(doc);
+      }, POSTSCRIPT_RESIZE_DEBOUNCE_MS);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   return (

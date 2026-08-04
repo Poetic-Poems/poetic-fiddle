@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
-import { PoemPreview, wirePoemToggles } from "./PoemPreview";
+import {
+  evaluatePostscriptPreviews,
+  PoemPreview,
+  wirePoemToggles,
+} from "./PoemPreview";
 import { NonceProvider } from "@/lib/nonce-context";
 import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
@@ -386,6 +390,151 @@ describe("wirePoemToggles postscript against real poetic output", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(content.classList.contains("postscript-expanded")).toBe(true);
     expect(content.textContent).toContain("Postscript line 12.");
+  });
+});
+
+describe("evaluatePostscriptPreviews", () => {
+  // Not vi.restoreAllMocks() in afterEach: that would also tear down the
+  // module-level window.open spy the song-embed describe block below sets up
+  // once, outside any beforeEach/afterEach of its own.
+  let computedStyleSpy: ReturnType<typeof vi.spyOn> | undefined;
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    computedStyleSpy?.mockRestore();
+    computedStyleSpy = undefined;
+  });
+
+  // Builds a detached `.postscript-content` element attached to the live
+  // `document` (not `document.implementation.createHTMLDocument()`, whose
+  // result has no `defaultView` — see the "does nothing" case below — the
+  // same reason evaluatePostscriptPreviews reaches computed style through
+  // `doc.defaultView` rather than a global). jsdom never lays elements out,
+  // so the two rects that decide clamping are stubbed directly on the nodes
+  // under test, standing in for `getBoundingClientRect()` in a real browser.
+  function postscriptContentElement({
+    previewLines,
+    lineHeight,
+    fontSize = "16px",
+    contentBottom,
+  }: {
+    previewLines?: number;
+    lineHeight: string;
+    fontSize?: string;
+    contentBottom: number;
+  }): HTMLElement {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <div class="postscript-content"${previewLines !== undefined ? ` data-preview-lines="${previewLines}"` : ""}>
+        <p>A postscript.</p>
+      </div>
+    `;
+    document.body.appendChild(container);
+
+    const content = container.querySelector<HTMLElement>(
+      ".postscript-content",
+    )!;
+    computedStyleSpy = vi.spyOn(window, "getComputedStyle").mockReturnValue({
+      lineHeight,
+      fontSize,
+    } as CSSStyleDeclaration);
+    vi.spyOn(content, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+    } as DOMRect);
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: contentBottom } as DOMRect);
+
+    return content;
+  }
+
+  it("adds postscript-clamped when hidden content exceeds a full line", () => {
+    // 5 (default) lines * 20px budget = 100px; 130px of content leaves 30px
+    // hidden, more than one 20px line.
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("does not add postscript-clamped when hidden content is a line or less", () => {
+    // 100px budget; 110px of content leaves only 10px hidden, under one
+    // 20px line — poetic's own preview would offer nothing to reveal.
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 110,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("removes an already-applied clamp once it no longer applies", () => {
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 110,
+    });
+    content.classList.add("postscript-clamped");
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("falls back to 1.2x font-size when line-height isn't a pixel value", () => {
+    // lineHeight "normal" isn't parseable, so lineHeightPx falls back to
+    // 1.2 * 16px = 19.2px; budget = 5 * 19.2 = 96px. 130px of content leaves
+    // 34px hidden, more than one fallback line.
+    const content = postscriptContentElement({
+      lineHeight: "normal",
+      fontSize: "16px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("respects a non-default data-preview-lines budget", () => {
+    // 2 lines * 20px = 40px budget; 130px of content leaves 90px hidden.
+    const content = postscriptContentElement({
+      previewLines: 2,
+      lineHeight: "20px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("does nothing when there is no postscript-content element", () => {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = "<p>No postscript here.</p>";
+
+    expect(() => evaluatePostscriptPreviews(doc)).not.toThrow();
+  });
+
+  it("does nothing when the document has no defaultView", () => {
+    // document.implementation.createHTMLDocument() produces a Document with
+    // no browsing context (defaultView is null) — the shape a detached test
+    // fixture has, distinct from a live iframe's contentDocument.
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = '<div class="postscript-content"><p>Text</p></div>';
+
+    expect(() => evaluatePostscriptPreviews(doc)).not.toThrow();
+    expect(
+      doc
+        .querySelector(".postscript-content")!
+        .classList.contains("postscript-clamped"),
+    ).toBe(false);
   });
 });
 
