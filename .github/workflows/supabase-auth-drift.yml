@@ -30,6 +30,27 @@ name: Supabase auth-config drift check
 # required-checks-drift.yml: the live project's dashboard settings only
 # change when a human deliberately edits them there, so there's nothing for
 # a per-PR run to catch that a daily one wouldn't.
+#
+# TD-PPpfid-26080402: a detected drift used to be only a red run in the
+# Actions tab plus GitHub's default scheduled-failure email, and this
+# repository's work is largely dispatched from open issues — so it files a
+# deduplicated issue on failure, mirroring td-tooling-drift.yml's pattern.
+# That step needs `issues: write`, a deliberate widening of this workflow's
+# token permissions beyond `contents: read` alone, accepted as the cost of
+# a scheduled guard nobody would otherwise see. Dedup is against open
+# issues only, unlike a one-off event: drift is a recurring condition, so
+# once an open report is resolved and closed, a fresh occurrence is news
+# again and should file a new issue.
+#
+# Unlike td-tooling-drift.yml, scripts/check-supabase-auth-drift.mjs exits
+# non-zero for both a genuine config disagreement and an operational
+# failure (SUPABASE_ACCESS_TOKEN unset, a non-ok Management API response,
+# an ALLOWLIST/config.toml mismatch) — it has no separate "drifted" output.
+# The check step below runs with continue-on-error so later steps can gate
+# on its outcome, and the issue uses one neutral title covering both cases:
+# a title asserting "has drifted" would be wrong for a token or API
+# failure, and a title that varies with the cause would break dedup. The
+# captured log in the issue body is what tells a reader which happened.
 
 on:
   schedule:
@@ -38,6 +59,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   drift:
@@ -52,6 +74,48 @@ jobs:
           node-version: "22"
 
       - name: Check Supabase auth-config drift
+        id: drift
+        continue-on-error: true
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: node scripts/check-supabase-auth-drift.mjs
+        run: |
+          set -o pipefail
+          node scripts/check-supabase-auth-drift.mjs 2>&1 | tee /tmp/auth-drift.log
+
+      - name: File an issue if the check failed
+        if: steps.drift.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Supabase auth-config drift check is failing"
+
+          # Dedup on open issues only: drift is a recurring condition, so
+          # once an open report is resolved and closed, a fresh occurrence
+          # is news again and should file a new issue.
+          already_filed=$(gh issue list --state open --limit 200 --json title \
+            | jq --arg title "$title" 'any(.[]; .title == $title)')
+          if [ "$already_filed" = "true" ]; then
+            echo "Already reported; skipping."
+            exit 0
+          fi
+
+          body_file=$(mktemp)
+          {
+            printf '`scripts/check-supabase-auth-drift.mjs` failed. This '
+            printf 'means either a genuine disagreement between '
+            printf '`supabase/config.toml` and the live project'"'"'s '
+            printf 'auth settings, or an operational failure (an unset '
+            printf '`SUPABASE_ACCESS_TOKEN`, a non-ok Management API '
+            printf 'response). The captured output below tells you which:\n\n'
+            printf '```\n'
+            cat /tmp/auth-drift.log
+            printf '\n```\n\n'
+            printf 'Run: %s\n' "$RUN_URL"
+          } > "$body_file"
+          gh issue create --title "$title" --body-file "$body_file"
+
+      - name: Fail if the check failed
+        if: steps.drift.outcome == 'failure'
+        run: exit 1
