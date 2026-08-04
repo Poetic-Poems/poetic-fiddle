@@ -174,6 +174,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   button in the version the pin moved to, which left a long postscript
   truncated with no way to read it. The preview now drives the control itself,
   as it already did for the Analysis section.
+- A share page's postscript is readable with client-side JavaScript disabled
+  (AC84), and the preview and share views no longer clamp a postscript short
+  enough that revealing it would show a line or less. The pinned `poetic`
+  dependency moves to v6.4.0, which leaves a postscript unclamped by default
+  instead of always-clamped-until-lifted; both views now measure rendered
+  postscripts against the preview budget themselves, the same way poetic's
+  own script would, and apply the clamp (and the "See more" control) only
+  when there is a full line or more to reveal.
 - Link text (`text-link`, e.g. the legal-page and editor share links) only
   met AA contrast in light mode — 2.61:1 against the dark background, well
   below the 4.5:1 threshold. Dark mode now uses a lighter tint of the same

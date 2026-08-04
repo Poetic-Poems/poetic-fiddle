@@ -160,6 +160,22 @@ describe("sanitizeSharedPoemHtml", () => {
     expect(clean).toContain('data-preview-lines="3"');
   });
 
+  // poetic.css leaves `.postscript-content` unclamped by default and only
+  // clamps it once script adds `.postscript-clamped`
+  // (PoemPreview.tsx's evaluatePostscriptPreviews mirrors that addition, but
+  // SharedPoemView's srcDoc is fully formed before any script runs). Since
+  // this function never adds that class itself, a share page always renders
+  // its postscript unclamped until script decides otherwise — satisfying
+  // AC84 (viewable with JS off) by construction, with no code here to keep
+  // in sync.
+  it("never adds postscript-clamped — a share page's postscript starts unclamped", () => {
+    const html = renderPoem(POEM_WITH_NON_DEFAULT_PREVIEW_LINES);
+    const clean = sanitizeSharedPoemHtml(html);
+
+    expect(clean).toContain("postscript-content");
+    expect(clean).not.toContain("postscript-clamped");
+  });
+
   it("never turns an arbitrary data-embed-src into an iframe (host allow-list)", () => {
     // A hostile-shaped fragment mimicking the song-embed markup but pointed
     // off the allow-list — the transform must ignore it, not trust the
