@@ -43,6 +43,25 @@ import { fileURLToPath } from "node:url";
 
 export const PROJECT_REF = "ixerygypaevxzmiknokg";
 
+// The Management API expresses `password_requirements` as a literal
+// character-class string rather than config.toml's symbolic name. Sourced
+// from supabase/cli's generated API client
+// (apps/cli-go/pkg/api/types.gen.go's UpdateAuthConfigBodyPasswordRequiredCharacters
+// enum, the same values apps/cli-go/pkg/config/auth.go's
+// PasswordRequirements.ToChar() maps config.toml's symbolic names onto) —
+// not, as TD-PPpfid-26080401 named it, Poetic-Poems/poetic, which has no Go
+// CLI and no such file. A value not in this table has no known-benign
+// translation and must fail loudly rather than silently mismatch or match.
+export const PASSWORD_REQUIREMENTS_CHAR_CLASSES = {
+  "": "",
+  letters_digits:
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789",
+  lower_upper_letters_digits:
+    "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789",
+  lower_upper_letters_digits_symbols:
+    "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789:!@#$%^&*()_+-=[]{};'\\\\:\"|<>?,./`~",
+};
+
 // One entry per row of the table in TD-PPpfid-26080301: `path` locates the
 // value in the parsed config.toml (dotted section + key), `apiField` is the
 // live Management API's name for the same setting. `invert` marks the two
@@ -57,15 +76,23 @@ export const PROJECT_REF = "ixerygypaevxzmiknokg";
 // character sets (auth's internal/conf/configuration.go
 // PasswordRequiredCharacters.Decode, checked in internal/api/password.go),
 // so the two spellings are the same enforced behaviour, not a real drift.
+// `symbolMap` marks the one row (see PASSWORD_REQUIREMENTS_CHAR_CLASSES
+// above) where config.toml's value is a symbolic name that must be
+// translated, not compared directly, against the API's literal
+// character-class string. `numeric` marks rows where the API is known to
+// sometimes return the same integer config.toml holds, but stringified —
+// TD-PPpfid-26080401's concrete case was `jwt_exp: "3600"`.
 export const ALLOWLIST = [
   {
     path: ["auth", "minimum_password_length"],
     apiField: "password_min_length",
+    numeric: true,
   },
   {
     path: ["auth", "password_requirements"],
     apiField: "password_required_characters",
     liveNullEquals: "",
+    symbolMap: PASSWORD_REQUIREMENTS_CHAR_CLASSES,
   },
   {
     path: ["auth", "enable_signup"],
@@ -76,7 +103,7 @@ export const ALLOWLIST = [
     path: ["auth", "enable_anonymous_sign_ins"],
     apiField: "external_anonymous_users_enabled",
   },
-  { path: ["auth", "jwt_expiry"], apiField: "jwt_exp" },
+  { path: ["auth", "jwt_expiry"], apiField: "jwt_exp", numeric: true },
   {
     path: ["auth", "enable_refresh_token_rotation"],
     apiField: "refresh_token_rotation_enabled",
@@ -84,6 +111,7 @@ export const ALLOWLIST = [
   {
     path: ["auth", "refresh_token_reuse_interval"],
     apiField: "security_refresh_token_reuse_interval",
+    numeric: true,
   },
   {
     path: ["auth", "email", "enable_signup"],
@@ -106,12 +134,22 @@ export const ALLOWLIST = [
     path: ["auth", "email", "max_frequency"],
     apiField: "smtp_max_frequency",
     duration: true,
+    numeric: true,
   },
-  { path: ["auth", "email", "otp_length"], apiField: "mailer_otp_length" },
-  { path: ["auth", "email", "otp_expiry"], apiField: "mailer_otp_exp" },
+  {
+    path: ["auth", "email", "otp_length"],
+    apiField: "mailer_otp_length",
+    numeric: true,
+  },
+  {
+    path: ["auth", "email", "otp_expiry"],
+    apiField: "mailer_otp_exp",
+    numeric: true,
+  },
   {
     path: ["auth", "mfa", "max_enrolled_factors"],
     apiField: "mfa_max_enrolled_factors",
+    numeric: true,
   },
   {
     path: ["auth", "mfa", "totp", "enroll_enabled"],
@@ -196,6 +234,19 @@ export function parseDurationSeconds(raw) {
   return parseInt(match[1], 10) * DURATION_UNIT_SECONDS[match[2]];
 }
 
+const INTEGER_STRING = /^-?\d+$/;
+
+// True only when `live` is a string that, read as a strictly-anchored
+// integer literal (no decimals, whitespace, or other Number()/parseInt
+// leniency), names the same value as `expected`.
+function isStringifiedInteger(expected, live) {
+  return (
+    typeof live === "string" &&
+    INTEGER_STRING.test(live) &&
+    Number(live) === expected
+  );
+}
+
 // Pure comparison: given config.toml's text and the live API's parsed JSON
 // body, returns one human-readable line per disagreement among exactly the
 // keys in ALLOWLIST. Never reads or reports on any other field either side
@@ -218,6 +269,15 @@ export function buildAuthDriftReport(configText, liveConfig) {
       ? parseDurationSeconds(rawExpected)
       : rawExpected;
     if (entry.invert) expected = !expected;
+    if (entry.symbolMap) {
+      if (!(rawExpected in entry.symbolMap)) {
+        throw new Error(
+          `supabase/config.toml's ${label} is ${JSON.stringify(rawExpected)}, ` +
+            `which ALLOWLIST's symbolMap does not recognise.`,
+        );
+      }
+      expected = entry.symbolMap[rawExpected];
+    }
 
     if (!(entry.apiField in liveConfig)) {
       problems.push(
@@ -226,8 +286,12 @@ export function buildAuthDriftReport(configText, liveConfig) {
       continue;
     }
     const live = liveConfig[entry.apiField];
-    const normalizedLive =
-      live === null && "liveNullEquals" in entry ? entry.liveNullEquals : live;
+    let normalizedLive = live;
+    if (live === null && "liveNullEquals" in entry) {
+      normalizedLive = entry.liveNullEquals;
+    } else if (entry.numeric && isStringifiedInteger(expected, live)) {
+      normalizedLive = expected;
+    }
 
     if (normalizedLive !== expected) {
       problems.push(
