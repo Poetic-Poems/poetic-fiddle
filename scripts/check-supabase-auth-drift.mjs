@@ -49,7 +49,14 @@ export const PROJECT_REF = "ixerygypaevxzmiknokg";
 // rows where the two systems record the same concept with opposite polarity
 // (config.toml's allow-flag vs. the API's disable-flag). `duration` marks the
 // one row where config.toml writes a duration string ("1s") and the API
-// returns whole seconds.
+// returns whole seconds. `liveNullEquals` marks the one row where the API's
+// schema (its AuthConfigResponse's password_required_characters property)
+// declares `null` and `""` as two distinct enum members, but a project whose
+// dashboard field was never explicitly saved reads back `null` even though
+// it enforces exactly what `""` does: GoTrue decodes both into zero required
+// character sets (auth's internal/conf/configuration.go
+// PasswordRequiredCharacters.Decode, checked in internal/api/password.go),
+// so the two spellings are the same enforced behaviour, not a real drift.
 export const ALLOWLIST = [
   {
     path: ["auth", "minimum_password_length"],
@@ -58,6 +65,7 @@ export const ALLOWLIST = [
   {
     path: ["auth", "password_requirements"],
     apiField: "password_required_characters",
+    liveNullEquals: "",
   },
   {
     path: ["auth", "enable_signup"],
@@ -218,8 +226,10 @@ export function buildAuthDriftReport(configText, liveConfig) {
       continue;
     }
     const live = liveConfig[entry.apiField];
+    const normalizedLive =
+      live === null && "liveNullEquals" in entry ? entry.liveNullEquals : live;
 
-    if (live !== expected) {
+    if (normalizedLive !== expected) {
       problems.push(
         `${label} (config.toml: ${JSON.stringify(rawExpected)}) does not match ` +
           `live ${entry.apiField} (${JSON.stringify(live)}); expected ${JSON.stringify(expected)}`,

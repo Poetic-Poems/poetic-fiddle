@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
-import { wirePoemToggles } from "@/components/PoemPreview";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  evaluatePostscriptPreviews,
+  POSTSCRIPT_RESIZE_DEBOUNCE_MS,
+  wirePoemToggles,
+} from "@/components/PoemPreview";
 import { useNonce } from "@/lib/nonce-context";
 import { EMBED_FRAME_SRC } from "@/lib/embed-hosts";
 
@@ -78,7 +82,25 @@ export function SharedPoemView({ html, css, title }: SharedPoemViewProps) {
 
   const handleLoad = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
-    if (doc) wirePoemToggles(doc);
+    if (!doc) return;
+    wirePoemToggles(doc);
+    evaluatePostscriptPreviews(doc);
+  }, []);
+
+  useEffect(() => {
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const doc = iframeRef.current?.contentDocument;
+        if (doc) evaluatePostscriptPreviews(doc);
+      }, POSTSCRIPT_RESIZE_DEBOUNCE_MS);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   return (

@@ -174,6 +174,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   button in the version the pin moved to, which left a long postscript
   truncated with no way to read it. The preview now drives the control itself,
   as it already did for the Analysis section.
+- A share page's postscript is readable with client-side JavaScript disabled
+  (AC84), and the preview and share views no longer clamp a postscript short
+  enough that revealing it would show a line or less. The pinned `poetic`
+  dependency moves to v6.4.0, which leaves a postscript unclamped by default
+  instead of always-clamped-until-lifted; both views now measure rendered
+  postscripts against the preview budget themselves, the same way poetic's
+  own script would, and apply the clamp (and the "See more" control) only
+  when there is a full line or more to reveal.
 - Link text (`text-link`, e.g. the legal-page and editor share links) only
   met AA contrast in light mode — 2.61:1 against the dark background, well
   below the 4.5:1 threshold. Dark mode now uses a lighter tint of the same
@@ -336,6 +344,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   via an `overrides` entry, resolving a medium-severity XSS via unescaped
   `</style>` in CSS Stringify Output
   ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)).
+- Bumped `postcss` further, to 8.5.23, resolving a medium-severity incomplete
+  fix of the above: an attacker-controlled `sourceMappingURL` could read
+  arbitrary `.map` files when PostCSS's `from` option is unset
+  ([GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp)).
 - Added a site-wide `Content-Security-Policy` header (`next.config.ts`) for
   the app's own pages (editor, dashboard, legal), restricting scripts,
   styles, connections, and framing to the app's own origin plus Supabase.
@@ -383,3 +395,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sign-up form's `minLength={10}` asks for. The live project's minimum is an
   Auth dashboard setting that neither this file nor `supabase db push`
   applies (TD-PPpfid-26080301).
+- CI's `npm audit` gate now covers the whole dependency tree, including
+  devDependencies, and runs on every pull request (even a prose-only one)
+  rather than only when the diff touches the app. The gate had carried a
+  blanket `--omit=dev` since #176, meant to tolerate one tracked advisory
+  chain (`eslint` → `minimatch` → `brace-expansion`,
+  [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg),
+  TD-PPpfid-26072429) but exempting the entire dev toolchain from the gate
+  in the process. `brace-expansion` under `minimatch@3.1.5` moves to
+  `1.1.18`, the patched 1.x release, clearing that advisory without an
+  `eslint` major bump, so `npm run audit` (the gate's new single definition,
+  used by both `ci.yml` and the new weekly `dependency-audit.yml`) now runs
+  with no exemption and passes clean (TD-PPpfid-26080110).

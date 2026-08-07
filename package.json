@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "audit": "npm audit --audit-level=high",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
@@ -34,7 +35,7 @@
     "dompurify": "^3.4.12",
     "jsdom": "^26.0.0",
     "next": "^16.2.12",
-    "poetic": "https://github.com/Poetic-Poems/poetic/releases/download/v6.3.0/poetic-6.3.0.tgz",
+    "poetic": "https://github.com/Poetic-Poems/poetic/releases/download/v6.4.0/poetic-6.4.0.tgz",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -61,7 +62,7 @@
     "vitest": "^4.1.10"
   },
   "overrides": {
-    "postcss": "8.5.19",
+    "postcss": "8.5.23",
     "sharp": "0.35.3"
   }
 }

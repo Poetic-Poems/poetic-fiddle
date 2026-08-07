@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
-import { PoemPreview, wirePoemToggles } from "./PoemPreview";
+import {
+  evaluatePostscriptPreviews,
+  PoemPreview,
+  POSTSCRIPT_RESIZE_DEBOUNCE_MS,
+  wirePoemToggles,
+} from "./PoemPreview";
 import { NonceProvider } from "@/lib/nonce-context";
 import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
@@ -386,6 +391,296 @@ describe("wirePoemToggles postscript against real poetic output", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(content.classList.contains("postscript-expanded")).toBe(true);
     expect(content.textContent).toContain("Postscript line 12.");
+  });
+});
+
+describe("evaluatePostscriptPreviews", () => {
+  // Not vi.restoreAllMocks() in afterEach: that would also tear down the
+  // module-level window.open spy the song-embed describe block below sets up
+  // once, outside any beforeEach/afterEach of its own.
+  let computedStyleSpy: ReturnType<typeof vi.spyOn> | undefined;
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    computedStyleSpy?.mockRestore();
+    computedStyleSpy = undefined;
+  });
+
+  // Builds a detached `.postscript-content` element attached to the live
+  // `document` (not `document.implementation.createHTMLDocument()`, whose
+  // result has no `defaultView` — see the "does nothing" case below — the
+  // same reason evaluatePostscriptPreviews reaches computed style through
+  // `doc.defaultView` rather than a global). jsdom never lays elements out,
+  // so the two rects that decide clamping are stubbed directly on the nodes
+  // under test, standing in for `getBoundingClientRect()` in a real browser.
+  function postscriptContentElement({
+    previewLines,
+    lineHeight,
+    fontSize = "16px",
+    contentBottom,
+  }: {
+    previewLines?: number;
+    lineHeight: string;
+    fontSize?: string;
+    contentBottom: number;
+  }): HTMLElement {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <div class="postscript-content"${previewLines !== undefined ? ` data-preview-lines="${previewLines}"` : ""}>
+        <p>A postscript.</p>
+      </div>
+    `;
+    document.body.appendChild(container);
+
+    const content = container.querySelector<HTMLElement>(
+      ".postscript-content",
+    )!;
+    computedStyleSpy = vi.spyOn(window, "getComputedStyle").mockReturnValue({
+      lineHeight,
+      fontSize,
+    } as CSSStyleDeclaration);
+    vi.spyOn(content, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+    } as DOMRect);
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: contentBottom } as DOMRect);
+
+    return content;
+  }
+
+  it("adds postscript-clamped when hidden content exceeds a full line", () => {
+    // 5 (default) lines * 20px budget = 100px; 130px of content leaves 30px
+    // hidden, more than one 20px line.
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("does not add postscript-clamped when hidden content is a line or less", () => {
+    // 100px budget; 110px of content leaves only 10px hidden, under one
+    // 20px line — poetic's own preview would offer nothing to reveal.
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 110,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("removes an already-applied clamp once it no longer applies", () => {
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 110,
+    });
+    content.classList.add("postscript-clamped");
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("falls back to 1.2x font-size when line-height isn't a pixel value", () => {
+    // lineHeight "normal" isn't parseable, so lineHeightPx falls back to
+    // 1.2 * 16px = 19.2px; budget = 5 * 19.2 = 96px. 130px of content leaves
+    // 34px hidden, more than one fallback line.
+    const content = postscriptContentElement({
+      lineHeight: "normal",
+      fontSize: "16px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("respects a non-default data-preview-lines budget", () => {
+    // 2 lines * 20px = 40px budget; 130px of content leaves 90px hidden.
+    const content = postscriptContentElement({
+      previewLines: 2,
+      lineHeight: "20px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("does nothing when there is no postscript-content element", () => {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = "<p>No postscript here.</p>";
+
+    expect(() => evaluatePostscriptPreviews(doc)).not.toThrow();
+  });
+
+  it("does nothing when the document has no defaultView", () => {
+    // document.implementation.createHTMLDocument() produces a Document with
+    // no browsing context (defaultView is null) — the shape a detached test
+    // fixture has, distinct from a live iframe's contentDocument.
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = '<div class="postscript-content"><p>Text</p></div>';
+
+    expect(() => evaluatePostscriptPreviews(doc)).not.toThrow();
+    expect(
+      doc
+        .querySelector(".postscript-content")!
+        .classList.contains("postscript-clamped"),
+    ).toBe(false);
+  });
+});
+
+// The clamp is only right if the component actually reaches for the preview
+// document — on load and again on resize. jsdom never loads a srcdoc iframe's
+// content (its contentDocument stays empty), so the document a real browser
+// would build is stubbed onto the iframe and the `load` event fired by hand;
+// what is under test is PoemPreview's wiring, not jsdom's iframe support.
+describe("PoemPreview postscript wiring", () => {
+  // Not vi.restoreAllMocks(): see the note in the evaluatePostscriptPreviews
+  // block above — it would tear down the module-level window.open spy the
+  // song-embed block sets up once.
+  const globalSpies: { mockRestore: () => void }[] = [];
+
+  afterEach(() => {
+    vi.useRealTimers();
+    globalSpies.splice(0).forEach((spy) => spy.mockRestore());
+  });
+
+  // Stubs the document a loaded preview iframe would expose, with layout
+  // (which jsdom never computes) standing in as fixed rects: a 5-line budget
+  // at 20px per line is 100px, so `contentBottom` above 120px is more than a
+  // line hidden and clamps.
+  function stubPreviewDocument(
+    iframe: HTMLIFrameElement,
+    contentBottom: number,
+  ): HTMLElement {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML =
+      '<div class="postscript-content"><p>A postscript.</p></div>';
+    // createHTMLDocument() has no browsing context, so no defaultView — the
+    // one thing a live iframe's contentDocument has that this fixture lacks.
+    Object.defineProperty(doc, "defaultView", {
+      value: window,
+      configurable: true,
+    });
+    Object.defineProperty(iframe, "contentDocument", {
+      value: doc,
+      configurable: true,
+    });
+
+    globalSpies.push(
+      vi.spyOn(window, "getComputedStyle").mockReturnValue({
+        lineHeight: "20px",
+        fontSize: "16px",
+      } as CSSStyleDeclaration),
+    );
+
+    const content = doc.querySelector<HTMLElement>(".postscript-content")!;
+    vi.spyOn(content, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+    } as DOMRect);
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: contentBottom } as DOMRect);
+    return content;
+  }
+
+  function renderPreview(): HTMLIFrameElement {
+    const { container } = render(
+      <NonceProvider nonce="test-nonce-123">
+        <PoemPreview html="<p>A poem.</p>" css="" />
+      </NonceProvider>,
+    );
+    return container.querySelector("iframe")!;
+  }
+
+  it("clamps a long postscript when the preview iframe loads", () => {
+    const iframe = renderPreview();
+    const content = stubPreviewDocument(iframe, 130);
+
+    fireEvent.load(iframe);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("leaves a short postscript unclamped when the preview iframe loads", () => {
+    const iframe = renderPreview();
+    const content = stubPreviewDocument(iframe, 110);
+
+    fireEvent.load(iframe);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("re-evaluates on a window resize, debounced", () => {
+    vi.useFakeTimers();
+    const iframe = renderPreview();
+    // Loaded narrow enough not to clamp, then re-measured after the viewport
+    // change as tall enough to.
+    const content = stubPreviewDocument(iframe, 110);
+    fireEvent.load(iframe);
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: 130 } as DOMRect);
+    fireEvent(window, new Event("resize"));
+
+    vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS - 1);
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("coalesces a burst of resizes into one evaluation", () => {
+    vi.useFakeTimers();
+    const iframe = renderPreview();
+    const content = stubPreviewDocument(iframe, 130);
+    const evaluated = vi.spyOn(content, "getBoundingClientRect");
+
+    for (let i = 0; i < 5; i++) {
+      fireEvent(window, new Event("resize"));
+      vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS - 1);
+    }
+    vi.advanceTimersByTime(1);
+
+    expect(evaluated).toHaveBeenCalledTimes(1);
+  });
+
+  // Asserted against the listener identity rather than "nothing happens after
+  // unmount": the ref is null by then, so a leaked listener would find no
+  // document and look identical — while still accumulating one listener per
+  // mount for the life of the page.
+  it("removes its resize listener on unmount", () => {
+    const addSpy = vi.spyOn(window, "addEventListener");
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+    globalSpies.push(addSpy, removeSpy);
+
+    const { unmount } = render(
+      <NonceProvider nonce="test-nonce-123">
+        <PoemPreview html="<p>A poem.</p>" css="" />
+      </NonceProvider>,
+    );
+    const handler = addSpy.mock.calls.find(
+      ([type]) => type === "resize",
+    )?.[1] as EventListener;
+    expect(handler).toBeDefined();
+
+    unmount();
+
+    expect(removeSpy).toHaveBeenCalledWith("resize", handler);
   });
 });
 
