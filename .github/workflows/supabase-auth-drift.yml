@@ -51,6 +51,21 @@ name: Supabase auth-config drift check
 # a title asserting "has drifted" would be wrong for a token or API
 # failure, and a title that varies with the cause would break dedup. The
 # captured log in the issue body is what tells a reader which happened.
+#
+# The filing step is the first in this repository to paste captured script
+# output into an issue, and the repository is public. Two consequences are
+# deliberate. A drift report prints the live value of every drifted key —
+# the side that is not in the repo — but the same report already lands in
+# the publicly readable run log, so the issue adds no exposure the Actions
+# tab doesn't, and without the live values the report would not tell a
+# reader what needs deciding. And the body is unbounded against GitHub's
+# 65536-character issue-body cap, which only a pathological Management API
+# response could reach: that path fails safe — `gh issue create` rejects
+# the body, the step and run go red — so a truncation guard would buy
+# nothing. One thing is not left to chance: the filing step strips
+# SUPABASE_ACCESS_TOKEN from the log before publishing, because Actions
+# secret masking covers only the run log, and the script's discipline of
+# never printing the token is enforced nowhere the publishing step can see.
 
 on:
   schedule:
@@ -86,6 +101,7 @@ jobs:
         if: steps.drift.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
@@ -101,6 +117,14 @@ jobs:
             exit 0
           fi
 
+          # Secret masking does not reach an issue body, so enforce the
+          # token's absence here, at the step that publishes, rather than
+          # trusting every future error path in the script.
+          log=$(cat /tmp/auth-drift.log)
+          if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            log=${log//"$SUPABASE_ACCESS_TOKEN"/"***"}
+          fi
+
           body_file=$(mktemp)
           {
             printf '`scripts/check-supabase-auth-drift.mjs` failed. This '
@@ -110,7 +134,7 @@ jobs:
             printf '`SUPABASE_ACCESS_TOKEN`, a non-ok Management API '
             printf 'response). The captured output below tells you which:\n\n'
             printf '```\n'
-            cat /tmp/auth-drift.log
+            printf '%s\n' "$log"
             printf '\n```\n\n'
             printf 'Run: %s\n' "$RUN_URL"
           } > "$body_file"
