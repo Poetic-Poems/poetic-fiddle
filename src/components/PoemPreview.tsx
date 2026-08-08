@@ -190,19 +190,33 @@ export function PoemPreview({ html, css }: PoemPreviewProps) {
     evaluatePostscriptPreviews(doc);
   }, []);
 
+  // A ResizeObserver on the iframe itself, rather than a window `resize`
+  // listener, is what covers the editor's mobile preview pane: that pane
+  // stays mounted at `display: none` while the source pane shows, so the
+  // iframe renders at zero size and evaluatePostscriptPreviews (run from
+  // handleLoad above) sees a zero-size box and never clamps. Toggling the
+  // pane back to visible changes the iframe's rendered size without firing
+  // `load` or a window `resize`, but a ResizeObserver reports exactly that
+  // 0 -> sized transition, so it also covers the window-resize case
+  // TD-PPpfid-26080108's listener existed for.
   useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
     let resizeTimer: ReturnType<typeof setTimeout>;
-    const handleResize = () => {
+    const scheduleEvaluate = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         const doc = iframeRef.current?.contentDocument;
         if (doc) evaluatePostscriptPreviews(doc);
       }, POSTSCRIPT_RESIZE_DEBOUNCE_MS);
     };
-    window.addEventListener("resize", handleResize);
+
+    const observer = new ResizeObserver(scheduleEvaluate);
+    observer.observe(iframe);
     return () => {
       clearTimeout(resizeTimer);
-      window.removeEventListener("resize", handleResize);
+      observer.disconnect();
     };
   }, []);
 

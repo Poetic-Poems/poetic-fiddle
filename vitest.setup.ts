@@ -85,6 +85,19 @@ if (Object.getOwnPropertyDescriptor(window, "localStorage")?.get) {
   });
 }
 
+// jsdom does not implement ResizeObserver; components that use one (e.g.
+// PoemPreview.tsx) need a stub just to mount. Tests that exercise the
+// observed behaviour replace this with their own mock (vi.stubGlobal) so
+// they can invoke the callback by hand — jsdom never lays elements out, so
+// a real ResizeObserver would never fire in a test anyway.
+if (typeof window.ResizeObserver !== "function") {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 // jsdom does not implement matchMedia; components that read
 // prefers-color-scheme need a stub to mount in tests.
 if (typeof window.matchMedia !== "function") {

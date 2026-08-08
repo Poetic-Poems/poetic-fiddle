@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
@@ -544,14 +544,43 @@ describe("evaluatePostscriptPreviews", () => {
 // content (its contentDocument stays empty), so the document a real browser
 // would build is stubbed onto the iframe and the `load` event fired by hand;
 // what is under test is PoemPreview's wiring, not jsdom's iframe support.
+//
+// jsdom also never lays elements out, so it never fires a real
+// ResizeObserver either — a mock class captures the callback PoemPreview
+// registers, letting tests invoke it directly to stand in for both a window
+// resize and the hidden -> visible pane transition a real ResizeObserver
+// reports for (unlike a window `resize` listener, which fires for neither).
+class MockResizeObserver {
+  static instances: MockResizeObserver[] = [];
+  callback: ResizeObserverCallback;
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+    MockResizeObserver.instances.push(this);
+  }
+
+  trigger() {
+    this.callback([], this as unknown as ResizeObserver);
+  }
+}
+
 describe("PoemPreview postscript wiring", () => {
   // Not vi.restoreAllMocks(): see the note in the evaluatePostscriptPreviews
   // block above — it would tear down the module-level window.open spy the
   // song-embed block sets up once.
   const globalSpies: { mockRestore: () => void }[] = [];
 
+  beforeEach(() => {
+    MockResizeObserver.instances = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+  });
+
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
     globalSpies.splice(0).forEach((spy) => spy.mockRestore());
   });
 
@@ -595,17 +624,22 @@ describe("PoemPreview postscript wiring", () => {
     return content;
   }
 
-  function renderPreview(): HTMLIFrameElement {
+  function renderPreview(): {
+    iframe: HTMLIFrameElement;
+    observer: MockResizeObserver;
+  } {
     const { container } = render(
       <NonceProvider nonce="test-nonce-123">
         <PoemPreview html="<p>A poem.</p>" css="" />
       </NonceProvider>,
     );
-    return container.querySelector("iframe")!;
+    const observer =
+      MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
+    return { iframe: container.querySelector("iframe")!, observer };
   }
 
   it("clamps a long postscript when the preview iframe loads", () => {
-    const iframe = renderPreview();
+    const { iframe } = renderPreview();
     const content = stubPreviewDocument(iframe, 130);
 
     fireEvent.load(iframe);
@@ -614,7 +648,7 @@ describe("PoemPreview postscript wiring", () => {
   });
 
   it("leaves a short postscript unclamped when the preview iframe loads", () => {
-    const iframe = renderPreview();
+    const { iframe } = renderPreview();
     const content = stubPreviewDocument(iframe, 110);
 
     fireEvent.load(iframe);
@@ -622,11 +656,27 @@ describe("PoemPreview postscript wiring", () => {
     expect(content.classList.contains("postscript-clamped")).toBe(false);
   });
 
-  it("re-evaluates on a window resize, debounced", () => {
+  it("observes the iframe for size changes", () => {
+    const { iframe, observer } = renderPreview();
+
+    expect(observer.observe).toHaveBeenCalledWith(iframe);
+  });
+
+  // The editor's mobile preview pane keeps this iframe permanently mounted
+  // and toggles it between `display: none` and visible with a class switch
+  // (Editor.tsx's `mobileView`), rather than mounting/unmounting it or
+  // reloading its srcDoc. Neither `load` nor a window `resize` fires on that
+  // transition, but the iframe's rendered box goes from zero to its real
+  // size, which is exactly what a ResizeObserver on the iframe reports —
+  // this is what TD-PPpfid-26080403 covers: deleting the ResizeObserver
+  // wiring (or reverting to the window `resize` listener it replaced) turns
+  // this red, because nothing else re-measures the pane when it appears.
+  it("re-evaluates when the previously-hidden pane becomes visible, not only on the next srcDoc reload", () => {
     vi.useFakeTimers();
-    const iframe = renderPreview();
-    // Loaded narrow enough not to clamp, then re-measured after the viewport
-    // change as tall enough to.
+    const { iframe, observer } = renderPreview();
+    // Loaded while the pane was hidden (a zero-size box in a real browser),
+    // measuring as unclamped; the pane then becomes visible with content
+    // tall enough to clamp, without a fresh `load`.
     const content = stubPreviewDocument(iframe, 110);
     fireEvent.load(iframe);
     expect(content.classList.contains("postscript-clamped")).toBe(false);
@@ -635,7 +685,7 @@ describe("PoemPreview postscript wiring", () => {
       content.lastElementChild!,
       "getBoundingClientRect",
     ).mockReturnValue({ bottom: 130 } as DOMRect);
-    fireEvent(window, new Event("resize"));
+    observer.trigger();
 
     vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS - 1);
     expect(content.classList.contains("postscript-clamped")).toBe(false);
@@ -644,14 +694,14 @@ describe("PoemPreview postscript wiring", () => {
     expect(content.classList.contains("postscript-clamped")).toBe(true);
   });
 
-  it("coalesces a burst of resizes into one evaluation", () => {
+  it("coalesces a burst of size-change reports into one evaluation", () => {
     vi.useFakeTimers();
-    const iframe = renderPreview();
+    const { iframe, observer } = renderPreview();
     const content = stubPreviewDocument(iframe, 130);
     const evaluated = vi.spyOn(content, "getBoundingClientRect");
 
     for (let i = 0; i < 5; i++) {
-      fireEvent(window, new Event("resize"));
+      observer.trigger();
       vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS - 1);
     }
     vi.advanceTimersByTime(1);
@@ -659,28 +709,23 @@ describe("PoemPreview postscript wiring", () => {
     expect(evaluated).toHaveBeenCalledTimes(1);
   });
 
-  // Asserted against the listener identity rather than "nothing happens after
-  // unmount": the ref is null by then, so a leaked listener would find no
-  // document and look identical — while still accumulating one listener per
-  // mount for the life of the page.
-  it("removes its resize listener on unmount", () => {
-    const addSpy = vi.spyOn(window, "addEventListener");
-    const removeSpy = vi.spyOn(window, "removeEventListener");
-    globalSpies.push(addSpy, removeSpy);
-
+  // Asserted against the observer instance rather than "nothing happens
+  // after unmount": the ref is null by then, so a leaked observer would find
+  // no document and look identical — while still accumulating one observer
+  // per mount for the life of the page.
+  it("disconnects its ResizeObserver on unmount", () => {
     const { unmount } = render(
       <NonceProvider nonce="test-nonce-123">
         <PoemPreview html="<p>A poem.</p>" css="" />
       </NonceProvider>,
     );
-    const handler = addSpy.mock.calls.find(
-      ([type]) => type === "resize",
-    )?.[1] as EventListener;
-    expect(handler).toBeDefined();
+    const observer =
+      MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
+    expect(observer.disconnect).not.toHaveBeenCalled();
 
     unmount();
 
-    expect(removeSpy).toHaveBeenCalledWith("resize", handler);
+    expect(observer.disconnect).toHaveBeenCalledTimes(1);
   });
 });
 
