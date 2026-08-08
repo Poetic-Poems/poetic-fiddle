@@ -37,19 +37,18 @@ name: Required-checks drift check
 # Unlike check-supabase-auth-drift.mjs, which exits non-zero for both a
 # genuine disagreement and an operational failure, the comparison step below
 # reports a detected drift as a `drifted=true` output instead of as a step
-# failure, so it follows td-tooling-drift.yml's direct `drifted=` output
-# shape for the drift case. But the step can still fail operationally — a
-# `gh api` error, say, or `check-workflow-wiring.mjs` erroring — and until
-# issue #235 that halted the job before the filing step, leaving an
-# operational failure as a bare red run with no issue behind it: nothing
-# else re-checks the snapshot between scheduled runs, so a drift that
-# happened to coincide with an operational failure would go unreported
-# until the following week. The fix layers supabase-auth-drift.yml's
+# failure, so for the drift case it follows td-tooling-drift.yml's direct
+# `drifted=` output shape. The step can still fail operationally, though —
+# a `gh api` error, say, or `check-workflow-wiring.mjs` erroring — which
+# leaves the snapshot unchecked rather than checked and sound, and nothing
+# else re-checks it between scheduled runs, so an unreported operational
+# failure would let a real drift go undetected until the following week
+# (#235). So that case is covered too, by layering supabase-auth-drift.yml's
 # `continue-on-error` + `steps.<id>.outcome` handling on top of the
-# drift-output shape, rather than replacing it: an operational failure now
-# files under its own neutral title, distinct from the genuine-drift title
-# below, so the two never dedup against each other and a reader is never
-# told "drifted" when the check never got far enough to know.
+# drift-output shape rather than replacing it: an operational failure files
+# under its own neutral title, distinct from the genuine-drift title below,
+# so the two never dedup against each other and a reader is never told
+# "drifted" when the check never got far enough to know.
 
 on:
   schedule:
@@ -85,8 +84,10 @@ jobs:
           # shell doesn't wait on, so a `set -e` exit can race the file
           # actually being written — the filing step below reads it a step
           # later, on a fresh shell, and needs it to exist by then.
-          # `PIPESTATUS[0]` recovers the subshell's own exit code, since
-          # `$?` after a pipeline is tee's.
+          # `PIPESTATUS[0]` pins the step's exit code to the subshell's
+          # own, whatever the runner's shell is invoked with: without
+          # `pipefail` a pipeline's status is its last command's — tee's,
+          # which is 0 however the body exited.
           {
             set -euo pipefail
 
