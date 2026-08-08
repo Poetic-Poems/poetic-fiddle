@@ -38,10 +38,18 @@ name: Required-checks drift check
 # genuine disagreement and an operational failure, the comparison step below
 # reports a detected drift as a `drifted=true` output instead of as a step
 # failure, so it follows td-tooling-drift.yml's direct `drifted=` output
-# shape rather than supabase-auth-drift.yml's `continue-on-error` +
-# `steps.<id>.outcome` shape. The step can still fail operationally — a
-# `gh api` error, say — and that halts the job before the filing step, so an
-# operational failure remains a bare red run with no issue behind it.
+# shape for the drift case. But the step can still fail operationally — a
+# `gh api` error, say, or `check-workflow-wiring.mjs` erroring — and until
+# issue #235 that halted the job before the filing step, leaving an
+# operational failure as a bare red run with no issue behind it: nothing
+# else re-checks the snapshot between scheduled runs, so a drift that
+# happened to coincide with an operational failure would go unreported
+# until the following week. The fix layers supabase-auth-drift.yml's
+# `continue-on-error` + `steps.<id>.outcome` handling on top of the
+# drift-output shape, rather than replacing it: an operational failure now
+# files under its own neutral title, distinct from the genuine-drift title
+# below, so the two never dedup against each other and a reader is never
+# told "drifted" when the check never got far enough to know.
 
 on:
   schedule:
@@ -65,34 +73,48 @@ jobs:
 
       - name: Compare required-checks.yml against the live branch rules
         id: diff
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          # jq's `unique` rather than `sort`: it de-duplicates a context two
-          # rulesets both require (the snapshot lists it once), and it sorts
-          # by codepoint — the same order --print-required uses, where the
-          # shell's `sort` would collate by locale.
-          live=$(gh api repos/${{ github.repository }}/rules/branches/main \
-            --jq '[.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | unique | .[]')
+          # The body runs in its own subshell, `set -e` and all, and is
+          # piped to tee rather than wrapped in `exec > >(tee …)`: a
+          # process-substitution tee is a background process the parent
+          # shell doesn't wait on, so a `set -e` exit can race the file
+          # actually being written — the filing step below reads it a step
+          # later, on a fresh shell, and needs it to exist by then.
+          # `PIPESTATUS[0]` recovers the subshell's own exit code, since
+          # `$?` after a pipeline is tee's.
+          {
+            set -euo pipefail
 
-          # The same parser the workflow-wiring check itself reads the file
-          # with — deliberately not a second grep/sed rendition of it.
-          snapshot=$(node scripts/check-workflow-wiring.mjs --print-required)
+            # jq's `unique` rather than `sort`: it de-duplicates a context
+            # two rulesets both require (the snapshot lists it once), and it
+            # sorts by codepoint — the same order --print-required uses,
+            # where the shell's `sort` would collate by locale.
+            live=$(gh api repos/${{ github.repository }}/rules/branches/main \
+              --jq '[.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | unique | .[]')
 
-          if [ "$live" != "$snapshot" ]; then
-            echo "::error file=.github/required-checks.yml::required-checks.yml's required: list has drifted from the live branch rules"
-            echo "Live required checks (aggregated across every active ruleset on main):"
-            echo "$live"
-            echo "Checked-in snapshot:"
-            echo "$snapshot"
-            echo "drifted=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "required-checks.yml matches the live branch rules:"
-            echo "$live"
-            echo "drifted=false" >> "$GITHUB_OUTPUT"
-          fi
+            # The same parser the workflow-wiring check itself reads the
+            # file with — deliberately not a second grep/sed rendition of it.
+            snapshot=$(node scripts/check-workflow-wiring.mjs --print-required)
+
+            if [ "$live" != "$snapshot" ]; then
+              echo "::error file=.github/required-checks.yml::required-checks.yml's required: list has drifted from the live branch rules"
+              echo "Live required checks (aggregated across every active ruleset on main):"
+              echo "$live"
+              echo "Checked-in snapshot:"
+              echo "$snapshot"
+              echo "drifted=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "required-checks.yml matches the live branch rules:"
+              echo "$live"
+              echo "drifted=false" >> "$GITHUB_OUTPUT"
+            fi
+          } 2>&1 | tee /tmp/required-checks-diff.log
+          exit "${PIPESTATUS[0]}"
 
       - name: File an issue if drift detected
         if: steps.diff.outputs.drifted == 'true'
@@ -126,6 +148,49 @@ jobs:
           } > "$body_file"
           gh issue create --title "$title" --body-file "$body_file"
 
-      - name: Fail if drift detected
-        if: steps.diff.outputs.drifted == 'true'
+      - name: File an issue if the compare step failed operationally
+        if: steps.diff.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Required-checks drift check is failing"
+
+          # Deliberately a different title from the genuine-drift issue
+          # above: this is an operational failure, not a confirmed drift,
+          # and the two must never dedup against each other or share a
+          # title that implies the wrong one. Dedup against open issues
+          # only, same reasoning as the drift issue: once resolved and
+          # closed, a fresh failure is news again.
+          already_filed=$(gh issue list --state open --limit 200 --json title \
+            | jq --arg title "$title" 'any(.[]; .title == $title)')
+          if [ "$already_filed" = "true" ]; then
+            echo "Already reported; skipping."
+            exit 0
+          fi
+
+          log=$(cat /tmp/required-checks-diff.log)
+
+          body_file=$(mktemp)
+          {
+            printf 'The required-checks drift check failed to run to '
+            printf 'completion — an operational failure (for example a '
+            printf '`gh api` error against the branch-rules endpoint, or '
+            printf '`scripts/check-workflow-wiring.mjs` erroring), not a '
+            printf 'confirmed comparison between '
+            printf '`.github/required-checks.yml` and the live branch '
+            printf 'rules on `main`. This check gates nothing that '
+            printf 'deploys — it only keeps the checked-in snapshot '
+            printf 'honest — but until this is resolved, a real drift '
+            printf 'between the snapshot and the live rules would go '
+            printf 'undetected.\n\n'
+            printf 'The captured output below tells you what failed:\n\n'
+            printf '```\n%s\n```\n\n' "$log"
+            printf 'Run: %s\n' "$RUN_URL"
+          } > "$body_file"
+          gh issue create --title "$title" --body-file "$body_file"
+
+      - name: Fail if drift detected or the compare step failed
+        if: steps.diff.outputs.drifted == 'true' || steps.diff.outcome == 'failure'
         run: exit 1
