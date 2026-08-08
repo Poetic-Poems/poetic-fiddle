@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   ALLOWLIST,
+  AUTH_REQUIRED_CHARACTER_CLASSES,
   buildAuthDriftReport,
   checkSupabaseAuthDrift,
   parseConfigToml,
@@ -193,6 +194,89 @@ describe("buildAuthDriftReport", () => {
     const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, withoutOne);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatch(/password_min_length/);
+  });
+
+  it("accepts a stringified integer on every numeric-flagged row", () => {
+    const numericRows = ALLOWLIST.filter((entry) => entry.numeric);
+    // Guards against a future edit dropping `numeric` from a row silently —
+    // this test would then just cover fewer rows without failing.
+    expect(numericRows.length).toBe(7);
+
+    for (const entry of numericRows) {
+      const live = {
+        ...MATCHING_LIVE_CONFIG,
+        [entry.apiField]: String(MATCHING_LIVE_CONFIG[entry.apiField]),
+      };
+      const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, live);
+      expect(problems).toEqual([]);
+    }
+  });
+
+  it("rejects a near-miss stringified number on a numeric-flagged row", () => {
+    const nearMisses = [
+      "3600.0",
+      " 3600",
+      "3600 ",
+      "3600abc",
+      "0x3600",
+      "+3600",
+    ];
+    for (const nearMiss of nearMisses) {
+      const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, {
+        ...MATCHING_LIVE_CONFIG,
+        jwt_exp: nearMiss,
+      });
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toMatch(/auth\.jwt_expiry/);
+    }
+  });
+
+  it("rejects a stringified number on a non-numeric-flagged row", () => {
+    const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, {
+      ...MATCHING_LIVE_CONFIG,
+      // enable_anonymous_sign_ins has no `numeric` flag, and isn't a numeric
+      // field to begin with (it's boolean) — a stringified value must not be
+      // coerced into matching.
+      external_anonymous_users_enabled: "false",
+    });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/auth\.enable_anonymous_sign_ins/);
+  });
+
+  it("still flags a genuine numeric disagreement on a numeric-flagged row", () => {
+    const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, {
+      ...MATCHING_LIVE_CONFIG,
+      jwt_exp: "7200",
+    });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/auth\.jwt_expiry/);
+  });
+
+  it("matches every non-empty symbolic password_requirements value against its live character-class literal", () => {
+    for (const [symbol, charClass] of Object.entries(
+      AUTH_REQUIRED_CHARACTER_CLASSES,
+    )) {
+      if (symbol === "") continue;
+      const configText = MATCHING_CONFIG_TOML.replace(
+        'password_requirements = ""',
+        `password_requirements = "${symbol}"`,
+      );
+      const problems = buildAuthDriftReport(configText, {
+        ...MATCHING_LIVE_CONFIG,
+        password_required_characters: charClass,
+      });
+      expect(problems).toEqual([]);
+    }
+  });
+
+  it("throws naming the value when password_requirements holds an unrecognised symbol", () => {
+    const configText = MATCHING_CONFIG_TOML.replace(
+      'password_requirements = ""',
+      'password_requirements = "digits_only"',
+    );
+    expect(() =>
+      buildAuthDriftReport(configText, MATCHING_LIVE_CONFIG),
+    ).toThrow(/password_requirements.*digits_only/s);
   });
 
   it("has an ALLOWLIST entry that resolves in the repo's own config.toml", () => {
