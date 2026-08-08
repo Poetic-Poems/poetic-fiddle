@@ -92,6 +92,9 @@ if (Object.getOwnPropertyDescriptor(window, "localStorage")?.get) {
 // a real ResizeObserver would never fire in a test anyway.
 if (typeof window.ResizeObserver !== "function") {
   window.ResizeObserver = class {
+    constructor(callback: ResizeObserverCallback) {
+      void callback;
+    }
     observe() {}
     unobserve() {}
     disconnect() {}
