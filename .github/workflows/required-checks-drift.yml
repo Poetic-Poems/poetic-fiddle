@@ -34,12 +34,14 @@ name: Required-checks drift check
 # recurring condition, so once an open report is resolved and closed, a
 # fresh occurrence is news again and should file a new issue.
 #
-# Unlike check-supabase-auth-drift.mjs, the comparison step below already
-# separates "drift detected" from an operational failure — it has nothing
-# that fails for a reason other than a genuine snapshot/live disagreement —
-# so it follows td-tooling-drift.yml's direct `drifted=` output shape rather
-# than supabase-auth-drift.yml's `continue-on-error` + `steps.<id>.outcome`
-# shape.
+# Unlike check-supabase-auth-drift.mjs, which exits non-zero for both a
+# genuine disagreement and an operational failure, the comparison step below
+# reports a detected drift as a `drifted=true` output instead of as a step
+# failure, so it follows td-tooling-drift.yml's direct `drifted=` output
+# shape rather than supabase-auth-drift.yml's `continue-on-error` +
+# `steps.<id>.outcome` shape. The step can still fail operationally — a
+# `gh api` error, say — and that halts the job before the filing step, so an
+# operational failure remains a bare red run with no issue behind it.
 
 on:
   schedule:
