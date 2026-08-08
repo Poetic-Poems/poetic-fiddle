@@ -22,6 +22,24 @@ name: Required-checks drift check
 # edits branch protection, so there's nothing for a per-PR run to catch that
 # a weekly one wouldn't, and it avoids the recursive problem of this guard
 # itself needing to be wired into required checks.
+#
+# TD-PPpfid-26080501: a failing run files a deduplicated issue, mirroring
+# td-tooling-drift.yml's pattern. On its own a detected drift would be only a
+# red run in the Actions tab plus GitHub's default scheduled-failure email,
+# and this repository's work is largely dispatched from open issues, so a
+# scheduled guard that files nothing is one nobody acts on. That step needs
+# `issues: write`, a deliberate widening of this workflow's token permissions
+# beyond `contents: read` alone, accepted as the cost of the notification.
+# Dedup is against open issues only, unlike a one-off event: drift is a
+# recurring condition, so once an open report is resolved and closed, a
+# fresh occurrence is news again and should file a new issue.
+#
+# Unlike check-supabase-auth-drift.mjs, the comparison step below already
+# separates "drift detected" from an operational failure — it has nothing
+# that fails for a reason other than a genuine snapshot/live disagreement —
+# so it follows td-tooling-drift.yml's direct `drifted=` output shape rather
+# than supabase-auth-drift.yml's `continue-on-error` + `steps.<id>.outcome`
+# shape.
 
 on:
   schedule:
@@ -30,6 +48,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   drift:
@@ -43,6 +62,7 @@ jobs:
           node-version: "22"
 
       - name: Compare required-checks.yml against the live branch rules
+        id: diff
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -65,8 +85,45 @@ jobs:
             echo "$live"
             echo "Checked-in snapshot:"
             echo "$snapshot"
-            exit 1
+            echo "drifted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required-checks.yml matches the live branch rules:"
+            echo "$live"
+            echo "drifted=false" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "required-checks.yml matches the live branch rules:"
-          echo "$live"
+      - name: File an issue if drift detected
+        if: steps.diff.outputs.drifted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="required-checks.yml has drifted from the live branch rules"
+
+          # Dedup on open issues only, unlike check-poetic-release.yml's
+          # all-state dedup: a release tag is a one-off event, so once
+          # reported it never needs reporting again. Drift is a recurring
+          # condition — once an open report is resolved and closed, a fresh
+          # occurrence is news again and should file a new issue.
+          already_filed=$(gh issue list --state open --limit 200 --json title \
+            | jq --arg title "$title" 'any(.[]; .title == $title)')
+          if [ "$already_filed" = "true" ]; then
+            echo "Drift already reported; skipping."
+            exit 0
+          fi
+
+          body_file=$(mktemp)
+          {
+            printf '`.github/required-checks.yml`'"'"'s `required:` list has '
+            printf 'drifted from the live branch rules on `main`. Re-sync it '
+            printf 'from the aggregated live rules (`node '
+            printf 'scripts/check-workflow-wiring.mjs --print-required` '
+            printf 'prints the checked-in snapshot for comparison).\n\n'
+            printf 'The run that detected this has the diff:\n%s\n' "$RUN_URL"
+          } > "$body_file"
+          gh issue create --title "$title" --body-file "$body_file"
+
+      - name: Fail if drift detected
+        if: steps.diff.outputs.drifted == 'true'
+        run: exit 1
