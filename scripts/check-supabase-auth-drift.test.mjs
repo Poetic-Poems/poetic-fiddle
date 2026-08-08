@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   ALLOWLIST,
-  PASSWORD_REQUIREMENTS_CHAR_CLASSES,
+  AUTH_REQUIRED_CHARACTER_CLASSES,
   buildAuthDriftReport,
   checkSupabaseAuthDrift,
   parseConfigToml,
@@ -254,7 +254,7 @@ describe("buildAuthDriftReport", () => {
 
   it("matches every non-empty symbolic password_requirements value against its live character-class literal", () => {
     for (const [symbol, charClass] of Object.entries(
-      PASSWORD_REQUIREMENTS_CHAR_CLASSES,
+      AUTH_REQUIRED_CHARACTER_CLASSES,
     )) {
       if (symbol === "") continue;
       const configText = MATCHING_CONFIG_TOML.replace(

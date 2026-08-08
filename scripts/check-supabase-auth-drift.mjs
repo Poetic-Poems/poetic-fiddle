@@ -52,7 +52,7 @@ export const PROJECT_REF = "ixerygypaevxzmiknokg";
 // not, as TD-PPpfid-26080401 named it, Poetic-Poems/poetic, which has no Go
 // CLI and no such file. A value not in this table has no known-benign
 // translation and must fail loudly rather than silently mismatch or match.
-export const PASSWORD_REQUIREMENTS_CHAR_CLASSES = {
+export const AUTH_REQUIRED_CHARACTER_CLASSES = {
   "": "",
   letters_digits:
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789",
@@ -76,7 +76,7 @@ export const PASSWORD_REQUIREMENTS_CHAR_CLASSES = {
 // character sets (auth's internal/conf/configuration.go
 // PasswordRequiredCharacters.Decode, checked in internal/api/password.go),
 // so the two spellings are the same enforced behaviour, not a real drift.
-// `symbolMap` marks the one row (see PASSWORD_REQUIREMENTS_CHAR_CLASSES
+// `symbolMap` marks the one row (see AUTH_REQUIRED_CHARACTER_CLASSES
 // above) where config.toml's value is a symbolic name that must be
 // translated, not compared directly, against the API's literal
 // character-class string. `numeric` marks rows where the API is known to
@@ -92,7 +92,7 @@ export const ALLOWLIST = [
     path: ["auth", "password_requirements"],
     apiField: "password_required_characters",
     liveNullEquals: "",
-    symbolMap: PASSWORD_REQUIREMENTS_CHAR_CLASSES,
+    symbolMap: AUTH_REQUIRED_CHARACTER_CLASSES,
   },
   {
     path: ["auth", "enable_signup"],
