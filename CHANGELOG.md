@@ -101,6 +101,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   profile row, and signs the browser out. Deletion is by irreversible
   removal, not a soft delete — a deleted account's shares stop resolving
   immediately.
+- A minimum-age statement on the sign-in prompt — "By continuing you confirm
+  you're 16 or older and agree to the Terms" — linking to the Terms of
+  Service (D39, AC115, W11).
 
 ### Changed
 
