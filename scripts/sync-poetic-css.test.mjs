@@ -24,16 +24,24 @@ describe("syncPoeticCss", () => {
     const writeFile = vi.fn();
 
     expect(() => {
-      syncPoeticCss(requireResolve, readFile, writeFile, "/fake/scripts", "/fake/package.json");
+      syncPoeticCss(
+        requireResolve,
+        readFile,
+        writeFile,
+        "/fake/scripts",
+        "/fake/package.json",
+      );
     }).toThrow(
-      /Could not resolve poetic\/browser\/poetic.css from the pinned poetic dependency \(6.4.0\)/
+      /Could not resolve poetic\/browser\/poetic.css from the pinned poetic dependency \(6.4.0\)/,
     );
 
     expect(requireResolve).toHaveBeenCalledWith("poetic/browser/poetic.css");
   });
 
   it("succeeds when require.resolve finds the CSS file", () => {
-    const requireResolve = vi.fn(() => "/node_modules/poetic/browser/poetic.css");
+    const requireResolve = vi.fn(
+      () => "/node_modules/poetic/browser/poetic.css",
+    );
 
     const cssContent = "body { color: red; }";
     const packageJson = JSON.stringify({
@@ -54,10 +62,19 @@ describe("syncPoeticCss", () => {
 
     const writeFile = vi.fn();
 
-    syncPoeticCss(requireResolve, readFile, writeFile, "/fake/scripts", "/fake/package.json");
+    syncPoeticCss(
+      requireResolve,
+      readFile,
+      writeFile,
+      "/fake/scripts",
+      "/fake/package.json",
+    );
 
     expect(requireResolve).toHaveBeenCalledWith("poetic/browser/poetic.css");
-    expect(readFile).toHaveBeenCalledWith("/node_modules/poetic/browser/poetic.css", "utf8");
+    expect(readFile).toHaveBeenCalledWith(
+      "/node_modules/poetic/browser/poetic.css",
+      "utf8",
+    );
     expect(writeFile).toHaveBeenCalled();
 
     const writeCall = writeFile.mock.calls[0];
@@ -82,7 +99,13 @@ describe("syncPoeticCss", () => {
     const writeFile = vi.fn();
 
     expect(() => {
-      syncPoeticCss(requireResolve, readFile, writeFile, "/fake/scripts", "/fake/package.json");
+      syncPoeticCss(
+        requireResolve,
+        readFile,
+        writeFile,
+        "/fake/scripts",
+        "/fake/package.json",
+      );
     }).toThrow(/7.0.0/);
   });
 });
