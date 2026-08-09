@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import Editor from "./Editor";
 import { loadPoem, savePoem, sharePoem, unsharePoem } from "@/lib/poems-store";
@@ -30,6 +30,13 @@ const SESSION = makeSession();
 beforeEach(() => {
   resetEditorTestState();
   vi.mocked(revalidateSharedPoem).mockResolvedValue(undefined);
+});
+
+// Safety net: a test that calls vi.useFakeTimers() and then throws before
+// reaching its own vi.useRealTimers() would otherwise leak fake timers into
+// every test that runs after it.
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("Editor share", () => {

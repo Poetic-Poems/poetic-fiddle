@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as Sentry from "@sentry/nextjs";
 import { renderPoem } from "poetic/browser";
-import { sanitizeSharedPoemHtml } from "./render-share";
+import { renderSharedPoemHtml, sanitizeSharedPoemHtml } from "./render-share";
 
 const POEM_WITH_EMBEDS = `Embed Test
 A Poet
@@ -187,5 +188,44 @@ describe("sanitizeSharedPoemHtml", () => {
     // The unrecognised host is never promoted into an iframe src — the
     // button (and its inert data-attribute) is left exactly as it was.
     expect(clean).not.toContain("<iframe");
+  });
+
+  it("leaves a malformed data-embed-src alone rather than throwing (new URL() failure)", () => {
+    // Not a valid absolute URL — `new URL()` throws, exercising the catch
+    // that a well-formed-but-unlisted host (the test above) never reaches.
+    const malformed = `<div class="song-embed"><button class="song-embed-btn" data-embed-src="not a url">Load</button><div class="song-embed-player hidden"></div></div>`;
+
+    const clean = sanitizeSharedPoemHtml(malformed);
+
+    expect(clean).not.toContain("<iframe");
+    expect(clean).toContain("song-embed-btn");
+  });
+});
+
+describe("renderSharedPoemHtml", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders and sanitises real source", () => {
+    const { html, error } = renderSharedPoemHtml(POEM_WITHOUT_EMBEDS);
+
+    expect(error).toBe(false);
+    expect(html).toContain("Just words, nothing more.");
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it("degrades to a friendly empty result and reports the swallowed error on unparseable source (AC94)", () => {
+    const result = renderSharedPoemHtml("not a valid poem at all");
+
+    expect(result).toEqual({ html: "", error: true });
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.any(Error),
+      undefined,
+    );
+    expect(Sentry.logger.error).toHaveBeenCalledWith(
+      "share page: poem render failed",
+      undefined,
+    );
   });
 });
