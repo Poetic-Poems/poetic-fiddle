@@ -146,9 +146,9 @@ export default function TermsOfService() {
         <section>
           <h2 className="font-serif text-lg font-semibold">Termination</h2>
           <p>
-            You can delete your account and its data yourself, at any time,
-            from your My poems dashboard&rsquo;s Danger zone. If you can&rsquo;t
-            sign in to do this yourself, email{" "}
+            You can delete your account and its data yourself, at any time, from
+            your My poems dashboard&rsquo;s Danger zone. If you can&rsquo;t sign
+            in to do this yourself, email{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
               className="text-link underline underline-offset-2"
