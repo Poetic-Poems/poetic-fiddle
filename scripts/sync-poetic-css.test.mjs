@@ -14,7 +14,7 @@ describe("syncPoeticCss", () => {
       },
     });
 
-    const readFile = vi.fn((path, encoding) => {
+    const readFile = vi.fn((path) => {
       if (path.includes("package.json")) {
         return packageJson;
       }
@@ -42,7 +42,7 @@ describe("syncPoeticCss", () => {
       },
     });
 
-    const readFile = vi.fn((filePath, encoding) => {
+    const readFile = vi.fn((filePath) => {
       if (filePath.includes("package.json")) {
         return packageJson;
       }
