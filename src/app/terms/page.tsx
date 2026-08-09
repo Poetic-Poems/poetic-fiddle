@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function TermsOfService() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10 sm:px-10">
-      <PageHeader title="Terms of Service" lastUpdated="28 July 2026" />
+      <PageHeader title="Terms of Service" lastUpdated="9 August 2026" />
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed">
         <section>
@@ -146,14 +146,16 @@ export default function TermsOfService() {
         <section>
           <h2 className="font-serif text-lg font-semibold">Termination</h2>
           <p>
-            You can delete your account and its data at any time by emailing{" "}
+            You can delete your account and its data yourself, at any time,
+            from your My poems dashboard&rsquo;s Danger zone. If you can&rsquo;t
+            sign in to do this yourself, email{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
               className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
-            </a>
-            , as set out in our{" "}
+            </a>{" "}
+            and we&rsquo;ll delete it for you, as set out in our{" "}
             <Link
               href="/privacy"
               className="text-link underline underline-offset-2"
