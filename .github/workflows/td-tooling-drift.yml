@@ -3,7 +3,8 @@ name: Tech-debt tooling drift check
 # This repo holds manual copies of the tech-debt tooling that is canonical in
 # Poetic-Poems/poetic (this repo does not framework-sync). This check fails
 # when the copies drift from poetic main, so divergence is noticed instead of
-# festering.
+# festering, and files a deduplicated issue on drift, mirroring
+# check-poetic-release.yml's pattern.
 
 on:
   schedule:
@@ -12,22 +13,63 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   drift:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
       - name: Compare tech-debt scripts against poetic main
+        id: diff
         run: |
           set -euo pipefail
-          status=0
+          drifted=""
           for f in scripts/get-tech-debt-record.pl scripts/next-tech-debt-id.pl \
                    scripts/td-check.pl; do
             curl -fsSL "https://raw.githubusercontent.com/Poetic-Poems/poetic/main/$f" -o /tmp/upstream
             if ! diff -u /tmp/upstream "$f"; then
               echo "::error file=$f::$f has drifted from Poetic-Poems/poetic main"
-              status=1
+              drifted="$drifted $f"
             fi
           done
-          exit $status
+          echo "drifted=${drifted# }" >> "$GITHUB_OUTPUT"
+
+      - name: File an issue if drift detected
+        if: steps.diff.outputs.drifted != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRIFTED: ${{ steps.diff.outputs.drifted }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Tech-debt tooling has drifted from Poetic-Poems/poetic main"
+
+          # Dedup on open issues only, unlike check-poetic-release.yml's
+          # all-state dedup: a release tag is a one-off event, so once
+          # reported it never needs reporting again. Drift is a recurring
+          # condition — once an open report is resolved and closed, a fresh
+          # occurrence is news again and should file a new issue.
+          already_filed=$(gh issue list --state open --limit 200 --json title \
+            | jq --arg title "$title" 'any(.[]; .title == $title)')
+          if [ "$already_filed" = "true" ]; then
+            echo "Drift already reported; skipping."
+            exit 0
+          fi
+
+          body_file=$(mktemp)
+          {
+            printf 'The following vendored tech-debt script(s) differ from '
+            printf '`Poetic-Poems/poetic`'"'"'s current `main`:\n\n'
+            for f in $DRIFTED; do
+              printf -- '- `%s`\n' "$f"
+            done
+            printf '\nRe-sync the file(s) above from poetic main. The run that '
+            printf 'detected this has the diff:\n%s\n' "$RUN_URL"
+          } > "$body_file"
+          gh issue create --title "$title" --body-file "$body_file"
+
+      - name: Fail if drift detected
+        if: steps.diff.outputs.drifted != ''
+        run: exit 1

@@ -95,6 +95,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the maintainer (AC92, TD26072414). Deleting an already-shared poem also
   invalidates its share page's cache, so the permalink stops serving right
   away rather than staying visible until the cache's next natural expiry.
+- A "Danger zone" section on the My poems dashboard with self-service account
+  deletion (AC92, W13): confirming (by typing the account's own email)
+  deletes the account outright, cascading to every saved poem, share, and
+  profile row, and signs the browser out. Deletion is by irreversible
+  removal, not a soft delete — a deleted account's shares stop resolving
+  immediately.
 
 ### Changed
 
@@ -129,11 +135,26 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   live Save/Share feature (Supabase storage, row-level security, share-link
   revocation, and deletion by request) instead of saying storage "isn't
   available yet".
+- The Privacy Policy's "Saving and sharing poems" section now describes
+  self-service account deletion from the My poems dashboard's Danger zone,
+  keeping the mailto address as a fallback for poets who can't sign in,
+  instead of saying account deletion requires emailing the maintainer.
+- The Terms of Service's "Termination" section now describes self-service
+  account deletion from the My poems dashboard's Danger zone, keeping the
+  mailto address as a fallback for poets who can't sign in, matching the
+  Privacy Policy, instead of saying account deletion requires emailing the
+  maintainer.
 - The Acceptable Use Policy and Privacy Policy publish a designated takedown
   address (`takedown@poeticfiddle.com`) and describe the removal process:
   valid requests result in content being removed from every surface — the
   poet's dashboard, any active share links, and the published site (D40,
   AC116).
+- The Privacy Policy describes the privacy breach notification process: if a
+  breach is likely to cause serious harm, the Office of the Privacy
+  Commissioner and affected individuals are notified without unreasonable
+  delay — individuals at the email address associated with their account —
+  and suspected breaches can be reported to the published privacy contact,
+  per the NZ Privacy Act 2020 notifiable-breach scheme (D41, AC118).
 - A Source/Preview toggle in the editor below the `lg` breakpoint, so mobile
   users can switch between the two views without horizontal scrolling; the
   split-pane layout at `lg` and above is unchanged (AC26, AC83).
@@ -152,6 +173,27 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `src/lib/contrast.test.ts` now measures poetic's stylesheet the way a
   browser paints it — inherited colours, backdrops and opacity resolved, over
   poems put through poetic's own renderer — in both colour schemes.
+- The postscript's "See more" control works again in the preview and share
+  views. Poetic clamps a long postscript to five lines and offers the control
+  to reveal the rest; it used to be a CSS-only checkbox, and became a scripted
+  button in the version the pin moved to, which left a long postscript
+  truncated with no way to read it. The preview now drives the control itself,
+  as it already did for the Analysis section.
+- A share page's postscript is readable with client-side JavaScript disabled
+  (AC84), and the preview and share views no longer clamp a postscript short
+  enough that revealing it would show a line or less. The pinned `poetic`
+  dependency moves to v6.4.0, which leaves a postscript unclamped by default
+  instead of always-clamped-until-lifted; both views now measure rendered
+  postscripts against the preview budget themselves, the same way poetic's
+  own script would, and apply the clamp (and the "See more" control) only
+  when there is a full line or more to reveal.
+- The editor's mobile preview pane now clamps a long postscript, matching a
+  published Poetic page at the same viewport width. Below `lg`, the preview
+  iframe stays mounted at zero size while the source pane shows, so it used
+  to measure a zero-size box and never clamp; a `ResizeObserver` on the
+  iframe now re-measures whenever it changes size, including the moment the
+  preview pane itself becomes visible, not only on window resize or the next
+  keystroke.
 - Link text (`text-link`, e.g. the legal-page and editor share links) only
   met AA contrast in light mode — 2.61:1 against the dark background, well
   below the 4.5:1 threshold. Dark mode now uses a lighter tint of the same
@@ -182,6 +224,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The Analysis section's "Synopsis"/"Full Analysis" selector buttons (shown
   when an analysis has both forms) now work in the live preview, for the
   same reason and via the same rewiring approach as the show/hide buttons.
+- A poem's song-embed button ("Load Audiomack Player" etc.) now works in the
+  live preview instead of doing nothing when clicked. The preview can't run
+  an in-place player (poetic.js, which normally activates the button, is
+  never loaded, and the preview iframe's sandbox has no `allow-scripts`), so
+  a click opens the embed URL in a new tab instead, checked against the same
+  host allow-list (`src/lib/embed-hosts.ts`) the share page's player uses.
 - "My Poems" no longer 404s. The M5 schema migrations had been merged but
   never applied to the live Supabase project, so `poems`/`profiles` were
   missing from its schema cache; the migrations are now pushed and the
@@ -268,6 +316,30 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   match poetic.css's `var()` fallback for a default-sized embed, which is why
   this was previously invisible; a non-default `preview-lines` or an
   aspect-ratio embed (no fallback) rendered wrong.
+- The editor and "My poems" dashboard now show a loading fallback instead of
+  a blank gap while their client-side bundle hydrates, and an already
+  signed-in poet visiting "My poems" no longer briefly sees a "sign in"
+  prompt before their session resolves. Sign-in (Google, magic link,
+  password), the poet's global remix-default checkbox, and a poem's own
+  "Remixing this poem" control now show in-progress text ("Signing in…",
+  "Saving…") instead of only disabling while the change is in flight.
+- The "My poems" dashboard's delete confirmation now manages focus and
+  supports Escape. Clicking "Delete" used to swap the focused button for a
+  different element with no focus management, silently dropping keyboard and
+  screen-reader focus to the page body; focus now moves onto the
+  confirmation's "Cancel" button, Escape cancels it, and focus returns to a
+  sensible target (the row's own "Delete" button on cancel; the next row's,
+  else the previous row's, else the page heading, after a successful delete).
+- Two dark-mode contrast bugs in the editor, caught by wiring axe-core into a
+  real browser rather than Vitest's `jsdom` (which can't run its
+  `color-contrast` rule at all; TD-PPpfid-26080109). `theme="dark"` was
+  pulling in `@codemirror/theme-one-dark`'s own syntax-highlight rules
+  alongside the app's own, and for tags both style — like a `{...}` section
+  label — its coral (4.38:1 on the editor's dark background) could outrank
+  the app's AA-checked colour; the editor now uses only the theme's chrome
+  colours. Its line-number gutter was also 3.86:1, short of the 4.5:1
+  threshold; it's now the same muted grey the editor already uses for
+  comments.
 
 ### Security
 
@@ -284,6 +356,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   via an `overrides` entry, resolving a medium-severity XSS via unescaped
   `</style>` in CSS Stringify Output
   ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)).
+- Bumped `postcss` further, to 8.5.23, resolving a medium-severity incomplete
+  fix of the above: an attacker-controlled `sourceMappingURL` could read
+  arbitrary `.map` files when PostCSS's `from` option is unset
+  ([GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp)).
 - Added a site-wide `Content-Security-Policy` header (`next.config.ts`) for
   the app's own pages (editor, dashboard, legal), restricting scripts,
   styles, connections, and framing to the app's own origin plus Supabase.
@@ -315,3 +391,25 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a visible hint on the requirement. The same field imposes no minimum when
   signing in to an existing account, so accounts created under the old minimum
   can still sign in (`SignInPrompt.tsx`).
+- Added `Referrer-Policy`, `X-Content-Type-Options`, and `Permissions-Policy`
+  response headers alongside the existing CSP (`src/proxy.ts`).
+  `Referrer-Policy: strict-origin-when-cross-origin` closes a theoretical leak
+  path where a `/share/[share_id]` URL's token could otherwise reach a
+  cross-origin destination in full via the `Referer` header.
+- Raised `minimum_password_length` to 10 in `supabase/config.toml`, so the
+  local Supabase stack rejects a new account below the same length the
+  sign-up form's `minLength={10}` asks for. The live project's minimum is an
+  Auth dashboard setting that neither this file nor `supabase db push`
+  applies (TD-PPpfid-26080301).
+- CI's `npm audit` gate now covers the whole dependency tree, including
+  devDependencies, and runs on every pull request (even a prose-only one)
+  rather than only when the diff touches the app. The gate had carried a
+  blanket `--omit=dev` since #176, meant to tolerate one tracked advisory
+  chain (`eslint` → `minimatch` → `brace-expansion`,
+  [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg),
+  TD-PPpfid-26072429) but exempting the entire dev toolchain from the gate
+  in the process. `brace-expansion` under `minimatch@3.1.5` moves to
+  `1.1.18`, the patched 1.x release, clearing that advisory without an
+  `eslint` major bump, so `npm run audit` (the gate's new single definition,
+  used by both `ci.yml` and the new weekly `dependency-audit.yml`) now runs
+  with no exemption and passes clean (TD-PPpfid-26080110).

@@ -1,17 +1,25 @@
+import { EMBED_FRAME_SRC } from "@/lib/embed-hosts";
+
+// This file's own tests assert emitted policy *strings*, never that a browser
+// then accepts the content — see docs/CSP-REVIEW-CHECKLIST.md before merging
+// a change here, and run it against a real browser.
+
 // The Supabase project ref differs per environment and NEXT_PUBLIC_SUPABASE_URL
 // isn't set during CI's plain `npm run build` (src/lib/supabase-server.ts), so
 // a wildcard host covers every environment without depending on an env var at
 // config-eval time.
 const SUPABASE_CONNECT_SRC = "https://*.supabase.co";
 
-// Hosts poetic's song-handler embeds can point at (src/lib/render-share.ts'
-// EMBED_ALLOWED_HOSTS, restated here as the frame-src origins). A srcdoc
+// EMBED_FRAME_SRC (src/lib/embed-hosts.ts) restates the same host allow-list
+// render-share.ts's sanitiser enforces, as the frame-src origins. A srcdoc
 // iframe (SharedPoemView.tsx) inherits this top-level policy in addition to
 // its own <meta> CSP — CSP is additive, so both must allow a framed embed to
 // load — and with no frame-src here that inherited policy would fall back
 // to default-src 'self', blocking the embeds regardless of the <meta> tag's
-// own allow-list (issue #97).
-const EMBED_FRAME_SRC = "https://mega.nz https://audiomack.com";
+// own allow-list (issue #97). It deliberately omits 'self': PR #117 narrowed
+// it from the previous default-src 'self' fallback, and nothing same-origin
+// is ever framed here — srcdoc iframes aren't governed by frame-src at all,
+// as issue #97 itself demonstrated.
 
 /**
  * A strict, site-wide CSP for the app's own pages (editor, dashboard, legal) —

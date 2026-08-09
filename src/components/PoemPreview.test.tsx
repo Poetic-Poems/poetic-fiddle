@@ -1,9 +1,15 @@
-import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
-import { PoemPreview, wireAnalysisToggles } from "./PoemPreview";
+import {
+  evaluatePostscriptPreviews,
+  PoemPreview,
+  POSTSCRIPT_RESIZE_DEBOUNCE_MS,
+  wirePoemToggles,
+} from "./PoemPreview";
 import { NonceProvider } from "@/lib/nonce-context";
+import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
 // Mirrors the markup poetic's _poem-content.pug emits for an Analysis
 // section (github.com/Poetic-Poems/poetic src/templates/_poem-content.pug).
@@ -59,10 +65,10 @@ function selectorDocument(): Document {
   return doc;
 }
 
-describe("wireAnalysisToggles", () => {
+describe("wirePoemToggles", () => {
   it("expands the analysis on click of the show button", () => {
     const doc = analysisDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const showButton = doc.getElementById("show-analysis--test-poem")!;
 
@@ -73,7 +79,7 @@ describe("wireAnalysisToggles", () => {
 
   it("collapses the analysis again on click of the hide button", () => {
     const doc = analysisDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const showButton = doc.getElementById("show-analysis--test-poem")!;
     const hideButton = doc.getElementById("hide-analysis--test-poem")!;
@@ -88,14 +94,14 @@ describe("wireAnalysisToggles", () => {
     const doc = document.implementation.createHTMLDocument("preview");
     doc.body.innerHTML = "<p>No analysis here.</p>";
 
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     expect(() => doc.body.querySelector("p")!.click()).not.toThrow();
   });
 
   it("switches to the full analysis and marks its button pressed", () => {
     const doc = selectorDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const synoButton = doc.getElementById("analysis-select-syno--test-poem")!;
     const fullButton = doc.getElementById("analysis-select-full--test-poem")!;
@@ -110,7 +116,7 @@ describe("wireAnalysisToggles", () => {
 
   it("switches back to the synopsis and marks its button pressed", () => {
     const doc = selectorDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const synoButton = doc.getElementById("analysis-select-syno--test-poem")!;
     const fullButton = doc.getElementById("analysis-select-full--test-poem")!;
@@ -125,12 +131,76 @@ describe("wireAnalysisToggles", () => {
   });
 });
 
-// The ANALYSIS_HTML/SELECTOR_HTML fixtures above are hand-copied from
-// poetic's _poem-content.pug, so a template change there could silently
-// desync the fixture from what poetic actually emits (the failure mode
-// behind TD26071401/TD26071602). This pipes a real .poem source with an
-// {Analysis} block through poetic's own renderPoem(), the same way
-// PoemPreview does, to exercise wireAnalysisToggles against genuine output.
+// poetic clamps a postscript to `--preview-lines` and offers a "See more"
+// control to lift it. That control was a CSS-only checkbox until poetic v6.2.0
+// made it a scripted button, so the clamp is now Fiddle's to release: left
+// unwired, a long postscript is truncated with no way to read the rest. The
+// visible label is poetic.css's ::after content keyed off aria-expanded; the
+// .sr-only span is the button's accessible name.
+const POSTSCRIPT_HTML = `
+  <div class="postscript">
+    <div class="postscript-content" id="postscript-item--test-poem--content" style="--preview-lines: 5" data-preview-lines="5">
+      <p>A postscript long enough to be clamped.</p>
+    </div>
+    <button class="postscript-toggle" id="postscript-item--test-poem--more" type="button" aria-expanded="false" aria-controls="postscript-item--test-poem--content">
+      <span class="sr-only">See more</span>
+    </button>
+  </div>
+`;
+
+function postscriptDocument(): Document {
+  const doc = document.implementation.createHTMLDocument("preview");
+  doc.body.innerHTML = POSTSCRIPT_HTML;
+  return doc;
+}
+
+describe("wirePoemToggles postscript preview", () => {
+  it("lifts the clamp and relabels the control on click", () => {
+    const doc = postscriptDocument();
+    wirePoemToggles(doc);
+
+    const toggle = doc.getElementById("postscript-item--test-poem--more")!;
+    const content = doc.getElementById("postscript-item--test-poem--content")!;
+
+    (toggle as HTMLElement).click();
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(content.classList.contains("postscript-expanded")).toBe(true);
+    expect(toggle.querySelector(".sr-only")!.textContent).toBe("See less");
+  });
+
+  it("restores the clamp and the label on a second click", () => {
+    const doc = postscriptDocument();
+    wirePoemToggles(doc);
+
+    const toggle = doc.getElementById("postscript-item--test-poem--more")!;
+    const content = doc.getElementById("postscript-item--test-poem--content")!;
+
+    (toggle as HTMLElement).click();
+    (toggle as HTMLElement).click();
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(content.classList.contains("postscript-expanded")).toBe(false);
+    expect(toggle.querySelector(".sr-only")!.textContent).toBe("See more");
+  });
+
+  it("responds to a click on the label inside the control", () => {
+    const doc = postscriptDocument();
+    wirePoemToggles(doc);
+
+    const toggle = doc.getElementById("postscript-item--test-poem--more")!;
+
+    (toggle.querySelector(".sr-only") as HTMLElement).click();
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  });
+});
+
+// The fixtures above are hand-copied from poetic's _poem-content.pug, so a
+// template change there could silently desync the fixture from what poetic
+// actually emits (the failure mode behind TD26071401/TD26071602). This pipes
+// real .poem sources through poetic's own renderPoem(), the same way
+// PoemPreview does, to exercise wirePoemToggles against genuine output.
 const POEM_WITH_ANALYSIS = `Analysis Wiring Test
 A Poet
 2026-07-24
@@ -155,10 +225,10 @@ The full analysis text.
 ====
 `;
 
-describe("wireAnalysisToggles against real poetic output", () => {
+describe("wirePoemToggles against real poetic output", () => {
   function realAnalysisDocument(): Document {
     const html = renderPoem(POEM_WITH_ANALYSIS);
-    const sanitised = DOMPurify.sanitize(html);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
     const doc = document.implementation.createHTMLDocument("preview");
     doc.body.innerHTML = sanitised;
     return doc;
@@ -168,7 +238,7 @@ describe("wireAnalysisToggles against real poetic output", () => {
     const html = renderPoem(POEM_WITH_ANALYSIS);
     expect(html).not.toContain("onclick");
 
-    // The attributes wireAnalysisToggles drives have to survive DOMPurify —
+    // The attributes wirePoemToggles drives have to survive DOMPurify —
     // stripped, the buttons would be inert and the analysis unreachable.
     const doc = realAnalysisDocument();
     expect(doc.body.innerHTML).not.toContain("onclick");
@@ -186,7 +256,7 @@ describe("wireAnalysisToggles against real poetic output", () => {
 
   it("expands the analysis on click of the show button", () => {
     const doc = realAnalysisDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const showButton = doc.getElementById(
       "show-analysis--analysis-wiring-test",
@@ -199,7 +269,7 @@ describe("wireAnalysisToggles against real poetic output", () => {
 
   it("collapses the analysis again on click of the hide button", () => {
     const doc = realAnalysisDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const showButton = doc.getElementById(
       "show-analysis--analysis-wiring-test",
@@ -216,7 +286,7 @@ describe("wireAnalysisToggles against real poetic output", () => {
 
   it("switches from the synopsis to the full analysis and marks its button pressed", () => {
     const doc = realAnalysisDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const synoButton = doc.getElementById(
       "analysis-select-syno--analysis-wiring-test",
@@ -245,7 +315,7 @@ describe("wireAnalysisToggles against real poetic output", () => {
 
   it("switches back to the synopsis and marks its button pressed", () => {
     const doc = realAnalysisDocument();
-    wireAnalysisToggles(doc);
+    wirePoemToggles(doc);
 
     const synoButton = doc.getElementById(
       "analysis-select-syno--analysis-wiring-test",
@@ -266,6 +336,506 @@ describe("wireAnalysisToggles against real poetic output", () => {
     expect(fullButton.getAttribute("aria-pressed")).toBe("false");
     expect(synoPanel.getAttribute("data-analysis-panel")).toBe("synopsis");
     expect(synoPanel.textContent).toContain("A short synopsis.");
+  });
+});
+
+// Long enough that poetic's five-line preview clamp hides part of it, which is
+// the case where leaving the control unwired loses text outright.
+const POEM_WITH_LONG_POSTSCRIPT = `Postscript Wiring Test
+A Poet
+2026-08-01
+
+{Verse}
+Hello world.
+
+====
+
+====
+
+${Array.from({ length: 12 }, (_, line) => `Postscript line ${line + 1}.`).join("\n")}
+
+====
+`;
+
+describe("wirePoemToggles postscript against real poetic output", () => {
+  function realPostscriptDocument(): Document {
+    const html = renderPoem(POEM_WITH_LONG_POSTSCRIPT);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = sanitised;
+    return doc;
+  }
+
+  it("keeps the clamp and the control's attributes through sanitising", () => {
+    const doc = realPostscriptDocument();
+
+    const content = doc.querySelector(".postscript-content")!;
+    const toggle = doc.querySelector(".postscript-toggle")!;
+
+    // The inline custom property is what poetic.css's max-height reads, and
+    // src/lib/csp.ts's style-src-attr exists to let it through.
+    expect(content.getAttribute("style")).toContain("--preview-lines");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-controls")).toBe(content.id);
+  });
+
+  it("reveals the clamped postscript on click", () => {
+    const doc = realPostscriptDocument();
+    wirePoemToggles(doc);
+
+    const content = doc.querySelector(".postscript-content")!;
+    const toggle = doc.querySelector(".postscript-toggle")!;
+
+    (toggle as HTMLElement).click();
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(content.classList.contains("postscript-expanded")).toBe(true);
+    expect(content.textContent).toContain("Postscript line 12.");
+  });
+});
+
+describe("evaluatePostscriptPreviews", () => {
+  // Not vi.restoreAllMocks() in afterEach: that would also tear down the
+  // module-level window.open spy the song-embed describe block below sets up
+  // once, outside any beforeEach/afterEach of its own.
+  let computedStyleSpy: ReturnType<typeof vi.spyOn> | undefined;
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    computedStyleSpy?.mockRestore();
+    computedStyleSpy = undefined;
+  });
+
+  // Builds a detached `.postscript-content` element attached to the live
+  // `document` (not `document.implementation.createHTMLDocument()`, whose
+  // result has no `defaultView` — see the "does nothing" case below — the
+  // same reason evaluatePostscriptPreviews reaches computed style through
+  // `doc.defaultView` rather than a global). jsdom never lays elements out,
+  // so the two rects that decide clamping are stubbed directly on the nodes
+  // under test, standing in for `getBoundingClientRect()` in a real browser.
+  function postscriptContentElement({
+    previewLines,
+    lineHeight,
+    fontSize = "16px",
+    contentBottom,
+  }: {
+    previewLines?: number;
+    lineHeight: string;
+    fontSize?: string;
+    contentBottom: number;
+  }): HTMLElement {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <div class="postscript-content"${previewLines !== undefined ? ` data-preview-lines="${previewLines}"` : ""}>
+        <p>A postscript.</p>
+      </div>
+    `;
+    document.body.appendChild(container);
+
+    const content = container.querySelector<HTMLElement>(
+      ".postscript-content",
+    )!;
+    computedStyleSpy = vi.spyOn(window, "getComputedStyle").mockReturnValue({
+      lineHeight,
+      fontSize,
+    } as CSSStyleDeclaration);
+    vi.spyOn(content, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+    } as DOMRect);
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: contentBottom } as DOMRect);
+
+    return content;
+  }
+
+  it("adds postscript-clamped when hidden content exceeds a full line", () => {
+    // 5 (default) lines * 20px budget = 100px; 130px of content leaves 30px
+    // hidden, more than one 20px line.
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("does not add postscript-clamped when hidden content is a line or less", () => {
+    // 100px budget; 110px of content leaves only 10px hidden, under one
+    // 20px line — poetic's own preview would offer nothing to reveal.
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 110,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("removes an already-applied clamp once it no longer applies", () => {
+    const content = postscriptContentElement({
+      lineHeight: "20px",
+      contentBottom: 110,
+    });
+    content.classList.add("postscript-clamped");
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("falls back to 1.2x font-size when line-height isn't a pixel value", () => {
+    // lineHeight "normal" isn't parseable, so lineHeightPx falls back to
+    // 1.2 * 16px = 19.2px; budget = 5 * 19.2 = 96px. 130px of content leaves
+    // 34px hidden, more than one fallback line.
+    const content = postscriptContentElement({
+      lineHeight: "normal",
+      fontSize: "16px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("respects a non-default data-preview-lines budget", () => {
+    // 2 lines * 20px = 40px budget; 130px of content leaves 90px hidden.
+    const content = postscriptContentElement({
+      previewLines: 2,
+      lineHeight: "20px",
+      contentBottom: 130,
+    });
+
+    evaluatePostscriptPreviews(document);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("does nothing when there is no postscript-content element", () => {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = "<p>No postscript here.</p>";
+
+    expect(() => evaluatePostscriptPreviews(doc)).not.toThrow();
+  });
+
+  it("does nothing when the document has no defaultView", () => {
+    // document.implementation.createHTMLDocument() produces a Document with
+    // no browsing context (defaultView is null) — the shape a detached test
+    // fixture has, distinct from a live iframe's contentDocument.
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = '<div class="postscript-content"><p>Text</p></div>';
+
+    expect(() => evaluatePostscriptPreviews(doc)).not.toThrow();
+    expect(
+      doc
+        .querySelector(".postscript-content")!
+        .classList.contains("postscript-clamped"),
+    ).toBe(false);
+  });
+});
+
+// The clamp is only right if the component actually reaches for the preview
+// document — on load and again on resize. jsdom never loads a srcdoc iframe's
+// content (its contentDocument stays empty), so the document a real browser
+// would build is stubbed onto the iframe and the `load` event fired by hand;
+// what is under test is PoemPreview's wiring, not jsdom's iframe support.
+//
+// jsdom also never lays elements out, so it never fires a real
+// ResizeObserver either — a mock class captures the callback PoemPreview
+// registers, letting tests invoke it directly to stand in for both a window
+// resize and the hidden -> visible pane transition a real ResizeObserver
+// reports for (unlike a window `resize` listener, which fires for neither).
+class MockResizeObserver {
+  static instances: MockResizeObserver[] = [];
+  callback: ResizeObserverCallback;
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+    MockResizeObserver.instances.push(this);
+  }
+
+  trigger() {
+    this.callback([], this as unknown as ResizeObserver);
+  }
+}
+
+describe("PoemPreview postscript wiring", () => {
+  // Not vi.restoreAllMocks(): see the note in the evaluatePostscriptPreviews
+  // block above — it would tear down the module-level window.open spy the
+  // song-embed block sets up once.
+  const globalSpies: { mockRestore: () => void }[] = [];
+
+  beforeEach(() => {
+    MockResizeObserver.instances = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    globalSpies.splice(0).forEach((spy) => spy.mockRestore());
+  });
+
+  // Stubs the document a loaded preview iframe would expose, with layout
+  // (which jsdom never computes) standing in as fixed rects: a 5-line budget
+  // at 20px per line is 100px, so `contentBottom` above 120px is more than a
+  // line hidden and clamps.
+  function stubPreviewDocument(
+    iframe: HTMLIFrameElement,
+    contentBottom: number,
+  ): HTMLElement {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML =
+      '<div class="postscript-content"><p>A postscript.</p></div>';
+    // createHTMLDocument() has no browsing context, so no defaultView — the
+    // one thing a live iframe's contentDocument has that this fixture lacks.
+    Object.defineProperty(doc, "defaultView", {
+      value: window,
+      configurable: true,
+    });
+    Object.defineProperty(iframe, "contentDocument", {
+      value: doc,
+      configurable: true,
+    });
+
+    globalSpies.push(
+      vi.spyOn(window, "getComputedStyle").mockReturnValue({
+        lineHeight: "20px",
+        fontSize: "16px",
+      } as CSSStyleDeclaration),
+    );
+
+    const content = doc.querySelector<HTMLElement>(".postscript-content")!;
+    vi.spyOn(content, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+    } as DOMRect);
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: contentBottom } as DOMRect);
+    return content;
+  }
+
+  function renderPreview(): {
+    iframe: HTMLIFrameElement;
+    observer: MockResizeObserver;
+  } {
+    const { container } = render(
+      <NonceProvider nonce="test-nonce-123">
+        <PoemPreview html="<p>A poem.</p>" css="" />
+      </NonceProvider>,
+    );
+    const observer =
+      MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
+    return { iframe: container.querySelector("iframe")!, observer };
+  }
+
+  it("clamps a long postscript when the preview iframe loads", () => {
+    const { iframe } = renderPreview();
+    const content = stubPreviewDocument(iframe, 130);
+
+    fireEvent.load(iframe);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("leaves a short postscript unclamped when the preview iframe loads", () => {
+    const { iframe } = renderPreview();
+    const content = stubPreviewDocument(iframe, 110);
+
+    fireEvent.load(iframe);
+
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+  });
+
+  it("observes the iframe for size changes", () => {
+    const { iframe, observer } = renderPreview();
+
+    expect(observer.observe).toHaveBeenCalledWith(iframe);
+  });
+
+  // The editor's mobile preview pane keeps this iframe permanently mounted
+  // and toggles it between `display: none` and visible with a class switch
+  // (Editor.tsx's `mobileView`), rather than mounting/unmounting it or
+  // reloading its srcDoc. Neither `load` nor a window `resize` fires on that
+  // transition, but the iframe's rendered box goes from zero to its real
+  // size, which is exactly what a ResizeObserver on the iframe reports —
+  // this is what TD-PPpfid-26080403 covers: deleting the ResizeObserver
+  // wiring (or reverting to the window `resize` listener it replaced) turns
+  // this red, because nothing else re-measures the pane when it appears.
+  it("re-evaluates when the previously-hidden pane becomes visible, not only on the next srcDoc reload", () => {
+    vi.useFakeTimers();
+    const { iframe, observer } = renderPreview();
+    // Loaded while the pane was hidden (a zero-size box in a real browser),
+    // measuring as unclamped; the pane then becomes visible with content
+    // tall enough to clamp, without a fresh `load`.
+    const content = stubPreviewDocument(iframe, 110);
+    fireEvent.load(iframe);
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+
+    vi.spyOn(
+      content.lastElementChild!,
+      "getBoundingClientRect",
+    ).mockReturnValue({ bottom: 130 } as DOMRect);
+    observer.trigger();
+
+    vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS - 1);
+    expect(content.classList.contains("postscript-clamped")).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    expect(content.classList.contains("postscript-clamped")).toBe(true);
+  });
+
+  it("coalesces a burst of size-change reports into one evaluation", () => {
+    vi.useFakeTimers();
+    const { iframe, observer } = renderPreview();
+    const content = stubPreviewDocument(iframe, 130);
+    const evaluated = vi.spyOn(content, "getBoundingClientRect");
+
+    for (let i = 0; i < 5; i++) {
+      observer.trigger();
+      vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS - 1);
+    }
+    vi.advanceTimersByTime(1);
+
+    expect(evaluated).toHaveBeenCalledTimes(1);
+  });
+
+  // Asserted against the observer instance rather than "nothing happens
+  // after unmount": the ref is null by then, so a leaked observer would find
+  // no document and look identical — while still accumulating one observer
+  // per mount for the life of the page.
+  it("disconnects its ResizeObserver on unmount", () => {
+    const { unmount } = render(
+      <NonceProvider nonce="test-nonce-123">
+        <PoemPreview html="<p>A poem.</p>" css="" />
+      </NonceProvider>,
+    );
+    const observer =
+      MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
+    expect(observer.disconnect).not.toHaveBeenCalled();
+
+    unmount();
+
+    expect(observer.disconnect).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Mirrors render-share.test.ts's POEM_WITH_EMBEDS: one handler per builtin
+// embed style (a fixed height, an aspect ratio) plus a link-only handler
+// (Suno) that never renders a button at all.
+const POEM_WITH_EMBEDS = `Embed Test
+A Poet
+2026-07-17
+
+{Verse}
+Hello world.
+
+====
+
+Audiomack: my-artist/my-song
+Mega: FileId123#Key456 (audio)
+Suno: s/SongLink12345678
+
+====
+`;
+
+describe("wirePoemToggles song-embed buttons", () => {
+  const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+  afterEach(() => {
+    openSpy.mockClear();
+  });
+
+  function embedDocument(dataEmbedSrc: string): Document {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = `<button class="song-embed-btn" data-embed-src="${dataEmbedSrc}">Load player</button>`;
+    return doc;
+  }
+
+  it("opens an allow-listed embed URL in a new tab", () => {
+    const doc = embedDocument("https://audiomack.com/embed/my-artist/my-song");
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://audiomack.com/embed/my-artist/my-song",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("does not open a URL whose host is not on the allow-list", () => {
+    const doc = embedDocument("https://evil.example/embed");
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not open a non-https URL even for an allow-listed host", () => {
+    const doc = embedDocument("http://audiomack.com/embed/my-artist/my-song");
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not throw and does not open on an unparseable embed URL", () => {
+    const doc = embedDocument("not a url");
+    wirePoemToggles(doc);
+
+    expect(() =>
+      (doc.querySelector(".song-embed-btn") as HTMLElement).click(),
+    ).not.toThrow();
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the button carries no data-embed-src", () => {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = `<button class="song-embed-btn">Load player</button>`;
+    wirePoemToggles(doc);
+
+    (doc.querySelector(".song-embed-btn") as HTMLElement).click();
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("opens the right host for each embed button against real poetic output", () => {
+    const html = renderPoem(POEM_WITH_EMBEDS);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = sanitised;
+    wirePoemToggles(doc);
+
+    const buttons = doc.querySelectorAll<HTMLElement>(".song-embed-btn");
+    // Audiomack and Mega both declare embed_url and get a button; Suno is
+    // link-only and renders a plain anchor instead.
+    expect(buttons.length).toBe(2);
+
+    buttons.forEach((button) => button.click());
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://audiomack.com/embed/my-artist/song/my-song",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://mega.nz/embed/FileId123#Key456",
+      "_blank",
+      "noopener,noreferrer",
+    );
   });
 });
 
@@ -304,9 +874,9 @@ describe("PoemPreview srcDoc nonce", () => {
   });
 
   // poetic's rendered markup carries per-instance sizing as inline `style`
-  // attributes (issue #119) — DOMPurify's default config (used here) keeps
-  // them, so this asserts the value genuinely survives the sanitisation
-  // step, not just that the site CSP (unexercised by jsdom) would allow it.
+  // attributes (issue #119) — POEM_SANITIZE_CONFIG keeps them, so this
+  // asserts the value genuinely survives the sanitisation step, not just
+  // that the site CSP (unexercised by jsdom) would allow it.
   it("keeps an inline style attribute through DOMPurify sanitisation", () => {
     const { container } = render(
       <NonceProvider nonce="test-nonce-123">

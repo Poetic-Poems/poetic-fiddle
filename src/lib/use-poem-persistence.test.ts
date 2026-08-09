@@ -35,11 +35,11 @@ const SESSION = {
 } as Session;
 
 function signedOut() {
-  vi.mocked(useSession).mockReturnValue(null);
+  vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
 }
 
 function signedIn() {
-  vi.mocked(useSession).mockReturnValue(SESSION);
+  vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
 }
 
 beforeEach(() => {
@@ -74,7 +74,7 @@ describe("usePoemPersistence — initial source", () => {
     const { result } = renderHook(() =>
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
-    expect(result.current.opening).toBe(true);
+    expect(result.current.open.opening).toBe(true);
     expect(result.current.source).toBe("");
   });
 
@@ -100,13 +100,13 @@ describe("usePoemPersistence — opening a saved poem", () => {
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
 
-    await waitFor(() => expect(result.current.opening).toBe(false));
+    await waitFor(() => expect(result.current.open.opening).toBe(false));
     expect(result.current.source).toBe(
       "A Title\nA Poet\n2026-07-17\n\n{Verse}\nHello.\n",
     );
-    expect(result.current.shareUrl).toContain("/share/abc123");
-    expect(result.current.allowRemix).toBe(true);
-    expect(result.current.saveStatus).toBe("Saved");
+    expect(result.current.share.shareUrl).toContain("/share/abc123");
+    expect(result.current.remix.allowRemix).toBe(true);
+    expect(result.current.save.saveStatus).toBe("Saved");
   });
 
   it("surfaces a load failure as openError", async () => {
@@ -119,9 +119,11 @@ describe("usePoemPersistence — opening a saved poem", () => {
     );
 
     await waitFor(() =>
-      expect(result.current.openError).toBe("That poem couldn't be found."),
+      expect(result.current.open.openError).toBe(
+        "That poem couldn't be found.",
+      ),
     );
-    expect(result.current.opening).toBe(false);
+    expect(result.current.open.opening).toBe(false);
   });
 });
 
@@ -130,7 +132,7 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
     window.localStorage.setItem("poetic-fiddle:draft:v1", "A stashed draft.");
     const { result, rerender } = renderHook(
       ({ session }) => {
-        vi.mocked(useSession).mockReturnValue(session);
+        vi.mocked(useSession).mockReturnValue({ session, loading: false });
         return usePoemPersistence({});
       },
       { initialProps: { session: null as Session | null } },
@@ -155,13 +157,13 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
     });
     const { result, rerender } = renderHook(
       ({ session }) => {
-        vi.mocked(useSession).mockReturnValue(session);
+        vi.mocked(useSession).mockReturnValue({ session, loading: false });
         return usePoemPersistence({});
       },
       { initialProps: { session: SESSION } },
     );
-    await act(async () => result.current.handleSave());
-    expect(result.current.saveStatus).toBe("Saved");
+    await act(async () => result.current.save.handleSave());
+    expect(result.current.save.saveStatus).toBe("Saved");
 
     const otherAccount = {
       user: { id: "user-2", email: "other@example.com" },
@@ -169,7 +171,7 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
     rerender({ session: otherAccount });
 
     await waitFor(() =>
-      expect(result.current.saveStatus).toBe("Unsaved changes"),
+      expect(result.current.save.saveStatus).toBe("Unsaved changes"),
     );
     // The source itself is untouched — only the saved-row identity is forgotten,
     // so the next Save inserts a poem of the new account's own.
@@ -185,17 +187,17 @@ describe("usePoemPersistence — sign-in draft migration (AC9)", () => {
     });
     const { result, rerender } = renderHook(
       ({ session }) => {
-        vi.mocked(useSession).mockReturnValue(session);
+        vi.mocked(useSession).mockReturnValue({ session, loading: false });
         return usePoemPersistence({ initialPoemId: "poem-1" });
       },
       { initialProps: { session: SESSION as Session | null } },
     );
-    await waitFor(() => expect(result.current.saveStatus).toBe("Saved"));
+    await waitFor(() => expect(result.current.save.saveStatus).toBe("Saved"));
 
     rerender({ session: null });
 
-    await waitFor(() => expect(result.current.shareUrl).toBeNull());
-    expect(result.current.saveStatus).toBe("");
+    await waitFor(() => expect(result.current.share.shareUrl).toBeNull());
+    expect(result.current.save.saveStatus).toBe("");
   });
 });
 
@@ -256,7 +258,7 @@ describe("usePoemPersistence — save (AC10, AC13, AC14, AC94, AC95)", () => {
   it("prompts sign-in instead of saving when signed out", async () => {
     const { result } = renderHook(() => usePoemPersistence({}));
 
-    await act(async () => result.current.handleSave());
+    await act(async () => result.current.save.handleSave());
 
     expect(savePoem).not.toHaveBeenCalled();
     expect(result.current.signInPromptAction).toBe("save");
@@ -271,14 +273,14 @@ describe("usePoemPersistence — save (AC10, AC13, AC14, AC94, AC95)", () => {
       shareId: null,
     });
     const { result } = renderHook(() => usePoemPersistence({}));
-    expect(result.current.saveStatus).toBe("Unsaved changes");
+    expect(result.current.save.saveStatus).toBe("Unsaved changes");
 
-    await act(async () => result.current.handleSave());
+    await act(async () => result.current.save.handleSave());
 
     expect(savePoem).toHaveBeenCalledWith(
       expect.objectContaining({ id: null, ownerId: "user-1" }),
     );
-    expect(result.current.saveStatus).toBe("Saved");
+    expect(result.current.save.saveStatus).toBe("Saved");
   });
 
   it("surfaces a failed save without losing the poem", async () => {
@@ -286,10 +288,10 @@ describe("usePoemPersistence — save (AC10, AC13, AC14, AC94, AC95)", () => {
     vi.mocked(savePoem).mockRejectedValue(new Error("Couldn't save your poem"));
     const { result } = renderHook(() => usePoemPersistence({}));
 
-    await act(async () => result.current.handleSave());
+    await act(async () => result.current.save.handleSave());
 
-    expect(result.current.saveError).toBe("Couldn't save your poem");
-    expect(result.current.saveStatus).toBe("Unsaved changes");
+    expect(result.current.save.saveError).toBe("Couldn't save your poem");
+    expect(result.current.save.saveStatus).toBe("Unsaved changes");
   });
 });
 
@@ -297,7 +299,7 @@ describe("usePoemPersistence — share/unshare (AC17)", () => {
   it("prompts sign-in instead of sharing when signed out", async () => {
     const { result } = renderHook(() => usePoemPersistence({}));
 
-    await act(async () => result.current.handleShare());
+    await act(async () => result.current.share.handleShare());
 
     expect(sharePoem).not.toHaveBeenCalled();
     expect(result.current.signInPromptAction).toBe("share");
@@ -314,13 +316,13 @@ describe("usePoemPersistence — share/unshare (AC17)", () => {
     vi.mocked(sharePoem).mockResolvedValue("abc123");
     const { result } = renderHook(() => usePoemPersistence({}));
 
-    await act(async () => result.current.handleShare());
+    await act(async () => result.current.share.handleShare());
 
     expect(savePoem).toHaveBeenCalledWith(
       expect.objectContaining({ id: null, ownerId: "user-1" }),
     );
     expect(sharePoem).toHaveBeenCalledWith("poem-1");
-    expect(result.current.shareUrl).toContain("/share/abc123");
+    expect(result.current.share.shareUrl).toContain("/share/abc123");
     expect(revalidateSharedPoem).toHaveBeenCalledWith("abc123");
   });
 
@@ -336,9 +338,9 @@ describe("usePoemPersistence — share/unshare (AC17)", () => {
     const { result } = renderHook(() =>
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
-    await waitFor(() => expect(result.current.opening).toBe(false));
+    await waitFor(() => expect(result.current.open.opening).toBe(false));
 
-    await act(async () => result.current.handleShare());
+    await act(async () => result.current.share.handleShare());
 
     expect(sharePoem).toHaveBeenCalledWith("poem-1");
     expect(savePoem).not.toHaveBeenCalled();
@@ -356,13 +358,15 @@ describe("usePoemPersistence — share/unshare (AC17)", () => {
     const { result } = renderHook(() =>
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
-    await waitFor(() => expect(result.current.shareUrl).toContain("abc123"));
+    await waitFor(() =>
+      expect(result.current.share.shareUrl).toContain("abc123"),
+    );
 
-    await act(async () => result.current.handleUnshare());
+    await act(async () => result.current.share.handleUnshare());
 
     expect(unsharePoem).toHaveBeenCalledWith("poem-1");
     expect(revalidateSharedPoem).toHaveBeenCalledWith("abc123");
-    expect(result.current.shareUrl).toBeNull();
+    expect(result.current.share.shareUrl).toBeNull();
   });
 
   it("surfaces a failed share without losing the poem", async () => {
@@ -378,9 +382,11 @@ describe("usePoemPersistence — share/unshare (AC17)", () => {
     );
     const { result } = renderHook(() => usePoemPersistence({}));
 
-    await act(async () => result.current.handleShare());
+    await act(async () => result.current.share.handleShare());
 
-    expect(result.current.shareError).toBe("Couldn't create a share link");
+    expect(result.current.share.shareError).toBe(
+      "Couldn't create a share link",
+    );
   });
 });
 
@@ -402,18 +408,20 @@ describe("usePoemPersistence — copy share link (#67)", () => {
     const { result } = renderHook(() =>
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
-    await waitFor(() => expect(result.current.shareUrl).toContain("abc123"));
+    await waitFor(() =>
+      expect(result.current.share.shareUrl).toContain("abc123"),
+    );
 
-    await act(async () => result.current.handleCopyShareLink());
+    await act(async () => result.current.share.handleCopyShareLink());
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("/share/abc123"),
     );
-    expect(result.current.linkCopied).toBe(true);
+    expect(result.current.share.linkCopied).toBe(true);
 
     await act(async () => {
       vi.advanceTimersByTime(2000);
     });
-    expect(result.current.linkCopied).toBe(false);
+    expect(result.current.share.linkCopied).toBe(false);
 
     vi.useRealTimers();
   });
@@ -436,12 +444,16 @@ describe("usePoemPersistence — copy share link (#67)", () => {
     const { result } = renderHook(() =>
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
-    await waitFor(() => expect(result.current.shareUrl).toContain("abc123"));
+    await waitFor(() =>
+      expect(result.current.share.shareUrl).toContain("abc123"),
+    );
 
-    await act(async () => result.current.handleCopyShareLink());
+    await act(async () => result.current.share.handleCopyShareLink());
 
-    expect(result.current.shareError).toBe("Couldn't access the clipboard");
-    expect(result.current.shareUrl).toContain("abc123");
+    expect(result.current.share.shareError).toBe(
+      "Couldn't access the clipboard",
+    );
+    expect(result.current.share.shareUrl).toContain("abc123");
   });
 });
 
@@ -449,7 +461,7 @@ describe("usePoemPersistence — per-poem remix override (AC114)", () => {
   it("prompts sign-in when changing the override while signed out", async () => {
     const { result } = renderHook(() => usePoemPersistence({}));
 
-    await act(async () => result.current.handleAllowRemixChange(true));
+    await act(async () => result.current.remix.handleAllowRemixChange(true));
 
     expect(updateAllowRemix).not.toHaveBeenCalled();
     expect(result.current.signInPromptAction).toBe("save");
@@ -467,13 +479,13 @@ describe("usePoemPersistence — per-poem remix override (AC114)", () => {
     const { result } = renderHook(() =>
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
-    await waitFor(() => expect(result.current.opening).toBe(false));
+    await waitFor(() => expect(result.current.open.opening).toBe(false));
 
-    await act(async () => result.current.handleAllowRemixChange(false));
+    await act(async () => result.current.remix.handleAllowRemixChange(false));
 
     expect(updateAllowRemix).toHaveBeenCalledWith("poem-1", false);
     expect(savePoem).not.toHaveBeenCalled();
-    expect(result.current.allowRemix).toBe(false);
+    expect(result.current.remix.allowRemix).toBe(false);
   });
 
   it("saves the poem first when setting an override before the first save", async () => {
@@ -487,13 +499,13 @@ describe("usePoemPersistence — per-poem remix override (AC114)", () => {
     vi.mocked(updateAllowRemix).mockResolvedValue(true);
     const { result } = renderHook(() => usePoemPersistence({}));
 
-    await act(async () => result.current.handleAllowRemixChange(true));
+    await act(async () => result.current.remix.handleAllowRemixChange(true));
 
     expect(savePoem).toHaveBeenCalledWith(
       expect.objectContaining({ id: null, ownerId: "user-1" }),
     );
     expect(updateAllowRemix).toHaveBeenCalledWith("new-poem", true);
-    expect(result.current.allowRemix).toBe(true);
+    expect(result.current.remix.allowRemix).toBe(true);
   });
 
   it("surfaces a failed override save without losing the current setting", async () => {
@@ -510,21 +522,21 @@ describe("usePoemPersistence — per-poem remix override (AC114)", () => {
     const { result } = renderHook(() =>
       usePoemPersistence({ initialPoemId: "poem-1" }),
     );
-    await waitFor(() => expect(result.current.opening).toBe(false));
+    await waitFor(() => expect(result.current.open.opening).toBe(false));
 
-    await act(async () => result.current.handleAllowRemixChange(true));
+    await act(async () => result.current.remix.handleAllowRemixChange(true));
 
-    expect(result.current.allowRemixError).toBe(
+    expect(result.current.remix.allowRemixError).toBe(
       "Couldn't update remixing for this poem — please try again.",
     );
-    expect(result.current.allowRemix).toBeNull();
+    expect(result.current.remix.allowRemix).toBeNull();
   });
 });
 
 describe("usePoemPersistence — sign-in prompt dismissal", () => {
   it("clears the sign-in prompt action", async () => {
     const { result } = renderHook(() => usePoemPersistence({}));
-    await act(async () => result.current.handleSave());
+    await act(async () => result.current.save.handleSave());
     expect(result.current.signInPromptAction).toBe("save");
 
     act(() => result.current.dismissSignInPrompt());

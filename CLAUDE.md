@@ -12,7 +12,8 @@ web application that talks to the poetic framework's output/format.
 **M7 delivered** (2026-07-18): The MVP is complete. A Next.js (App Router)
 + TypeScript app lives under `src/`, with ESLint, Prettier, Vitest, and the
 brand shell (logo, palette, light/dark) in place. `.github/workflows/ci.yml`
-(lint, typecheck, format check, test, build, plus the pgTAP data-layer suite)
+(lint, typecheck, format check, test, build, a real-browser axe-core
+accessibility scan, plus the pgTAP data-layer suite)
 and CodeQL's `javascript-typescript` scan (`.github/workflows/codeql.yml`) run
 on every pull request and push to `main`. `ci.yml`'s jobs are conditional on
 what the diff touches, and its `CI` job — the single required status check —
@@ -212,6 +213,9 @@ subagent.
 | `docs/IMPLEMENTATION-PLAN.md` | Milestone sequencing / build plan (living) |
 | `docs/OBSERVABILITY-PLAN.md` | Error-reporting / logging / agent-triage plan (living) |
 | `docs/TRIAGE.md` | How to read production errors/logs; agent read-access runbook |
+| `docs/RELEASE-RUNBOOK.md` | How to publish a release (version bump, CHANGELOG rename) |
+| `docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md` | How to fulfil a poet's data export/delete request |
+| `docs/CSP-REVIEW-CHECKLIST.md` | Manual browser checks for PRs touching CSP/srcDoc rendering |
 | `SECURITY.md` | Vulnerability reporting, CodeQL scanning |
 | `TECH-DEBT.md` | Deferred work register |
 | `CHANGELOG.md` | Notable changes, Keep a Changelog format |

@@ -20,6 +20,14 @@ name: CI
 # Adding a conditional job later means adding it to `ci`'s `needs` list. The
 # ruleset keeps requiring `CI` and does not need editing.
 #
+# `workflow-wiring` is that same discipline made automatic (TD-PPpfid-26080105):
+# it fails when a job that runs against pull requests (`pull_request`,
+# `pull_request_target` or `merge_group`) — in this file or any other
+# under .github/workflows/ — isn't reachable from a required check. Wiring it
+# in here, rather than as its own separate always-required workflow, means
+# the guard protects itself through the exact mechanism it's checking,
+# without needing a ruleset edit.
+#
 # `changes` classifies the diff once, here, so there is no second path list
 # anywhere to keep in sync by hand. It names what is *inert* rather than what
 # is relevant: because passing this gate is what unblocks a merge, the failure
@@ -110,6 +118,94 @@ jobs:
             echo "database=$database"
           } >> "$GITHUB_OUTPUT"
 
+  workflow-wiring:
+    name: Check workflow wiring
+    runs-on: ubuntu-latest
+
+    # Unconditional, like `changes`: this asserts every pull-request-triggered
+    # job across .github/workflows/*.yml is reachable from a required check
+    # (see .github/required-checks.yml), which is a property of the workflow
+    # files themselves, not of what this particular diff touches.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check workflow wiring
+        run: node scripts/check-workflow-wiring.mjs
+
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+
+    # Unconditional, like `changes` and `workflow-wiring`: a prose-only pull
+    # request must still audit the full dependency tree (including
+    # devDependencies — the code that runs in CI and on maintainer machines)
+    # rather than skip it because the diff classifier found nothing
+    # app-relevant to build. .github/workflows/dependency-audit.yml runs the
+    # same `npm run audit` weekly on a schedule, to catch advisories
+    # published while no pull request is open to run this job at all.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Update npm
+        run: npm install -g npm@11.17.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm run audit
+
+  changelog-rename:
+    name: Check CHANGELOG.md rename
+    runs-on: ubuntu-latest
+
+    # Not gated on `changes`, unlike `build` and `database`: this guard must
+    # never be skipped on exactly the pull request it exists to check. A
+    # release-bump PR does reach the app-relevant classification anyway —
+    # `changes` is a deny-list and package.json is not on it (CHANGELOG.md
+    # is, being *.md) — but that is incidental, and tying this guard to a
+    # classifier tuned for "does the app need rebuilding" would let one edit
+    # to that deny-list switch the release gate off silently. The script is
+    # cheap enough to need no npm install.
+    #
+    # The one condition is the event: `push` and `workflow_dispatch` have no
+    # base branch to read the previous version from, and a skipped dependency
+    # is a pass to the `ci` job below.
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # Reads the base branch's package.json below.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check CHANGELOG.md was renamed if the version bumped
+        run: |
+          set -euo pipefail
+          git show "origin/${GITHUB_BASE_REF}:package.json" > /tmp/base-package.json
+          base_version=$(node -p "require('/tmp/base-package.json').version")
+          head_version=$(node -p "require('./package.json').version")
+          node scripts/check-changelog-rename.mjs "$base_version" "$head_version" CHANGELOG.md
+
   build:
     name: Build the app
     needs: changes
@@ -146,6 +242,49 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  a11y-contrast:
+    name: Real-browser a11y contrast check
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+
+    # jest-axe's smoke tests (src/components/*.a11y.test.tsx) run under
+    # Vitest's jsdom environment, which has no real layout/paint — axe-core's
+    # color-contrast rule silently doesn't execute there at all
+    # (TD-PPpfid-26080109). This job runs the same default axe-core rule set
+    # against a production build in real Chromium (e2e/a11y.spec.ts), so
+    # contrast regressions actually get caught, alongside — not instead of —
+    # the jsdom suites the `build` job already runs.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Update npm
+        run: npm install -g npm@11.17.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run real-browser a11y checks
+        run: npm run test:a11y
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_attempt }}
+          path: playwright-report/
+          retention-days: 7
 
   database:
     name: Test the data layer
@@ -189,6 +328,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
@@ -196,6 +340,17 @@ jobs:
 
       - name: Link live project
         run: supabase link --project-ref ixerygypaevxzmiknokg
+
+      # TD-PPpfid-26080301: the same check
+      # .github/workflows/supabase-auth-drift.yml runs daily, asserted here at
+      # the moment it matters most — immediately before this job is about to
+      # change the live project. Failing ahead of the push means a live auth
+      # config that disagrees with the committed one is dealt with before more
+      # changes land on top of it. The script imports only `node:` builtins, so
+      # this needs no `npm ci`; see its header comment for why it asserts
+      # config.toml's [auth] block rather than pushing it.
+      - name: Check Supabase auth-config drift
+        run: node scripts/check-supabase-auth-drift.mjs
 
       # --yes skips the interactive "push these migrations?" confirmation,
       # which otherwise stalls a non-interactive CI shell.
@@ -208,7 +363,15 @@ jobs:
     # without it, a skipped dependency would skip this job too, and a required
     # check that never reports blocks the merge instead of passing it.
     if: always()
-    needs: [changes, build, database, deploy]
+    needs:
+      - changes
+      - workflow-wiring
+      - audit
+      - changelog-rename
+      - build
+      - a11y-contrast
+      - database
+      - deploy
     runs-on: ubuntu-latest
 
     steps:

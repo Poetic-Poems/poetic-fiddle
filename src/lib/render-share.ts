@@ -11,18 +11,8 @@ import { JSDOM } from "jsdom";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
 import { reportSwallowedError } from "@/lib/observability";
-
-/**
- * Hosts poetic's builtin song handlers can point an embed at (see poetic's
- * `src/song-handlers.yaml`). Fiddle passes no `config.song_handlers` to
- * `renderPoem` (there is no `.poetic-config.yaml` UI), so every
- * `data-embed-src` this module ever sees is built from one of these two
- * fixed URL templates — a poet's audio value can only fill the *path*, never
- * the origin. This allow-list is still enforced explicitly (AC86), rather
- * than trusted implicitly, as the defence that actually matters if that
- * assumption ever stops holding.
- */
-const EMBED_ALLOWED_HOSTS = new Set(["mega.nz", "audiomack.com"]);
+import { EMBED_ALLOWED_HOSTS } from "@/lib/embed-hosts";
+import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
 /**
  * Sandboxed just enough for a media player to work (script execution, and
@@ -46,12 +36,16 @@ export function sanitizeSharedPoemHtml(rawHtml: string): string {
   const purify = DOMPurify(window);
   const document = window.document;
 
-  // Default config: no <script>, no on* handlers, no <iframe> — the poem's
-  // own song-embed markup is just buttons/divs with data-* attributes at
-  // this point (poetic.js, which Fiddle never loads, is what would normally
-  // turn them into iframes — see poetic's song-handlers.js), so it survives
-  // sanitisation intact and unexploitable.
-  const clean = purify.sanitize(rawHtml, { RETURN_DOM_FRAGMENT: true });
+  // POEM_SANITIZE_CONFIG (src/lib/sanitize-poem.ts): no <script>, no on*
+  // handlers, no <iframe> — the poem's own song-embed markup is just
+  // buttons/divs with data-* attributes at this point (poetic.js, which
+  // Fiddle never loads, is what would normally turn them into iframes — see
+  // poetic's song-handlers.js), so it survives sanitisation intact and
+  // unexploitable.
+  const clean = purify.sanitize(rawHtml, {
+    ...POEM_SANITIZE_CONFIG,
+    RETURN_DOM_FRAGMENT: true,
+  });
 
   const container = document.createElement("div");
   container.appendChild(clean);
@@ -70,6 +64,10 @@ export function sanitizeSharedPoemHtml(rawHtml: string): string {
       } catch {
         return;
       }
+      // A poet's audio value can only ever fill the URL's path, never its
+      // origin (see embed-hosts.ts) — but this allow-list is still enforced
+      // explicitly (AC86), rather than trusted implicitly, as the defence
+      // that actually matters if that assumption ever stops holding.
       if (
         url.protocol !== "https:" ||
         !EMBED_ALLOWED_HOSTS.has(url.hostname.toLowerCase())

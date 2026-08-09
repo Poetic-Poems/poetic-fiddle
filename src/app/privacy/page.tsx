@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPolicy() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10 sm:px-10">
-      <PageHeader title="Privacy Policy" lastUpdated="27 July 2026" />
+      <PageHeader title="Privacy Policy" lastUpdated="3 August 2026" />
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed">
         <section>
@@ -83,17 +83,19 @@ export default function PrivacyPolicy() {
           </p>
           <p>
             You can delete an individual poem yourself, at any time, from your
-            My poems dashboard — this removes it permanently, immediately. To
-            delete your entire account — which removes your email address, all
-            poems you wrote, and all share links you created — email{" "}
+            My poems dashboard — this removes it permanently, immediately. You
+            can also delete your entire account yourself from that same
+            dashboard&rsquo;s Danger zone — which removes your email address,
+            all poems you wrote, and all share links you created, permanently
+            and immediately. If you can&rsquo;t sign in to do this yourself,
+            email{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
               className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
-            </a>
-            . We delete data permanently as soon as your account-deletion
-            request is processed.
+            </a>{" "}
+            and we&rsquo;ll delete it for you.
           </p>
         </section>
 
@@ -159,6 +161,29 @@ export default function PrivacyPolicy() {
             </a>
             . We keep account and poem data only for as long as your account
             exists.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-serif text-lg font-semibold">
+            Privacy breach notification
+          </h2>
+          <p>
+            If a privacy breach occurs that is likely to result in serious harm
+            to an individual&rsquo;s privacy, we will notify the Office of the
+            Privacy Commissioner and affected individuals without unreasonable
+            delay, as the New Zealand Privacy Act 2020 requires. Notification
+            will be sent to the email address associated with your account and
+            will include details about the breach and the measures we are taking
+            to protect your information. If you believe your personal
+            information has been involved in a breach, please report it to{" "}
+            <a
+              href="mailto:warwick@datumprocess.co.nz"
+              className="text-link underline underline-offset-2"
+            >
+              warwick@datumprocess.co.nz
+            </a>
+            .
           </p>
         </section>
 

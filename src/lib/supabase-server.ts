@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createTimeoutFetch } from "@/lib/supabase-fetch";
 
 let cached: SupabaseClient | undefined;
+let cachedAdmin: SupabaseClient | undefined;
 
 /**
  * A server-side client for SSR routes that read through an anon-safe RPC
@@ -33,4 +34,35 @@ export function getSupabaseServer(): SupabaseClient {
     global: { fetch: createTimeoutFetch() },
   });
   return cached;
+}
+
+/**
+ * A privileged server-side client for the one operation that genuinely needs
+ * it (docs/IMPLEMENTATION-PLAN.md §6.2 point 4): account deletion, via
+ * `auth.admin.deleteUser()`, which only the service-role key can call. The
+ * service-role key bypasses RLS entirely, so nothing else in this codebase
+ * should use this client — every other server/browser path goes through
+ * `getSupabaseServer()` or `supabase-client.ts`'s anon-keyed client instead.
+ *
+ * Built lazily, on first call, for the same reason as `getSupabaseServer()`:
+ * `SUPABASE_SERVICE_ROLE_KEY` is supplied at deploy time (Vercel), not during
+ * CI's plain `npm run build`, and a top-level throw on a missing env var
+ * would fail that build step even though nothing has tried to use it yet.
+ */
+export function getSupabaseAdmin(): SupabaseClient {
+  if (cachedAdmin) return cachedAdmin;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — see .env.example.",
+    );
+  }
+
+  cachedAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: createTimeoutFetch() },
+  });
+  return cachedAdmin;
 }

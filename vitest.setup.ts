@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach, vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { toHaveNoViolations } from "jest-axe";
+
+// jest-axe's matcher is written against Jest's `expect.extend` shape, which
+// Vitest's `expect` implements identically — no Jest runtime involved.
+expect.extend(toHaveNoViolations);
 
 // vitest.config.ts doesn't set `test.globals`, so Testing Library's
 // auto-cleanup (which looks for a global `afterEach`) never registers —
@@ -78,6 +83,22 @@ if (Object.getOwnPropertyDescriptor(window, "localStorage")?.get) {
     writable: true,
     configurable: true,
   });
+}
+
+// jsdom does not implement ResizeObserver; components that use one (e.g.
+// PoemPreview.tsx) need a stub just to mount. Tests that exercise the
+// observed behaviour replace this with their own mock (vi.stubGlobal) so
+// they can invoke the callback by hand — jsdom never lays elements out, so
+// a real ResizeObserver would never fire in a test anyway.
+if (typeof window.ResizeObserver !== "function") {
+  window.ResizeObserver = class {
+    constructor(callback: ResizeObserverCallback) {
+      void callback;
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
 }
 
 // jsdom does not implement matchMedia; components that read

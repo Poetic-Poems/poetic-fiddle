@@ -1,6 +1,8 @@
 # poetic-fiddle
 A user-friendly interface to the Poetic poem-authoring framework.
 
+**Live at:** https://www.poeticfiddle.com/
+
 ## Environment & secrets
 
 The app reads its configuration from environment variables. `.env.example`
@@ -37,6 +39,16 @@ authenticating with two repo secrets (Settings → Secrets and variables →
 Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account → Access
 Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
 
+## Backups
+
+The Supabase project runs on the organisation's Pro plan, which includes
+automatic daily backups with 7 days' retention by default. Point-in-Time
+Recovery is available as a separate paid add-on but is not enabled for this
+project. See
+[`docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`](docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md#backup--pitr-coverage)
+for the full guarantee, its restore procedure, and how to fulfil a poet's
+export/delete request.
+
 ## Development
 
 Requires Node.js 22.x. Install dependencies with `npm install`, then:
@@ -52,6 +64,7 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | `npm test` | Vitest |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run coverage` | Vitest with coverage reporting |
+| `npm run test:a11y` | Real-browser axe-core accessibility checks against a production build, via Playwright (`npx playwright install chromium` first) |
 | `npm run test:db` | pgTAP data-layer tests, via the Supabase CLI (`supabase start` first) |
 
 On WSL, npm/node commands can pick up the Windows binaries ahead of the

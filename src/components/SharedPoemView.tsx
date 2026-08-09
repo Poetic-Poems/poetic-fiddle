@@ -1,8 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
-import { wireAnalysisToggles } from "@/components/PoemPreview";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  evaluatePostscriptPreviews,
+  POSTSCRIPT_RESIZE_DEBOUNCE_MS,
+  wirePoemToggles,
+} from "@/components/PoemPreview";
 import { useNonce } from "@/lib/nonce-context";
+import { EMBED_FRAME_SRC } from "@/lib/embed-hosts";
 
 interface SharedPoemViewProps {
   /**
@@ -15,18 +20,16 @@ interface SharedPoemViewProps {
   title: string;
 }
 
-const EMBED_HOSTS = "https://mega.nz https://audiomack.com";
-
 /**
  * A strict Content-Security-Policy for the sandboxed document below, as a
  * backstop independent of the server-side sanitisation: even if a <script>
  * somehow survived DOMPurify, `script-src 'none'` stops it running here. It
  * does not restrict the allow-listed embeds themselves — those are separate
  * framed documents governed by their own origin's policy, not this one;
- * `frame-src` here just re-states the same host allow-list as a second,
- * browser-enforced line of defence (AC86).
+ * `frame-src` here just re-states the same host allow-list (embed-hosts.ts)
+ * as a second, browser-enforced line of defence (AC86).
  */
-const CONTENT_SECURITY_POLICY = `default-src 'none'; script-src 'none'; object-src 'none'; base-uri 'none'; style-src 'unsafe-inline'; img-src * data:; media-src *; frame-src ${EMBED_HOSTS};`;
+const CONTENT_SECURITY_POLICY = `default-src 'none'; script-src 'none'; object-src 'none'; base-uri 'none'; style-src 'unsafe-inline'; img-src * data:; media-src *; frame-src ${EMBED_FRAME_SRC};`;
 
 function escapeHtml(value: string): string {
   return value
@@ -47,15 +50,19 @@ function escapeHtml(value: string): string {
  * activates. `allow-scripts` + `allow-same-origin` together would normally
  * be avoided (MDN warns against the combination), but the CSP above
  * neutralises the residual risk for our own sanitised content, and
- * `allow-same-origin` is what lets `wireAnalysisToggles` reach the iframe's
+ * `allow-same-origin` is what lets `wirePoemToggles` reach the iframe's
  * DOM the same way the editor preview does — without it, a poem's Analysis
  * section would stay permanently hidden (poeticCss sets `display: none`
  * until the toggle reveals it), which AC84's "viewable without client-side
  * JS" doesn't excuse.
  *
  * Uses `srcDoc`, a plain HTML attribute the browser honours with no JS: the
- * page is fully viewable without client-side JS (AC84); `wireAnalysisToggles`
+ * page is fully viewable without client-side JS (AC84); `wirePoemToggles`
  * only enhances the Analysis show/hide toggle once JS does run.
+ *
+ * This srcDoc inherits the app shell's CSP in addition to its own <meta> CSP
+ * above — before merging a change that touches this file, run
+ * docs/CSP-REVIEW-CHECKLIST.md against a real browser.
  */
 export function SharedPoemView({ html, css, title }: SharedPoemViewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -75,7 +82,25 @@ export function SharedPoemView({ html, css, title }: SharedPoemViewProps) {
 
   const handleLoad = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
-    if (doc) wireAnalysisToggles(doc);
+    if (!doc) return;
+    wirePoemToggles(doc);
+    evaluatePostscriptPreviews(doc);
+  }, []);
+
+  useEffect(() => {
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const doc = iframeRef.current?.contentDocument;
+        if (doc) evaluatePostscriptPreviews(doc);
+      }, POSTSCRIPT_RESIZE_DEBOUNCE_MS);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   return (

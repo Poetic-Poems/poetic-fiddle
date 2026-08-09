@@ -119,10 +119,10 @@ describe("sanitizeSharedPoemHtml", () => {
 
     const clean = sanitizeSharedPoemHtml(html);
 
-    // DOMPurify's default config (used here, and by the live PoemPreview
-    // iframe) keeps these three tags — sanitisation is not what would strip
-    // them, so this asserts the title markup genuinely survives the
-    // untrusted-content boundary, not just the renderer's own output.
+    // POEM_SANITIZE_CONFIG (shared with the live PoemPreview iframe) keeps
+    // these three tags — sanitisation is not what would strip them, so this
+    // asserts the title markup genuinely survives the untrusted-content
+    // boundary, not just the renderer's own output.
     expect(clean).toContain(
       '<h2 class="poem-title"><em>Em</em> <strong>Strong</strong> <s>Struck</s> Title</h2>',
     );
@@ -158,6 +158,22 @@ describe("sanitizeSharedPoemHtml", () => {
 
     expect(clean).toContain('style="--preview-lines: 3"');
     expect(clean).toContain('data-preview-lines="3"');
+  });
+
+  // poetic.css leaves `.postscript-content` unclamped by default and only
+  // clamps it once script adds `.postscript-clamped`
+  // (PoemPreview.tsx's evaluatePostscriptPreviews mirrors that addition, but
+  // SharedPoemView's srcDoc is fully formed before any script runs). Since
+  // this function never adds that class itself, a share page always renders
+  // its postscript unclamped until script decides otherwise — satisfying
+  // AC84 (viewable with JS off) by construction, with no code here to keep
+  // in sync.
+  it("never adds postscript-clamped — a share page's postscript starts unclamped", () => {
+    const html = renderPoem(POEM_WITH_NON_DEFAULT_PREVIEW_LINES);
+    const clean = sanitizeSharedPoemHtml(html);
+
+    expect(clean).toContain("postscript-content");
+    expect(clean).not.toContain("postscript-clamped");
   });
 
   it("never turns an arbitrary data-embed-src into an iframe (host allow-list)", () => {

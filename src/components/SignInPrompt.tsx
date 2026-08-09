@@ -16,9 +16,11 @@ const COPY: Record<"save" | "share", string> = {
 
 type PasswordMode = "sign-in" | "sign-up";
 
+type PendingVia = "google" | "magic-link" | "password";
+
 type Status =
   | { kind: "idle" }
-  | { kind: "pending" }
+  | { kind: "pending"; via: PendingVia }
   | { kind: "error"; message: string }
   | { kind: "info"; message: string };
 
@@ -61,7 +63,7 @@ function SignInForm({ action, onClose }: SignInFormProps) {
 
   async function handleMagicLink(event: FormEvent) {
     event.preventDefault();
-    setStatus({ kind: "pending" });
+    setStatus({ kind: "pending", via: "magic-link" });
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: window.location.origin },
@@ -74,7 +76,7 @@ function SignInForm({ action, onClose }: SignInFormProps) {
   }
 
   async function handleGoogle() {
-    setStatus({ kind: "pending" });
+    setStatus({ kind: "pending", via: "google" });
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin },
@@ -85,7 +87,7 @@ function SignInForm({ action, onClose }: SignInFormProps) {
 
   async function handlePassword(event: FormEvent) {
     event.preventDefault();
-    setStatus({ kind: "pending" });
+    setStatus({ kind: "pending", via: "password" });
     const result =
       passwordMode === "sign-in"
         ? await supabase.auth.signInWithPassword({ email, password })
@@ -108,6 +110,7 @@ function SignInForm({ action, onClose }: SignInFormProps) {
   }
 
   const pending = status.kind === "pending";
+  const pendingVia = status.kind === "pending" ? status.via : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -125,7 +128,7 @@ function SignInForm({ action, onClose }: SignInFormProps) {
         disabled={pending}
         className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/5"
       >
-        Continue with Google
+        {pendingVia === "google" ? "Signing in…" : "Continue with Google"}
       </button>
 
       <form onSubmit={handleMagicLink} className="flex flex-col gap-2">
@@ -146,7 +149,7 @@ function SignInForm({ action, onClose }: SignInFormProps) {
           disabled={pending}
           className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
         >
-          Send magic link
+          {pendingVia === "magic-link" ? "Sending…" : "Send magic link"}
         </button>
       </form>
 
@@ -186,7 +189,13 @@ function SignInForm({ action, onClose }: SignInFormProps) {
             disabled={pending}
             className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/5"
           >
-            {passwordMode === "sign-in" ? "Sign in" : "Create account"}
+            {pendingVia === "password"
+              ? passwordMode === "sign-in"
+                ? "Signing in…"
+                : "Creating account…"
+              : passwordMode === "sign-in"
+                ? "Sign in"
+                : "Create account"}
           </button>
           <button
             type="button"
