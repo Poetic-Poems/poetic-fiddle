@@ -139,6 +139,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   self-service account deletion from the My poems dashboard's Danger zone,
   keeping the mailto address as a fallback for poets who can't sign in,
   instead of saying account deletion requires emailing the maintainer.
+- The Terms of Service's "Termination" section now describes self-service
+  account deletion from the My poems dashboard's Danger zone, keeping the
+  mailto address as a fallback for poets who can't sign in, matching the
+  Privacy Policy, instead of saying account deletion requires emailing the
+  maintainer.
 - The Acceptable Use Policy and Privacy Policy publish a designated takedown
   address (`takedown@poeticfiddle.com`) and describe the removal process:
   valid requests result in content being removed from every surface — the
