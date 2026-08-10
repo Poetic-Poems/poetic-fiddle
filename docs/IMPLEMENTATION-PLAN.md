@@ -507,9 +507,10 @@ public launch, **P2** soon after, **P3** insurance/polish.
 - **W10 (P1, S)** — **Breach-handling statement** (AC118). Nothing user-facing
   today. Add wording to the Privacy Policy per the NZ notifiable-breach
   scheme (REQUIREMENTS.md §15).
-- **W11 (P2, S)** — **Surface min-age 16 at sign-up** (D39, AC115). The age
-  term exists in Terms/Privacy but `SignInPrompt.tsx` never mentions it. Add
-  the one-line prompt wording.
+- **W11 (P2, S)** — **Surface min-age 16 at sign-up** (D39, AC115) — **done**:
+  `SignInPrompt.tsx` states "By continuing you confirm you're 16 or older and
+  agree to the Terms", linking to `/terms`, beneath the sign-in options
+  (§6.7).
 - **W12 (P1, M)** — **Poem deletion** (AC92, first half) — **done** (PR #124,
   TD26072414): `deletePoem()` in `poems-store.ts`, a confirmed delete action
   in `PoemsDashboard.tsx`; deleting an already-shared poem invalidates its
