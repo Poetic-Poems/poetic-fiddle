@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { AuthError } from "@/lib/auth-error";
 import { supabase } from "@/lib/supabase-client";
 
@@ -212,6 +213,17 @@ function SignInForm({ action, onClose }: SignInFormProps) {
           </button>
         </form>
       </details>
+
+      <p className="text-xs text-foreground/70">
+        By continuing you confirm you&rsquo;re 16 or older and agree to the{" "}
+        <Link
+          href="/terms"
+          className="underline underline-offset-2 hover:text-foreground"
+        >
+          Terms
+        </Link>
+        .
+      </p>
 
       {status.kind === "error" && (
         <p role="alert" className="text-sm text-red-600 dark:text-red-400">
