@@ -34,6 +34,17 @@ describe("SignInPrompt", () => {
     expect(screen.getByText(/use a password instead/i)).toBeInTheDocument();
   });
 
+  it("states the minimum-age requirement, linking to the Terms (AC115)", () => {
+    render(<SignInPrompt action="save" onClose={() => {}} />);
+    expect(
+      screen.getByText(/16 or older and agree to the/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /terms/i })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+  });
+
   it("sends a magic link to the entered email", async () => {
     authMock.signInWithOtp.mockResolvedValue({ error: null });
     render(<SignInPrompt action="save" onClose={() => {}} />);
