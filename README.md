@@ -25,7 +25,9 @@ no real values.
   load in the browser (an on-screen message explains what to do).
 - **Deployed app (Vercel):** set the same variables under the project's
   Environment Variables, scoped per environment. Keep the service-role key as
-  a server-only secret; never expose it to the browser.
+  a server-only secret; never expose it to the browser. For how code reaches
+  production and how to roll back a bad deploy, see
+  [`docs/RELEASE-RUNBOOK.md`'s "Deployment and rollback"](docs/RELEASE-RUNBOOK.md#deployment-and-rollback).
 
 Variables prefixed `NEXT_PUBLIC_` are inlined into the browser bundle at build
 time, so only values designed to be public — the Supabase URL and anon key,
