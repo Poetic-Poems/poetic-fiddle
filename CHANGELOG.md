@@ -101,6 +101,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   profile row, and signs the browser out. Deletion is by irreversible
   removal, not a soft delete — a deleted account's shares stop resolving
   immediately.
+- A minimum-age statement on the sign-in prompt — "By continuing you confirm
+  you're 16 or older and agree to the Terms" — linking to the Terms of
+  Service (D39, AC115, W11).
 
 ### Changed
 
@@ -139,6 +142,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   self-service account deletion from the My poems dashboard's Danger zone,
   keeping the mailto address as a fallback for poets who can't sign in,
   instead of saying account deletion requires emailing the maintainer.
+- The Terms of Service's "Termination" section now describes self-service
+  account deletion from the My poems dashboard's Danger zone, keeping the
+  mailto address as a fallback for poets who can't sign in, matching the
+  Privacy Policy, instead of saying account deletion requires emailing the
+  maintainer.
 - The Acceptable Use Policy and Privacy Policy publish a designated takedown
   address (`takedown@poeticfiddle.com`) and describe the removal process:
   valid requests result in content being removed from every surface — the
@@ -182,6 +190,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   postscripts against the preview budget themselves, the same way poetic's
   own script would, and apply the clamp (and the "See more" control) only
   when there is a full line or more to reveal.
+- The editor's mobile preview pane now clamps a long postscript, matching a
+  published Poetic page at the same viewport width. Below `lg`, the preview
+  iframe stays mounted at zero size while the source pane shows, so it used
+  to measure a zero-size box and never clamp; a `ResizeObserver` on the
+  iframe now re-measures whenever it changes size, including the moment the
+  preview pane itself becomes visible, not only on window resize or the next
+  keystroke.
 - Link text (`text-link`, e.g. the legal-page and editor share links) only
   met AA contrast in light mode — 2.61:1 against the dark background, well
   below the 4.5:1 threshold. Dark mode now uses a lighter tint of the same

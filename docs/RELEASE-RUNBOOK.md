@@ -34,3 +34,39 @@ second and later releases would repeat every entry the earlier ones already
 announced. The `changelog-rename` CI job and this runbook are the two guards
 against that: the job catches it mechanically, the runbook states the step
 for whoever is doing the release.
+
+## Deployment and rollback
+
+`main` deploys continuously to production through Vercel's Git integration:
+every merge to `main` triggers a Vercel build and deploy on its own, outside
+any GitHub Actions workflow. The GitHub release and `vX.Y.Z` tag that
+`release.yml` produces (see "Procedure" above) is a version and
+release-notes record — it is not what puts code into production, and
+production does not wait for it.
+
+The rollback mechanism for a bad production deploy is Vercel's **Instant
+Rollback**, performed from the Vercel dashboard:
+
+1. From the project overview, open the **Production Deployment** tile and
+   choose **Instant Rollback**.
+2. Select the deployment to roll back to, then **Continue**.
+3. Verify the domains and details shown, then **Confirm Rollback**. The
+   rollback takes effect immediately.
+
+Alternatively, from the **Deployments** tab: filter by `main`, open the ⋮
+menu on the deployment row to roll back to, and choose **Instant Rollback**.
+
+Caveats that affect what to do next:
+
+- Only deployments that were previously aliased to a production domain are
+  eligible; preview deployments generally are not.
+- Environment-variable changes made in project settings since the target
+  deployment are **not** applied to a rolled-back deployment — it serves the
+  previous build as originally compiled.
+- After a rollback, Vercel turns off auto-assignment of production domains,
+  so further pushes to `main` will **not** go live until the rollback is
+  undone: project overview → **Undo Rollback** → select a deployment →
+  **Confirm**, or `vercel promote <deployment-id-or-url>` from the CLI.
+
+See https://vercel.com/docs/instant-rollback for the authoritative
+procedure.

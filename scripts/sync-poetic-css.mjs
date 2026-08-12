@@ -11,14 +11,19 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-function main() {
-  const require = createRequire(import.meta.url);
-
+export function syncPoeticCss(
+  requireResolve,
+  readFile,
+  writeFile,
+  scriptDir,
+  packageJsonPath,
+) {
   let cssPath;
   try {
-    cssPath = require.resolve("poetic/browser/poetic.css");
+    cssPath = requireResolve("poetic/browser/poetic.css");
   } catch (cause) {
-    const pinnedVersion = require("../package.json").dependencies.poetic;
+    const packageJson = JSON.parse(readFile(packageJsonPath, "utf8"));
+    const pinnedVersion = packageJson.dependencies.poetic;
     throw new Error(
       `Could not resolve poetic/browser/poetic.css from the pinned poetic ` +
         `dependency (${pinnedVersion}). Its browser/poetic.css export path ` +
@@ -28,10 +33,10 @@ function main() {
     );
   }
 
-  const css = readFileSync(cssPath, "utf8");
+  const css = readFile(cssPath, "utf8");
 
   const outPath = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
+    scriptDir,
     "..",
     "src",
     "lib",
@@ -43,8 +48,21 @@ function main() {
 export const poeticCss = ${JSON.stringify(css)};
 `;
 
-  writeFileSync(outPath, contents);
+  writeFile(outPath, contents);
   console.log(`Wrote ${outPath} (${css.length} bytes)`);
+}
+
+function main() {
+  const require = createRequire(import.meta.url);
+  const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+
+  syncPoeticCss(
+    require.resolve.bind(require),
+    readFileSync,
+    writeFileSync,
+    scriptDir,
+    path.join(scriptDir, "..", "package.json"),
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
