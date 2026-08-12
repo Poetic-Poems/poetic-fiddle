@@ -168,7 +168,9 @@ commit on the branch.
 - **`CHANGELOG.md`** is the only place for recording what changed and when.
   Add an entry under `[Unreleased]` for any notable change (one visible to
   users of the app). Patch-level fixes and routine doc updates do not need
-  entries.
+  entries. One exception: a dependency bump that clears a security advisory
+  is notable even when it is not user-visible (transitive and dev-toolchain
+  dependencies included) — record it under `Security`.
 - **All other docs are as-built.** Write them to describe the current state
   only — no "previously", "used to be", "now uses", "migration completed", or
   "old format (deprecated)" phrasing. Git log already records history; docs

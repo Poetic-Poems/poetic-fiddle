@@ -390,6 +390,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   toolchain) to 5.0.8, resolving a high-severity denial of service via
   unbounded expansion result length
   ([GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg)).
+- Bumped `brace-expansion` on the `minimatch` 10.x chain further, from 5.0.8 to
+  5.0.9, resolving a high-severity denial of service via unbounded intermediate
+  arrays that bypassed the 5.0.8 mitigation above
+  ([GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895)).
 - Raised the new-account password minimum length from 6 to 10 characters, with
   a visible hint on the requirement. The same field imposes no minimum when
   signing in to an existing account, so accounts created under the old minimum
