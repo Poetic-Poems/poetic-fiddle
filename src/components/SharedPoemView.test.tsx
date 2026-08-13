@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
-import { POSTSCRIPT_RESIZE_DEBOUNCE_MS } from "./PoemPreview";
+import { POSTSCRIPT_RESIZE_DEBOUNCE_MS } from "@/lib/poem-toggles";
 import { SharedPoemView } from "./SharedPoemView";
 import { NonceProvider } from "@/lib/nonce-context";
 
@@ -123,7 +123,7 @@ describe("SharedPoemView srcDoc frame-src", () => {
 
 // The share page owes the same clamp the editor preview does, so it has to
 // reach for its iframe's document on load and again on resize — the wiring,
-// not evaluatePostscriptPreviews itself, which PoemPreview.test.tsx exercises
+// not evaluatePostscriptPreviews itself, which poem-toggles.test.ts exercises
 // in full (short/long/fallback/data-preview-lines cases). jsdom never loads a
 // srcdoc iframe's content, so the document a real browser would build is
 // stubbed onto the iframe, shaped like what sanitizeSharedPoemHtml
