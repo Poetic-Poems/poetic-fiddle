@@ -5,7 +5,7 @@ import {
   evaluatePostscriptPreviews,
   POSTSCRIPT_RESIZE_DEBOUNCE_MS,
   wirePoemToggles,
-} from "@/components/PoemPreview";
+} from "@/lib/poem-toggles";
 import { useNonce } from "@/lib/nonce-context";
 import { EMBED_FRAME_SRC } from "@/lib/embed-hosts";
 
