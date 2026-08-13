@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
-import {
-  evaluatePostscriptPreviews,
-  wirePoemToggles,
-} from "./poem-toggles";
+import { evaluatePostscriptPreviews, wirePoemToggles } from "./poem-toggles";
 import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
 
 // Mirrors the markup poetic's _poem-content.pug emits for an Analysis
