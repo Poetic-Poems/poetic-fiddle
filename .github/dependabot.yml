@@ -24,3 +24,8 @@ updates:
       # before lifting this.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # eslint 10+ is blocked by eslint-config-next, which still calls the
+      # ESLint-10-removed context.getFilename() API. See
+      # tech-debt/TD-PPpfid-26072429.md before lifting this.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
