@@ -190,8 +190,8 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
+[auth.captcha]
+enabled = false
 # provider = "hcaptcha"
 # secret = ""
 
