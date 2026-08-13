@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { poeticCss } from "@/lib/poetic-css.generated";
 import { getCachedSharedPoem } from "@/lib/shared-poem-cache";
 import { EditorClient } from "@/components/EditorClient";
+import { RouteHeading } from "@/components/RouteHeading";
 
 interface RemixPageProps {
   params: Promise<{ share_id: string }>;
@@ -37,18 +38,18 @@ export default async function RemixPage({ params }: RemixPageProps) {
 
   return (
     <main className="flex flex-1 flex-col gap-4">
-      <div className="px-6 pt-6">
-        <h1 className="font-serif text-2xl font-semibold tracking-tight">
-          Remix this poem
-        </h1>
-        <p className="text-sm text-foreground/70">
-          This is your own copy of{" "}
-          <span className="font-medium">
-            {poem.title || "an untitled poem"}
-          </span>
-          . Edits here are yours alone — the original is untouched.
-        </p>
-      </div>
+      <RouteHeading
+        title="Remix this poem"
+        description={
+          <>
+            This is your own copy of{" "}
+            <span className="font-medium">
+              {poem.title || "an untitled poem"}
+            </span>
+            . Edits here are yours alone — the original is untouched.
+          </>
+        }
+      />
       <EditorClient poeticCss={poeticCss} initialSource={poem.source} />
     </main>
   );
