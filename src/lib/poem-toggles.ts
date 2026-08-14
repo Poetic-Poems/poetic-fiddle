@@ -99,6 +99,35 @@ export function wirePoemToggles(doc: Document) {
         return;
       }
       window.open(url.toString(), "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // Any other left-clicked link (the postscript's Markdown links, e.g. the
+    // syntax-reference link in EXAMPLE_POEM, are the common case) would
+    // otherwise navigate the sandboxed iframe itself in place — which the
+    // page's own frame-src CSP directive blocks, since frame-src governs
+    // renavigating an existing nested browsing context just as much as
+    // framing one initially (issue #315). Opening it from here runs in the
+    // parent page's own realm, exactly like the embed button above, so it's
+    // Fiddle's own window.open rather than a frame navigation and never hits
+    // frame-src at all. In-page anchors (`href="#..."`) resolve against the
+    // srcDoc's `about:srcdoc` base to a non-http(s) URL and fall through
+    // un-intercepted, so they still scroll normally.
+    const link = target.closest("a[href]");
+    if (link) {
+      const href = link.getAttribute("href");
+      if (!href) return;
+
+      let url: URL;
+      try {
+        url = new URL(href, doc.baseURI);
+      } catch {
+        return;
+      }
+      if (url.protocol !== "https:" && url.protocol !== "http:") return;
+
+      event.preventDefault();
+      window.open(url.toString(), "_blank", "noopener,noreferrer");
     }
   });
 }
