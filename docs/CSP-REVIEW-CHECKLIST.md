@@ -12,8 +12,9 @@ policy that fixed it still blocked poetic's inline `style` *attributes*
 
 Run through this checklist, in a real browser, for any pull request that
 touches `src/lib/csp.ts`, `src/proxy.ts`, `src/components/PoemPreview.tsx`,
-or `src/components/SharedPoemView.tsx` — the app shell's CSP and the two
-`srcDoc` iframes it governs. A local `npm run dev` (or `npm run build && npm
+`src/components/SharedPoemView.tsx`, or `src/lib/poem-toggles.ts` — the app
+shell's CSP, the two `srcDoc` iframes it governs, and the module that drives
+what a click inside those iframes does. A local `npm run dev` (or `npm run build && npm
 run start`, closer to what a deployed policy looks like) is enough; a preview
 deployment is preferred when one is available, since it exercises `proxy.ts`'s
 real header instead of the dev server's.
@@ -32,6 +33,13 @@ real header instead of the dev server's.
       default and mask the same failure.
 - [ ] **Embed loads.** The song embed's frame actually loads its content, not
       a blocked/blank frame.
+- [ ] **A link in the poem opens.** Left-click a link in the rendered poem —
+      the example poem's "syntax reference" link will do. It opens in a new
+      tab, rather than doing nothing and reporting a `frame-src` violation:
+      a poem lives in a `srcDoc` frame, so an uncaught link click renavigates
+      that frame, which `frame-src` blocks (issue #315). Where the poem links
+      to one of its own headings, clicking that scrolls the frame instead of
+      opening anything.
 - [ ] **Console is free of CSP reports.** Open the browser devtools console
       before loading the page. No `Content-Security-Policy` violation
       messages appear for the top document or either `srcDoc` iframe
