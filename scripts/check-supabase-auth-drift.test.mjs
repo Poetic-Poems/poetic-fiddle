@@ -48,6 +48,18 @@ verify_enabled = false
 [auth.mfa.phone]
 enroll_enabled = false
 verify_enabled = false
+
+[auth.rate_limit]
+anonymous_users = 30
+token_refresh = 150
+sign_in_sign_ups = 30
+token_verifications = 30
+email_sent = 2
+sms_sent = 30
+web3 = 30
+
+[auth.captcha]
+enabled = false
 `;
 
 // The live API's shape for the config above — every field ALLOWLIST reads,
@@ -77,6 +89,16 @@ const MATCHING_LIVE_CONFIG = {
   mfa_totp_verify_enabled: false,
   mfa_phone_enroll_enabled: false,
   mfa_phone_verify_enabled: false,
+  rate_limit_anonymous_users: 30,
+  rate_limit_token_refresh: 150,
+  // Named `_otp`/`_verify` on the API side, not `_sign_in_sign_ups`/
+  // `_token_verifications` — see ALLOWLIST's comment on these two rows.
+  rate_limit_otp: 30,
+  rate_limit_verify: 30,
+  rate_limit_email_sent: 2,
+  rate_limit_sms_sent: 30,
+  rate_limit_web3: 30,
+  security_captcha_enabled: false,
   // Fields no ALLOWLIST entry names — must never affect the report.
   site_url: "https://example.com",
   smtp_admin_email: "admin@example.com",
@@ -200,7 +222,7 @@ describe("buildAuthDriftReport", () => {
     const numericRows = ALLOWLIST.filter((entry) => entry.numeric);
     // Guards against a future edit dropping `numeric` from a row silently —
     // this test would then just cover fewer rows without failing.
-    expect(numericRows.length).toBe(7);
+    expect(numericRows.length).toBe(14);
 
     for (const entry of numericRows) {
       const live = {
@@ -277,6 +299,30 @@ describe("buildAuthDriftReport", () => {
     expect(() =>
       buildAuthDriftReport(configText, MATCHING_LIVE_CONFIG),
     ).toThrow(/password_requirements.*digits_only/s);
+  });
+
+  it("flags a rate-limit disagreement against the API's differently-named field", () => {
+    // sign_in_sign_ups maps to rate_limit_otp, not a `_sign_in_sign_ups`
+    // field — this is the row most likely to silently break if the mapping
+    // is ever "corrected" to look symmetrical.
+    const drifted = { ...MATCHING_LIVE_CONFIG, rate_limit_otp: 5 };
+    const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, drifted);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/auth\.rate_limit\.sign_in_sign_ups/);
+  });
+
+  it("flags a token_verifications disagreement against rate_limit_verify", () => {
+    const drifted = { ...MATCHING_LIVE_CONFIG, rate_limit_verify: 5 };
+    const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, drifted);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/auth\.rate_limit\.token_verifications/);
+  });
+
+  it("flags a captcha enabled disagreement", () => {
+    const drifted = { ...MATCHING_LIVE_CONFIG, security_captcha_enabled: true };
+    const problems = buildAuthDriftReport(MATCHING_CONFIG_TOML, drifted);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/auth\.captcha\.enabled/);
   });
 
   it("has an ALLOWLIST entry that resolves in the repo's own config.toml", () => {

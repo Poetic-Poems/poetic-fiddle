@@ -82,6 +82,11 @@ export const AUTH_REQUIRED_CHARACTER_CLASSES = {
 // character-class string. `numeric` marks rows where the API is known to
 // sometimes return the same integer config.toml holds, but stringified —
 // TD-PPpfid-26080401's concrete case was `jwt_exp: "3600"`.
+//
+// TD-PPpfid-26080906 added the `[auth.rate_limit]` rows and
+// `auth.captcha.enabled` — the two sections config.toml carried but
+// ALLOWLIST didn't check yet, filed as a monitoring gap in the
+// 2026-08-08 project review (F-SEC-01/R-07).
 export const ALLOWLIST = [
   {
     path: ["auth", "minimum_password_length"],
@@ -166,6 +171,57 @@ export const ALLOWLIST = [
   {
     path: ["auth", "mfa", "phone", "verify_enabled"],
     apiField: "mfa_phone_verify_enabled",
+  },
+  {
+    path: ["auth", "rate_limit", "anonymous_users"],
+    apiField: "rate_limit_anonymous_users",
+    numeric: true,
+  },
+  {
+    path: ["auth", "rate_limit", "token_refresh"],
+    apiField: "rate_limit_token_refresh",
+    numeric: true,
+  },
+  // The Management API's field names don't line up with config.toml's:
+  // `sign_in_sign_ups` is `rate_limit_otp` and `token_verifications` is
+  // `rate_limit_verify` — confirmed against supabase/cli's own mapping
+  // (apps/cli-go/pkg/config/auth.go's rateLimit.toAuthConfigBody /
+  // fromAuthConfig), not the field names' surface similarity.
+  {
+    path: ["auth", "rate_limit", "sign_in_sign_ups"],
+    apiField: "rate_limit_otp",
+    numeric: true,
+  },
+  {
+    path: ["auth", "rate_limit", "token_verifications"],
+    apiField: "rate_limit_verify",
+    numeric: true,
+  },
+  {
+    path: ["auth", "rate_limit", "email_sent"],
+    apiField: "rate_limit_email_sent",
+    numeric: true,
+  },
+  {
+    path: ["auth", "rate_limit", "sms_sent"],
+    apiField: "rate_limit_sms_sent",
+    numeric: true,
+  },
+  {
+    path: ["auth", "rate_limit", "web3"],
+    apiField: "rate_limit_web3",
+    numeric: true,
+  },
+  // `provider` and `secret` are deliberately not here, on top of the
+  // OAuth/SMTP-secret exclusion already described above: config.toml never
+  // commits a real CAPTCHA secret (the committed value is a placeholder),
+  // so there is nothing meaningful to compare, and a mismatch would print
+  // both sides — config.toml's placeholder and the live secret — into a
+  // filed GitHub issue. `enabled` alone is safe to compare and is enough to
+  // catch CAPTCHA being turned on or off without a matching config.toml edit.
+  {
+    path: ["auth", "captcha", "enabled"],
+    apiField: "security_captcha_enabled",
   },
 ];
 

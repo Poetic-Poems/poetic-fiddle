@@ -163,7 +163,7 @@ describe("sanitizeSharedPoemHtml", () => {
 
   // poetic.css leaves `.postscript-content` unclamped by default and only
   // clamps it once script adds `.postscript-clamped`
-  // (PoemPreview.tsx's evaluatePostscriptPreviews mirrors that addition, but
+  // (poem-toggles.ts's evaluatePostscriptPreviews mirrors that addition, but
   // SharedPoemView's srcDoc is fully formed before any script runs). Since
   // this function never adds that class itself, a share page always renders
   // its postscript unclamped until script decides otherwise — satisfying

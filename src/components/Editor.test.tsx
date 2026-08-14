@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import Editor, { tryRenderPoem } from "./Editor";
-import { EXAMPLE_POEM } from "@/lib/example-poem";
+import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 
 vi.mock("@/lib/use-session", () => ({
   useSession: () => ({ session: null, loading: false }),
@@ -94,5 +94,15 @@ describe("tryRenderPoem", () => {
     const bad = tryRenderPoem("not a valid poem at all", good.html);
     expect(bad.error).not.toBeNull();
     expect(bad.html).toBe(good.html);
+  });
+
+  it("renders the postscript's syntax-reference link as a clickable link (issue #315)", () => {
+    const result = tryRenderPoem(EXAMPLE_POEM);
+    const doc = new DOMParser().parseFromString(result.html, "text/html");
+    const link = Array.from(doc.querySelectorAll("a")).find(
+      (a) => a.textContent === "syntax reference",
+    );
+    expect(link?.getAttribute("href")).toBe(POEM_SYNTAX_REFERENCE_URL);
+    expect(result.html).not.toContain("[syntax reference|");
   });
 });

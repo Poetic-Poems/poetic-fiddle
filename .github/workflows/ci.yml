@@ -40,6 +40,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Deliberately unfiltered, unlike `push`/`pull_request` above: `merge_group`
+  # takes no `branches:` filter, and a merge group's ref is
+  # refs/heads/gh-readonly-queue/<base>/pr-N-<sha> rather than the base branch,
+  # so a `branches: [main]` filter here would match nothing and leave `CI`
+  # unreported — the exact stall this trigger exists to prevent. Nothing is
+  # lost by omitting it: a merge group only ever exists for a branch that has
+  # a merge queue enabled.
+  merge_group:
   workflow_dispatch:
 
 permissions:
@@ -71,6 +79,9 @@ jobs:
           elif [ "${{ github.event_name }}" = "push" ]; then
             base="${{ github.event.before }}"
             head="${{ github.sha }}"
+          elif [ "${{ github.event_name }}" = "merge_group" ]; then
+            base="${{ github.event.merge_group.base_sha }}"
+            head="${{ github.event.merge_group.head_sha }}"
           else
             # workflow_dispatch (or any other event): no meaningful diff to
             # compute, so run everything.

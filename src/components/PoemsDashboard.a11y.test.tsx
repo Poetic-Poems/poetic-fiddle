@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { axe } from "jest-axe";
 import type { Session } from "@supabase/supabase-js";
 import { PoemsDashboard } from "./PoemsDashboard";
@@ -53,6 +53,38 @@ describe("PoemsDashboard accessibility (TD-PPpfid-26072435)", () => {
     const { container, findByRole } = render(<PoemsDashboard />);
 
     await findByRole("link", { name: /ode to a fiddle/i });
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("has no axe violations when the per-row delete confirmation is open", async () => {
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
+    vi.mocked(listPoems).mockResolvedValue([
+      {
+        id: "poem-1",
+        title: "Ode to a Fiddle",
+        updatedAt: "2026-07-16T00:00:00Z",
+        shareId: null,
+      },
+    ]);
+    const { container, findByRole } = render(<PoemsDashboard />);
+
+    const deleteButton = await findByRole("button", {
+      name: /delete "ode to a fiddle"/i,
+    });
+    fireEvent.click(deleteButton);
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("has no axe violations when the account deletion dialog is open", async () => {
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
+    vi.mocked(listPoems).mockResolvedValue([]);
+    const { container } = render(<PoemsDashboard />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^delete account$/i }),
+    );
 
     expect(await axe(container)).toHaveNoViolations();
   });
