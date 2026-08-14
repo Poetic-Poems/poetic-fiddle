@@ -50,7 +50,7 @@ This note is rendered as **Markdown**, so lists and links work too:
 
 - Write your poem on the left
 - Watch it render on the right
-- Check the [syntax reference|${POEM_SYNTAX_REFERENCE_URL}] any time
+- Check the [syntax reference](${POEM_SYNTAX_REFERENCE_URL}) any time
 
 ====
 ====
