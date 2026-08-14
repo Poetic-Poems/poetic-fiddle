@@ -110,25 +110,47 @@ export function wirePoemToggles(doc: Document) {
     // framing one initially (issue #315). Opening it from here runs in the
     // parent page's own realm, exactly like the embed button above, so it's
     // Fiddle's own window.open rather than a frame navigation and never hits
-    // frame-src at all. In-page anchors (`href="#..."`) resolve against the
-    // srcDoc's `about:srcdoc` base to a non-http(s) URL and fall through
-    // un-intercepted, so they still scroll normally.
+    // frame-src at all.
     const link = target.closest("a[href]");
-    if (link) {
-      const href = link.getAttribute("href");
-      if (!href) return;
+    if (!link) return;
 
-      let url: URL;
-      try {
-        url = new URL(href, doc.baseURI);
-      } catch {
-        return;
-      }
-      if (url.protocol !== "https:" && url.protocol !== "http:") return;
+    const href = link.getAttribute("href");
+    if (!href) return;
 
+    // An in-page anchor is the one link that must not become a new tab. A
+    // srcdoc document's base URL is its *container's* — HTML's fallback base
+    // URL for `about:srcdoc` — not the frame's own, so `#id` resolves to a
+    // URL on Fiddle's origin rather than to anything in this document: the
+    // browser would navigate the frame there (frame-src again) and a
+    // window.open would spawn a pointless second copy of the app. Scrolling
+    // this document is what the anchor actually means.
+    if (href.startsWith("#")) {
       event.preventDefault();
-      window.open(url.toString(), "_blank", "noopener,noreferrer");
+      const raw = href.slice(1);
+      if (!raw) return;
+      let id = raw;
+      try {
+        id = decodeURIComponent(raw);
+      } catch {
+        // A malformed escape is not a URL-encoded id; match it literally.
+      }
+      const anchor = doc.getElementById(id) ?? doc.getElementById(raw);
+      // Guarded because a realm without layout (jsdom, in this file's tests)
+      // implements no scrollIntoView.
+      if (typeof anchor?.scrollIntoView === "function") anchor.scrollIntoView();
+      return;
     }
+
+    let url: URL;
+    try {
+      url = new URL(href, doc.baseURI);
+    } catch {
+      return;
+    }
+    if (url.protocol !== "https:" && url.protocol !== "http:") return;
+
+    event.preventDefault();
+    window.open(url.toString(), "_blank", "noopener,noreferrer");
   });
 }
 
