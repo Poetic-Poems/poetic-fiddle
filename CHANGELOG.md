@@ -343,6 +343,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   colours. Its line-number gutter was also 3.86:1, short of the 4.5:1
   threshold; it's now the same muted grey the editor already uses for
   comments.
+- Links in a poem — the example poem's syntax reference among them — now open
+  when clicked, in both the editor preview and a share page. The poem renders
+  inside a sandboxed iframe, so a plain left-click used to try to navigate
+  that frame in place, which the page's own `frame-src` policy blocks: the
+  link did nothing and the browser console reported a Content-Security-Policy
+  violation. External links now open in a new tab, and a link to a heading
+  within the poem scrolls to it (#315).
 
 ### Security
 

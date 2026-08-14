@@ -3,6 +3,7 @@ import DOMPurify from "dompurify";
 import { renderPoem } from "poetic/browser";
 import { evaluatePostscriptPreviews, wirePoemToggles } from "./poem-toggles";
 import { POEM_SANITIZE_CONFIG } from "@/lib/sanitize-poem";
+import { EXAMPLE_POEM, POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 
 // Mirrors the markup poetic's _poem-content.pug emits for an Analysis
 // section (github.com/Poetic-Poems/poetic src/templates/_poem-content.pug).
@@ -636,6 +637,151 @@ describe("wirePoemToggles song-embed buttons", () => {
     );
     expect(openSpy).toHaveBeenCalledWith(
       "https://mega.nz/embed/FileId123#Key456",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+});
+
+// Regression coverage for issue #315: a left-clicked link inside the
+// srcDoc-sandboxed preview would otherwise navigate the iframe itself in
+// place, which the page's frame-src CSP directive blocks.
+describe("wirePoemToggles body/postscript links", () => {
+  const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+  afterEach(() => {
+    openSpy.mockClear();
+    document.body.innerHTML = "";
+  });
+
+  // The preview is a srcdoc iframe, whose base URL is its *container's* —
+  // HTML's fallback base URL for `about:srcdoc`. A detached
+  // `createHTMLDocument` would instead sit on `about:blank`, under which every
+  // relative href resolves to a non-http(s) URL and so never reaches the
+  // interception these tests are about; a real iframe document is what
+  // reproduces what the browser does.
+  function previewDocument(bodyHtml: string): Document {
+    const iframe = document.createElement("iframe");
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument as Document;
+    doc.body.innerHTML = bodyHtml;
+    return doc;
+  }
+
+  function linkDocument(href: string): Document {
+    return previewDocument(`<a href="${href}">syntax reference</a>`);
+  }
+
+  function clickIn(doc: Document, selector: string): MouseEvent {
+    // Built from the document's own realm, as the browser would.
+    const view = doc.defaultView as Window & typeof globalThis;
+    const event = new view.MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    doc.querySelector(selector)?.dispatchEvent(event);
+    return event;
+  }
+
+  it("resolves a relative href against the container's base URL, not about:srcdoc", () => {
+    const doc = previewDocument(`<a href="#x">x</a>`);
+    expect(new URL("#x", doc.baseURI).protocol).toBe("http:");
+  });
+
+  it("opens an https link in a new tab instead of navigating the iframe", () => {
+    const doc = linkDocument(
+      "https://github.com/Poetic-Poems/poetic/blob/v6.3.0/docs/POEM-SYNTAX.md",
+    );
+    wirePoemToggles(doc);
+
+    const event = clickIn(doc, "a");
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://github.com/Poetic-Poems/poetic/blob/v6.3.0/docs/POEM-SYNTAX.md",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("opens an http link in a new tab too", () => {
+    const doc = linkDocument("http://example.com/notes");
+    wirePoemToggles(doc);
+
+    (doc.querySelector("a") as HTMLElement).click();
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "http://example.com/notes",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("scrolls to an in-page anchor rather than opening a tab of the app", () => {
+    const doc = previewDocument(
+      `<a href="#some-heading">jump</a><h2 id="some-heading">Heading</h2>`,
+    );
+    const scrollIntoView = vi.fn();
+    (
+      doc.defaultView as Window & typeof globalThis
+    ).Element.prototype.scrollIntoView = scrollIntoView;
+    wirePoemToggles(doc);
+
+    const event = clickIn(doc, "a");
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(scrollIntoView.mock.instances[0]).toBe(
+      doc.getElementById("some-heading"),
+    );
+  });
+
+  it("matches a percent-encoded fragment against the element's decoded id", () => {
+    const doc = previewDocument(
+      `<a href="#caf%C3%A9">jump</a><h2 id="café">Café</h2>`,
+    );
+    const scrollIntoView = vi.fn();
+    (
+      doc.defaultView as Window & typeof globalThis
+    ).Element.prototype.scrollIntoView = scrollIntoView;
+    wirePoemToggles(doc);
+
+    clickIn(doc, "a");
+
+    expect(scrollIntoView.mock.instances[0]).toBe(doc.getElementById("café"));
+  });
+
+  it("does not throw and does not open on a fragment with no matching element", () => {
+    const doc = previewDocument(`<a href="#">top</a>`);
+    wirePoemToggles(doc);
+
+    expect(() => clickIn(doc, "a")).not.toThrow();
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not throw and does not open when the link has no href", () => {
+    const doc = previewDocument(`<a>no href here</a>`);
+    wirePoemToggles(doc);
+
+    expect(() => clickIn(doc, "a")).not.toThrow();
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("renders the example poem's syntax-reference link as a plain anchor and opens it via window.open", () => {
+    const html = renderPoem(EXAMPLE_POEM);
+    const sanitised = DOMPurify.sanitize(html, POEM_SANITIZE_CONFIG);
+    const doc = previewDocument(sanitised);
+    wirePoemToggles(doc);
+
+    const link = Array.from(doc.querySelectorAll("a")).find(
+      (a) => a.textContent === "syntax reference",
+    );
+    expect(link).toBeTruthy();
+
+    link?.click();
+
+    expect(openSpy).toHaveBeenCalledWith(
+      POEM_SYNTAX_REFERENCE_URL,
       "_blank",
       "noopener,noreferrer",
     );
