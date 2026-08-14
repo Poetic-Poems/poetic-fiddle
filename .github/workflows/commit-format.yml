@@ -22,14 +22,20 @@ name: Commit message format
 # Also triggered on merge_group, so this required context reports on a
 # merge-queue run instead of sitting at "Expected" forever — but the job
 # itself validates a pull request's title and commit range, neither of which
-# exists on a merge group, so it's gated to run only for pull_request and
-# report `skipped` (which satisfies the queue) on merge_group.
+# exists on a merge group, so it's gated to run only for pull_request. On a
+# merge group the job is skipped by that condition, and a job skipped by a
+# job-level `if:` reports success to branch protection — "will not prevent a
+# pull request from merging, even if it is a required check". That is the
+# distinction that matters here: it holds only because the workflow itself
+# still triggers. A workflow that never triggers at all reports nothing, and
+# the required context sits at "Expected" until the queue times out.
 
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
+  # Unfiltered: `merge_group` takes no `branches:` filter, and a merge group's
+  # ref is gh-readonly-queue/<base>/…, not the base branch. See ci.yml.
   merge_group:
-    branches: [main]
 
 permissions:
   contents: read

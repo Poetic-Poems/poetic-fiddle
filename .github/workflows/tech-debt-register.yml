@@ -17,8 +17,9 @@ name: Tech-debt register check
 
 on:
   pull_request:
+  # Unfiltered: `merge_group` takes no `branches:` filter, and a merge group's
+  # ref is gh-readonly-queue/<base>/…, not the base branch. See ci.yml.
   merge_group:
-    branches: [main]
   push:
     branches: [main]
 

@@ -13,8 +13,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Unfiltered: `merge_group` takes no `branches:` filter, and a merge group's
+  # ref is gh-readonly-queue/<base>/…, not the base branch. See ci.yml.
   merge_group:
-    branches: [main]
   schedule:
     - cron: "30 1 * * 0"
   workflow_dispatch:

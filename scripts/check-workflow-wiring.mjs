@@ -190,8 +190,8 @@ function contextOf(jobs, id) {
 // see commit-format.yml's header) and `merge_group` is what a merge queue
 // runs before merging; a job on either gates — or silently fails to gate — a
 // merge exactly like a plain `pull_request` job, so all three go through the
-// same required-or-exempt discipline. Neither of the latter two is used here
-// today; recognising them closes the hole before it opens.
+// same required-or-exempt discipline. `pull_request_target` is unused here;
+// recognising it closes that hole before it opens.
 const PR_TRIGGERS = ["pull_request", "pull_request_target", "merge_group"];
 
 export function checkWorkflowWiring(workflowFiles, requiredChecks) {
