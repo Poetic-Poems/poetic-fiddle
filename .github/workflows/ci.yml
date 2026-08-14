@@ -40,6 +40,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -71,6 +73,9 @@ jobs:
           elif [ "${{ github.event_name }}" = "push" ]; then
             base="${{ github.event.before }}"
             head="${{ github.sha }}"
+          elif [ "${{ github.event_name }}" = "merge_group" ]; then
+            base="${{ github.event.merge_group.base_sha }}"
+            head="${{ github.event.merge_group.head_sha }}"
           else
             # workflow_dispatch (or any other event): no meaningful diff to
             # compute, so run everything.

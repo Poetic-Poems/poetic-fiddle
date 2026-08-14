@@ -18,16 +18,25 @@ name: Commit message format
 #
 # Both this job and the local hook call .githooks/check-commit-format.sh, so
 # the Conventional Commits pattern itself lives in exactly one place.
+#
+# Also triggered on merge_group, so this required context reports on a
+# merge-queue run instead of sitting at "Expected" forever — but the job
+# itself validates a pull request's title and commit range, neither of which
+# exists on a merge group, so it's gated to run only for pull_request and
+# report `skipped` (which satisfies the queue) on merge_group.
 
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
+  merge_group:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   commit-format:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
