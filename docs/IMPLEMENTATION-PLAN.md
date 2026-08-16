@@ -504,9 +504,9 @@ public launch, **P2** soon after, **P3** insurance/polish.
 - **W9 (P1, S)** — **Takedown address + process** (D40, AC116) — **done**
   (PR #138): the takedown address `takedown@poeticfiddle.com` and process
   are published in the AUP and Privacy pages.
-- **W10 (P1, S)** — **Breach-handling statement** (AC118). Nothing user-facing
-  today. Add wording to the Privacy Policy per the NZ notifiable-breach
-  scheme (REQUIREMENTS.md §15).
+- **W10 (P1, S)** — **Breach-handling statement** (AC118) — **done** (PR #180):
+  `src/app/privacy/page.tsx` includes a "Privacy breach notification" section
+  per the NZ notifiable-breach scheme (REQUIREMENTS.md §15).
 - **W11 (P2, S)** — **Surface min-age 16 at sign-up** (D39, AC115) — **done**:
   `SignInPrompt.tsx` states "By continuing you confirm you're 16 or older and
   agree to the Terms", linking to `/terms`, beneath the sign-in options
@@ -525,8 +525,11 @@ public launch, **P2** soon after, **P3** insurance/polish.
   deletion does (W12), and a deleted poet's permalinks 404 at once rather than
   at the share cache's next expiry. A "Danger zone" section on the My poems
   dashboard gates the whole thing behind a type-your-email confirmation.
-- **W14 (P2, M)** — **Data export** (AC92). No export flow exists. Add
-  download-my-data (poems + profile as JSON/`.poem` files).
+- **W14 (P2, M)** — **Data export** (AC92) — **partially done** (PR #191):
+  `scripts/export-poet-data.mjs` delivers admin-run export (poems + profile
+  as JSON/`.poem` files) via the maintainer-run runbook
+  `docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`. Self-service in-app export
+  remains open.
 - **W15 (P2, S–M)** — **Branding: theme-aware logo + favicon set** (AC106).
   `poetic-fiddle-logo.svg` has hard-coded fills and no dark variant;
   favicons are a bare `favicon.ico` + `icon.svg`. Make the logo respect
