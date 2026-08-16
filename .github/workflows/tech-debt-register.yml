@@ -15,9 +15,9 @@ name: Tech-debt register check
 # runs with write-scoped secrets, and ungated by `paths:` — the register is
 # checked on every PR, since drift can also arrive from an edit elsewhere.
 #
-# scripts/td-check.pl and scripts/check-tech-debt-open-rewrites.pl are the
-# canonical copies for the sibling repositories, which hold byte-identical
-# copies guarded by their td-tooling-drift workflow.
+# scripts/td-check.pl and scripts/check-tech-debt-open-rewrites.pl are
+# byte-identical copies of the canonical originals in Poetic-Poems/poetic,
+# held in step by .github/workflows/td-tooling-drift.yml.
 
 on:
   pull_request:
