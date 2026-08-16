@@ -14,8 +14,8 @@ exists, in the same way AC121/AC122 are the reason `TRIAGE.md` does.
 - **Delete one poem** — the "My poems" dashboard's delete action, any time,
   no maintainer involvement.
 - **Delete their whole account** — `DELETE /api/account/delete`
-  (`src/app/api/account/delete/route.ts`, W13), reachable from the app's
-  account settings. It authenticates the caller with their own session
+  (`src/app/api/account/delete/route.ts`, W13), reachable from the My poems
+  dashboard's Danger zone. It authenticates the caller with their own session
   token and deletes only that account, so a poet who can still sign in
   never needs the dashboard procedure below.
 
