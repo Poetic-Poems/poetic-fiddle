@@ -1,10 +1,16 @@
 name: Tech-debt tooling drift check
 
 # This repo holds manual copies of the tech-debt tooling that is canonical in
-# Poetic-Poems/poetic (this repo does not framework-sync). This check fails
-# when the copies drift from poetic main, so divergence is noticed instead of
-# festering, and files a deduplicated issue on drift, mirroring
-# check-poetic-release.yml's pattern.
+# Poetic-Poems/poetic (this repo does not framework-sync). The canonical file
+# list lives in poetic's own scripts/td-tooling-manifest (Poetic-Poems/poetic#188,
+# docs/TECH-DEBT-REGISTER.md "Tooling manifest for consumers") — this check
+# fetches that manifest from poetic main at run time and iterates it, rather
+# than hard-coding the file list here, so a script poetic's manifest adds is
+# covered by this check before any consumer has manually mirrored the file.
+# A manifest entry this repo doesn't have is reported as missing, not skipped.
+# This check fails when a copy drifts from poetic main or a manifest entry is
+# missing, so divergence is noticed instead of festering, and files a
+# deduplicated issue, mirroring check-poetic-release.yml's pattern.
 
 on:
   schedule:
@@ -25,17 +31,36 @@ jobs:
         id: diff
         run: |
           set -euo pipefail
+          manifest_url="https://raw.githubusercontent.com/Poetic-Poems/poetic/main/scripts/td-tooling-manifest"
+          manifest=$(curl -fsSL "$manifest_url") || {
+            echo "::error::failed to fetch td-tooling-manifest from poetic main ($manifest_url)"
+            exit 1
+          }
+          if [ -z "$manifest" ]; then
+            echo "::error::td-tooling-manifest fetched empty from poetic main; treating as a failed fetch, not as zero drift"
+            exit 1
+          fi
+
           drifted=""
-          for f in scripts/get-tech-debt-record.pl scripts/next-tech-debt-id.pl \
-                   scripts/reserve-tech-debt-id.pl \
-                   scripts/check-tech-debt-open-rewrites.pl scripts/td-check.pl; do
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            if [ ! -f "$f" ]; then
+              echo "::error file=$f::$f is listed in poetic's td-tooling-manifest but is missing from this repo"
+              drifted="${drifted}${f}|missing"$'\n'
+              continue
+            fi
             curl -fsSL "https://raw.githubusercontent.com/Poetic-Poems/poetic/main/$f" -o /tmp/upstream
             if ! diff -u /tmp/upstream "$f"; then
               echo "::error file=$f::$f has drifted from Poetic-Poems/poetic main"
-              drifted="$drifted $f"
+              drifted="${drifted}${f}|drifted"$'\n'
             fi
-          done
-          echo "drifted=${drifted# }" >> "$GITHUB_OUTPUT"
+          done <<< "$manifest"
+
+          {
+            echo "drifted<<TD_DRIFT_EOF"
+            printf '%s' "$drifted"
+            echo "TD_DRIFT_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: File an issue if drift detected
         if: steps.diff.outputs.drifted != ''
@@ -61,11 +86,18 @@ jobs:
 
           body_file=$(mktemp)
           {
-            printf 'The following vendored tech-debt script(s) differ from '
-            printf '`Poetic-Poems/poetic`'"'"'s current `main`:\n\n'
-            for f in $DRIFTED; do
-              printf -- '- `%s`\n' "$f"
-            done
+            printf 'The following vendored tech-debt script(s) differ from, or '
+            printf 'are missing entries from, '
+            printf '`Poetic-Poems/poetic`'"'"'s current `main` manifest '
+            printf '(`scripts/td-tooling-manifest`):\n\n'
+            while IFS='|' read -r f reason; do
+              [ -n "$f" ] || continue
+              if [ "$reason" = "missing" ]; then
+                printf -- '- `%s` — listed in the manifest but missing from this repo\n' "$f"
+              else
+                printf -- '- `%s` has drifted from poetic main\n' "$f"
+              fi
+            done <<< "$DRIFTED"
             printf '\nRe-sync the file(s) above from poetic main. The run that '
             printf 'detected this has the diff:\n%s\n' "$RUN_URL"
           } > "$body_file"
