@@ -176,8 +176,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Retried, unlike the other steps in this job: the advisory database
+      # `npm audit` queries moves independently of this repo's tree, so a
+      # transient database inconsistency can fail this step on a commit that
+      # passes minutes later with no change of its own (TD-PPpfid-26080911).
+      # Two attempts a few minutes apart absorbs that without masking a real
+      # advisory, which fails both attempts identically.
       - name: Audit dependencies
-        run: npm run audit
+        run: |
+          attempt=1
+          max_attempts=2
+          retry_delay_seconds=180
+          until npm run audit; do
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              exit 1
+            fi
+            echo "Audit attempt $attempt/$max_attempts failed; retrying in ${retry_delay_seconds}s in case the advisory database is transiently inconsistent" >&2
+            attempt=$((attempt + 1))
+            sleep "$retry_delay_seconds"
+          done
 
   changelog-rename:
     name: Check CHANGELOG.md rename
