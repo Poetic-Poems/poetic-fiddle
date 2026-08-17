@@ -138,8 +138,10 @@ action at this project's current scale, and that judgement is recorded in
 
 **Severity:** Low · **Effort:** Small · **Addresses:** F-CI-02
 
-**Current state:** `npm run audit` has no retry/backoff; the advisory database it queries moves independently of the repo's tree, causing occasional false-red `CI` runs on an unchanged commit. This flakiness was the documented proximate trigger of the F-GOV-01 register-hygiene incident.
+**Superseded by #336.** On the identical commit `a6647036`, the 23:13 run correctly reported two live advisories and exited 1, and the 03:53 run on the same unchanged tree spuriously reported "found 0 vulnerabilities" and exited 0 — the first run was correct, the second was the flake, not the other way round. See #336 for the actual remediation and #337 for this correction.
 
-**Intended end state:** Either the `audit` job retries once after a short delay before failing, or the project has a documented norm (e.g. in `CONTRIBUTING.md` or the workflow's own comment) that a red audit-only run on an otherwise-clean PR gets manually re-run before concluding the branch needs rework.
+**Current state:** `npm run audit` has no retry/backoff; the advisory database it queries moves independently of the repo's tree, causing occasional false-*green* `CI` runs on an unchanged commit that has a genuine, active advisory. This flakiness was the documented proximate trigger of the F-GOV-01 register-hygiene incident.
 
-**Approach:** Optional, proportionate to project scale — smallest fix is a documented norm; a retry step in `ci.yml`'s `audit` job is the more thorough option. Tech-debt item: `TD-PPpfid-26080911`.
+**Intended end state:** Superseded by #336 — retrying a red audit run before failing would retry past a correct red into a spurious green, which is the wrong direction. See #336 for the actual remediation.
+
+**Approach:** Superseded by #336; no further action against this recommendation. Tech-debt item: `TD-PPpfid-26080911`.

@@ -705,67 +705,21 @@ this PR (the item already exists — flip its `status:` to `resolved` with
 
 ## Prompt for R-12 — Add retry/backoff to the `npm audit` CI gate
 
+**Superseded by #336.** This prompt's premise was inverted: the project's own
+CI history shows the 23:13 run on commit `a6647036` correctly reported two
+live advisories (GHSA-2v37-7h3g-55p8, nanoid, HIGH; GHSA-55q2-fjhq-7xh7,
+dompurify, MODERATE) and exited 1, and the 03:53 run on the same unchanged
+tree spuriously reported "found 0 vulnerabilities" and exited 0 — the red run
+was correct and the green run was the flake. Retrying a red audit before
+failing, as both options below proposed, would retry past a correct red into
+a spurious green, which moves in the wrong direction against a flake whose
+signature is a spurious green, not a spurious red. See #336 for the actual
+remediation and #337 for this correction; do not run either option below.
+
 **Bundles:** R-12 only · **Run after:** no prerequisites
 
 ```text
-Poetic Fiddle (github.com/Poetic-Poems/poetic-fiddle) runs `npm run audit`
-(defined in `package.json` as `npm audit --audit-level=high`) as part of
-`.github/workflows/ci.yml`'s required `CI` check, and again weekly via
-`.github/workflows/dependency-audit.yml`.
-
-Problem: `npm audit`'s advisory database is queried live and moves
-independently of this repository's own tree, so an identical commit can
-fail the audit at one moment and pass it minutes or hours later with no
-code change — confirmed in this project's own CI history (two runs on the
-same commit, one red at 23:13, one green at 03:53, "found 0
-vulnerabilities" in the second). This flakiness has real downstream cost:
-it was the documented proximate trigger of a stuck pull request that later
-required manual maintainer intervention to untangle.
-
-Goal (acceptance criteria) — implement ONE of these two options, whichever
-you judge lower-risk for this project's CI setup after reading
-`.github/workflows/ci.yml`'s `audit` job in full:
-
-Option A (preferred if straightforward): modify the `audit` job in
-`ci.yml` (and, if it shares logic, `dependency-audit.yml`) so that a
-failing `npm run audit` triggers one retry after a short delay (e.g. 2-5
-minutes) before the job is marked failed — using a GitHub Actions retry
-action, or a simple shell loop with `sleep`, whichever fits this project's
-existing workflow style better (check how other jobs in `ci.yml` are
-structured).
-
-Option B (if a retry adds too much complexity or CI time for this
-project's taste): instead, add a short comment to `ci.yml`'s `audit` job
-explaining the known flakiness and documenting the norm that a red
-audit-only CI run on an otherwise-unchanged PR should be manually re-run
-(via the GitHub UI or `gh run rerun`) before concluding the branch needs
-code changes — and add the same norm as a note in `CONTRIBUTING.md` if that
-file discusses CI failures at all.
-
-Goal is met once one of the two is genuinely done, not both.
-
-Constraints: do not change `--audit-level=high` or otherwise weaken what
-the audit actually checks. Do not add a retry that could mask a
-genuine, reproducible vulnerability — the retry (if you choose Option A)
-must only re-run the audit command itself, not silently pass on failure.
-
-Verification: for Option A, trigger the workflow (e.g. via a draft PR) and
-confirm the retry logic is syntactically correct and the job still
-correctly fails if `npm audit` fails on both attempts (you can simulate
-this by temporarily lowering `--audit-level` to something that will
-trigger, then reverting). For Option B, confirm the added documentation
-reads clearly and doesn't contradict any existing CI documentation.
-
-Work cost-consciously. This is a small, well-specified CI configuration or
-documentation change — suits a low-cost-to-mid-cost model tier (CI YAML
-edits benefit from a bit more care than pure prose, but this is not
-ambiguous or security-critical work).
-
-Deliverable: one commit/PR (branch-workflow rules per this repo's
-`CLAUDE.md`; conventional-commit title, e.g. `ci(audit): retry the
-dependency-audit gate before failing` or `docs(ci): document the
-audit-flakiness re-run norm`). File a new tech-debt item resolving
-`TD-PPpfid-26080911` per `TECH-DEBT.md`'s workflow as part of this PR (the
-item already exists — flip its `status:` to `resolved` with `resolved:`
-and `ref:` once merged).
+This prompt is retired — see the correction above. Do not implement Option A
+or Option B as originally written; both retry past a correct red into a
+spurious green. Follow #336 instead.
 ```
