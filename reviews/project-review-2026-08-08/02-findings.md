@@ -172,7 +172,7 @@ concretely resolved (grouped return shape, a shared `ensureSaved()` helper).
 
 ### F-CI-02 — The `npm audit` CI gate is flaky by design, and that flakiness was the proximate trigger of a real process incident · **Low**
 
-**Evidence:** 2 of the last 19 `CI` runs on `main` failed solely on `Audit dependencies`; the identical commit failed then passed hours later as the advisory database moved. This is the documented proximate cause of the PR #221→#223 register-hygiene incident (see F-GOV-01).
+**Evidence:** 2 of the last 19 `CI` runs on `main` failed solely on `Audit dependencies`; on the identical commit `a6647036`, the 23:13 run correctly reported two live advisories (GHSA-2v37-7h3g-55p8, nanoid, HIGH; GHSA-55q2-fjhq-7xh7, dompurify, MODERATE) and exited 1, and the 03:53 run on the same unchanged tree reported "found 0 vulnerabilities" and exited 0 — the first run was correct, the second was the flake. This is the documented proximate cause of the PR #221→#223 register-hygiene incident (see F-GOV-01). See #336 for the defect.
 
 **Impact:** Low as a correctness matter, but its downstream cost (two escalation issues, a stuck draft PR, real maintainer toil) was not.
 
