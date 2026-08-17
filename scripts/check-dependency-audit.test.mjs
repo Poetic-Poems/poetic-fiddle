@@ -4,8 +4,15 @@ import {
   CANARY_VERSION,
   evaluateDependencyAudit,
   hasHighOrCriticalVulnerability,
+  unusableReportReason,
   vulnerabilityCounts,
 } from "./check-dependency-audit.mjs";
+
+// What `npm audit --json` writes to stdout when the audit itself fails: an
+// error object in place of a report, with no `metadata` at all.
+function errorJson(code = "ENOAUDIT", summary = "registry did not answer") {
+  return { error: { code, summary, detail: "" } };
+}
 
 function auditJson(overrides = {}) {
   return {
@@ -60,6 +67,23 @@ describe("hasHighOrCriticalVulnerability", () => {
   });
 });
 
+describe("unusableReportReason", () => {
+  it("is null for a well-formed report", () => {
+    expect(unusableReportReason(auditJson())).toBeNull();
+  });
+
+  it("names the error code when npm audit errored instead of reporting", () => {
+    expect(unusableReportReason(errorJson("ENOLOCK"))).toContain("ENOLOCK");
+  });
+
+  it("flags a report with no vulnerability counts", () => {
+    expect(unusableReportReason({})).toContain("no vulnerability counts");
+    expect(unusableReportReason({ metadata: {} })).toContain(
+      "no vulnerability counts",
+    );
+  });
+});
+
 describe("evaluateDependencyAudit", () => {
   it("fails immediately on a genuine high-severity advisory, without consulting the canary", () => {
     const getCanaryAuditJson = vi.fn(() => auditJson({ high: 1 }));
@@ -103,6 +127,31 @@ describe("evaluateDependencyAudit", () => {
 
     expect(result.pass).toBe(true);
     expect(getCanaryAuditJson).toHaveBeenCalledOnce();
+  });
+
+  it("fails when npm audit errored instead of producing a report, however healthy the canary", () => {
+    // An errored audit has no `metadata`, so counting advisories in it yields
+    // zero and looks exactly like a clean tree — the gate must not pass on a
+    // tree it never actually audited.
+    const getCanaryAuditJson = vi.fn(() => auditJson({ high: 1 }));
+
+    const result = evaluateDependencyAudit(
+      errorJson("ENOAUDIT"),
+      getCanaryAuditJson,
+    );
+
+    expect(result.pass).toBe(false);
+    expect(result.message).toContain("ENOAUDIT");
+    expect(getCanaryAuditJson).not.toHaveBeenCalled();
+  });
+
+  it("fails a clean report when the canary audit errored rather than answering", () => {
+    const getCanaryAuditJson = vi.fn(() => errorJson("ENOAUDIT"));
+
+    const result = evaluateDependencyAudit(auditJson(), getCanaryAuditJson);
+
+    expect(result.pass).toBe(false);
+    expect(result.message).toContain("ENOAUDIT");
   });
 
   it("passes a report containing only lower-severity advisories, confirmed by the canary", () => {

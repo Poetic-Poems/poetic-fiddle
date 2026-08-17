@@ -87,6 +87,30 @@ export function vulnerabilityCounts(auditJson) {
   return { high: counts.high ?? 0, critical: counts.critical ?? 0 };
 }
 
+// An `npm audit` that fails outright still writes JSON to stdout — but an
+// error object rather than a report: `{"error":{"code":"ENOAUDIT",…}}` for a
+// registry that would not answer the audit request, `ENOLOCK` for a missing
+// lockfile, and so on. That JSON carries no `metadata.vulnerabilities`, so
+// counting advisories in it yields zero and reads exactly like a clean tree.
+// Passing on it would be the same green-audit-that-never-audited failure this
+// script exists to prevent, so a report that isn't a report is a failure in
+// its own right.
+export function unusableReportReason(auditJson) {
+  const error = auditJson?.error;
+  if (error) {
+    const code = error.code ?? "unknown error";
+    const summary = error.summary ? `: ${error.summary}` : "";
+    return `npm audit reported an error (${code}${summary}) instead of a report`;
+  }
+
+  const counts = auditJson?.metadata?.vulnerabilities;
+  if (!counts || typeof counts !== "object") {
+    return "npm audit produced no vulnerability counts (no `metadata.vulnerabilities` in its JSON output)";
+  }
+
+  return null;
+}
+
 export function hasHighOrCriticalVulnerability(auditJson) {
   const { high, critical } = vulnerabilityCounts(auditJson);
   return high > 0 || critical > 0;
@@ -97,6 +121,14 @@ export function hasHighOrCriticalVulnerability(auditJson) {
 // path, exactly as the design requires — a real advisory in `realAuditJson`
 // short-circuits before it's ever called.
 export function evaluateDependencyAudit(realAuditJson, getCanaryAuditJson) {
+  const realProblem = unusableReportReason(realAuditJson);
+  if (realProblem) {
+    return {
+      pass: false,
+      message: `${realProblem}, so this project's dependency tree was never actually audited. Treating that as a failure rather than a pass.`,
+    };
+  }
+
   if (hasHighOrCriticalVulnerability(realAuditJson)) {
     return {
       pass: false,
@@ -107,6 +139,14 @@ export function evaluateDependencyAudit(realAuditJson, getCanaryAuditJson) {
   }
 
   const canaryAuditJson = getCanaryAuditJson();
+  const canaryProblem = unusableReportReason(canaryAuditJson);
+  if (canaryProblem) {
+    return {
+      pass: false,
+      message: `npm audit reported no high or critical severity advisories, but the canary audit of ${CANARY_PACKAGE}@${CANARY_VERSION} could not confirm that: ${canaryProblem}. This project's clean result is therefore unconfirmed — treating it as a failure rather than a pass.`,
+    };
+  }
+
   if (!hasHighOrCriticalVulnerability(canaryAuditJson)) {
     return {
       pass: false,
