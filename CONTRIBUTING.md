@@ -16,6 +16,14 @@ Thanks for your interest in contributing! Poetic Fiddle is a collaborative proje
    - Fill in the PR body with context: what the change does, why it matters, any test plan or verification steps
    - Link the issue or tech-debt item if applicable
    - CI checks must pass before merge
+   - If the `Audit dependencies` step goes red, it names a specific advisory —
+     read it and check `package-lock.json` against the advisory's affected
+     range before assuming CI is at fault. A green re-run on an otherwise
+     unchanged tree after a red one is the suspicious result, not the
+     reassuring one: the advisory database can wrongly stop reporting an
+     advisory it correctly reported minutes earlier, so a same-tree red→green
+     flip needs the same scrutiny as any other flaky-looking CI result, not a
+     shrug
    - If the PR touches `src/lib/csp.ts`, `src/proxy.ts`,
      `src/components/PoemPreview.tsx` or `src/components/SharedPoemView.tsx`,
      run through [docs/CSP-REVIEW-CHECKLIST.md](./docs/CSP-REVIEW-CHECKLIST.md)
