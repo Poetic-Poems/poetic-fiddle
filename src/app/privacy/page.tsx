@@ -151,16 +151,18 @@ export default function PrivacyPolicy() {
         <section>
           <h2 className="font-serif text-lg font-semibold">Your rights</h2>
           <p>
-            You can ask us to export or delete your data, or delete your account
-            entirely, at any time by emailing{" "}
+            You can ask us to export your data at any time by emailing{" "}
             <a
               href="mailto:warwick@datumprocess.co.nz"
               className="text-link underline underline-offset-2"
             >
               warwick@datumprocess.co.nz
             </a>
-            . We keep account and poem data only for as long as your account
-            exists.
+            . You can delete your account yourself, at any time, from your My
+            poems dashboard&rsquo;s Danger zone. If you can&rsquo;t sign in to
+            do this yourself, email us at the same address and we&rsquo;ll
+            delete it for you. We keep account and poem data only for as long as
+            your account exists.
           </p>
         </section>
 
