@@ -161,6 +161,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A Source/Preview toggle in the editor below the `lg` breakpoint, so mobile
   users can switch between the two views without horizontal scrolling; the
   split-pane layout at `lg` and above is unchanged (AC26, AC83).
+- The Privacy Policy's "Your rights" section now describes self-service
+  account deletion from the My poems dashboard's Danger zone, keeping the
+  mailto address as a fallback for poets who can't sign in, matching the
+  "Saving and sharing poems" section, instead of saying account deletion
+  requires emailing the maintainer.
 
 ### Fixed
 
