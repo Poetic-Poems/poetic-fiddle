@@ -40,28 +40,17 @@ jobs:
       # an infrastructure flake. Same capture-then-report-then-fail shape as
       # td-tooling-drift.yml.
       #
-      # Retried internally, same as ci.yml's own `audit` job
-      # (TD-PPpfid-26080911): the advisory database moves independently of
-      # this repo's tree, so a transient inconsistency can fail this step on
-      # a commit that passes minutes later. Two attempts a few minutes apart
-      # absorbs that without masking a real advisory, which fails both
-      # attempts identically and still reaches `continue-on-error` as a
-      # `failure` outcome.
+      # Not retried, for the same reason as ci.yml's own `audit` job: this
+      # gate fails false-green rather than false-red, and a retry-until-pass
+      # loop would only help a spurious clean result win. The guard is inside
+      # `npm run audit` (scripts/check-dependency-audit.mjs), which fails the
+      # run when the advisory endpoint returns nothing — reaching
+      # `continue-on-error` as a `failure` outcome, so the two steps below
+      # still file the issue and fail the job. See TD-PPpfid-26080911.
       - name: Audit dependencies
         id: audit
         continue-on-error: true
-        run: |
-          attempt=1
-          max_attempts=2
-          retry_delay_seconds=180
-          until npm run audit; do
-            if [ "$attempt" -ge "$max_attempts" ]; then
-              exit 1
-            fi
-            echo "Audit attempt $attempt/$max_attempts failed; retrying in ${retry_delay_seconds}s in case the advisory database is transiently inconsistent" >&2
-            attempt=$((attempt + 1))
-            sleep "$retry_delay_seconds"
-          done
+        run: npm run audit
 
       - name: File an issue if the audit failed
         if: steps.audit.outcome == 'failure'
