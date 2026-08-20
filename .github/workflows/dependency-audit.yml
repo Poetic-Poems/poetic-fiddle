@@ -39,6 +39,14 @@ jobs:
       # setup or `npm ci` broke, filing an advisory report for what was really
       # an infrastructure flake. Same capture-then-report-then-fail shape as
       # td-tooling-drift.yml.
+      #
+      # Not retried, for the same reason as ci.yml's own `audit` job: this
+      # gate fails false-green rather than false-red, and a retry-until-pass
+      # loop would only help a spurious clean result win. The guard is inside
+      # `npm run audit` (scripts/check-dependency-audit.mjs), which fails the
+      # run when the advisory endpoint returns nothing — reaching
+      # `continue-on-error` as a `failure` outcome, so the two steps below
+      # still file the issue and fail the job. See TD-PPpfid-26080911.
       - name: Audit dependencies
         id: audit
         continue-on-error: true

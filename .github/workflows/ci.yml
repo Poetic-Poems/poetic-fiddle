@@ -176,6 +176,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Deliberately not wrapped in a retry loop. This gate's observed
+      # failure mode is a false *green*, not a false red: on commit
+      # a6647036 a run that correctly reported two live advisories was
+      # followed, on the identical tree, by one reporting "found 0
+      # vulnerabilities" (#336). Retrying until the audit passes can only
+      # raise the odds that the spurious green wins, so the guard belongs
+      # inside the gate rather than around it —
+      # scripts/check-dependency-audit.mjs refuses to trust a clean result
+      # the advisory endpoint may not have actually answered. See
+      # TD-PPpfid-26080911, and CONTRIBUTING.md for how to respond to a red
+      # audit step.
       - name: Audit dependencies
         run: npm run audit
 
