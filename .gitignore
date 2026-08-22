@@ -1,5 +1,9 @@
+# Git
+*.orig
+
 # Agents
 .claude/settings.json
+.claude/settings.local.json
 
 # Logs
 logs
