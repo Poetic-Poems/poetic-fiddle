@@ -93,4 +93,32 @@ test.describe("preview link gestures", () => {
 
     await popup.close();
   });
+
+  // Real-browser counterpart to the "gesture gate on non-link controls" unit
+  // suite (src/lib/poem-toggles.test.ts, TD-PPpfid-26081401's review round):
+  // the postscript toggle is not a link, so it has no native "open in a new
+  // tab" behaviour for a middle-click to defer to — unlike the link test
+  // above, a middle-click here must have no effect at all.
+  test("middle-click on the postscript toggle does not expand it or open a tab", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("textbox", { name: "Your poem" }).waitFor();
+
+    const frame = page.frameLocator('iframe[title="Poem preview"]');
+    const postscriptToggle = frame.locator(".postscript-toggle");
+
+    test.skip(
+      !(await postscriptToggle.isVisible().catch(() => false)),
+      "EXAMPLE_POEM's postscript isn't clamped at this viewport, so there's no toggle to middle-click",
+    );
+
+    const pagesBefore = context.pages().length;
+
+    await postscriptToggle.click({ button: "middle" });
+
+    expect(context.pages().length).toBe(pagesBefore);
+    await expect(postscriptToggle).toHaveAttribute("aria-expanded", "false");
+  });
 });

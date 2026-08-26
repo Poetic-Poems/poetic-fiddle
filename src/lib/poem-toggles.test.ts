@@ -643,6 +643,111 @@ describe("wirePoemToggles song-embed buttons", () => {
   });
 });
 
+// Regression coverage for the review round on TD-PPpfid-26081401: the
+// auxclick listener wirePoemToggles registers alongside `click` shares
+// handlePreviewClick with every other branch, not just the http(s)-link one.
+// Without a gesture-type gate ahead of the non-link branches, a middle-click
+// (or, since a modified left-click is still a plain `click` event, a
+// Ctrl/Cmd/Shift/Alt-click) on the postscript toggle, an analysis
+// show/hide/selector button, or the song-embed button would run that
+// branch's action even though none of those controls are links with any
+// native "open in a new tab" behaviour to defer to.
+describe("wirePoemToggles gesture gate on non-link controls", () => {
+  const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+  afterEach(() => {
+    openSpy.mockClear();
+  });
+
+  function fireAuxclick(doc: Document, selector: string): MouseEvent {
+    const event = new MouseEvent("auxclick", {
+      bubbles: true,
+      cancelable: true,
+      button: 1,
+    });
+    doc.querySelector(selector)?.dispatchEvent(event);
+    return event;
+  }
+
+  function fireModifiedClick(doc: Document, selector: string): MouseEvent {
+    const event = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+    });
+    doc.querySelector(selector)?.dispatchEvent(event);
+    return event;
+  }
+
+  it("does not lift the postscript clamp on a middle-click of the toggle", () => {
+    const doc = postscriptDocument();
+    wirePoemToggles(doc);
+
+    const toggle = doc.getElementById("postscript-item--test-poem--more")!;
+    const content = doc.getElementById("postscript-item--test-poem--content")!;
+
+    fireAuxclick(doc, ".postscript-toggle");
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(content.classList.contains("postscript-expanded")).toBe(false);
+  });
+
+  it("does not lift the postscript clamp on a modified click of the toggle", () => {
+    const doc = postscriptDocument();
+    wirePoemToggles(doc);
+
+    const toggle = doc.getElementById("postscript-item--test-poem--more")!;
+
+    fireModifiedClick(doc, ".postscript-toggle");
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("does not expand the analysis on a middle-click of the show button", () => {
+    const doc = analysisDocument();
+    wirePoemToggles(doc);
+
+    const showButton = doc.getElementById("show-analysis--test-poem")!;
+
+    fireAuxclick(doc, ".analysis.show");
+
+    expect(showButton.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("does not switch panels on a middle-click of an analysis selector button", () => {
+    const doc = selectorDocument();
+    wirePoemToggles(doc);
+
+    const fullButton = doc.getElementById("analysis-select-full--test-poem")!;
+    const group = doc.querySelector(".full-or-synopsis-selector")!;
+
+    fireAuxclick(doc, "#analysis-select-full--test-poem");
+
+    expect(group.getAttribute("data-selected")).toBe("synopsis");
+    expect(fullButton.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("does not open the embed on a middle-click of the song-embed button", () => {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = `<button class="song-embed-btn" data-embed-src="https://audiomack.com/embed/my-artist/my-song">Load player</button>`;
+    wirePoemToggles(doc);
+
+    fireAuxclick(doc, ".song-embed-btn");
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not open the embed on a modified click of the song-embed button", () => {
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = `<button class="song-embed-btn" data-embed-src="https://audiomack.com/embed/my-artist/my-song">Load player</button>`;
+    wirePoemToggles(doc);
+
+    fireModifiedClick(doc, ".song-embed-btn");
+
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+});
+
 // Regression coverage for issue #315: a left-clicked link inside the
 // srcDoc-sandboxed preview would otherwise navigate the iframe itself in
 // place, which the page's frame-src CSP directive blocks.

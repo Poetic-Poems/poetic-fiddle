@@ -42,89 +42,108 @@ export function wirePoemToggles(doc: Document) {
     const target = event.target as Element | null;
     if (typeof target?.closest !== "function") return;
 
-    // poetic.css leaves `.postscript-content` unclamped by default and only
-    // clamps (and reveals this toggle) once `evaluatePostscriptPreviews`
-    // below has added `.postscript-clamped` — so a postscript short enough to
-    // need no preview never reaches this handler with a visible control at
-    // all.
-    const postscriptToggle = target.closest(".postscript-toggle");
-    if (postscriptToggle) {
-      const contentId = postscriptToggle.getAttribute("aria-controls");
-      const content = contentId ? doc.getElementById(contentId) : null;
-      if (!content) return;
+    // Gesture-type gate for every branch below except the link branch: this
+    // handler is shared by both `click` and `auxclick` (TD-PPpfid-26081401),
+    // and none of the postscript toggle, analysis show/hide/selector, or
+    // song-embed controls are links — they have no native "open in a new
+    // tab/window" behaviour for a modified or middle-click to defer to, so a
+    // plain, unmodified left-click is the only gesture that may run their
+    // actions. The link branch further down still inspects these itself, to
+    // decide between intercepting and falling through to native handling.
+    const isAuxiliaryClick = event.type === "auxclick";
+    const isModified =
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey ||
+      isAuxiliaryClick;
 
-      const expanded =
-        postscriptToggle.getAttribute("aria-expanded") === "true";
-      postscriptToggle.setAttribute("aria-expanded", String(!expanded));
-      content.classList.toggle("postscript-expanded", !expanded);
-      // The visible label is poetic.css's ::after content, keyed off
-      // aria-expanded; this span is the button's accessible name.
-      const label = postscriptToggle.querySelector(".sr-only");
-      if (label) label.textContent = expanded ? "See more" : "See less";
-      return;
-    }
+    if (!isModified) {
+      // poetic.css leaves `.postscript-content` unclamped by default and only
+      // clamps (and reveals this toggle) once `evaluatePostscriptPreviews`
+      // below has added `.postscript-clamped` — so a postscript short enough
+      // to need no preview never reaches this handler with a visible control
+      // at all.
+      const postscriptToggle = target.closest(".postscript-toggle");
+      if (postscriptToggle) {
+        const contentId = postscriptToggle.getAttribute("aria-controls");
+        const content = contentId ? doc.getElementById(contentId) : null;
+        if (!content) return;
 
-    const showButton = target.closest(".analysis.show");
-    if (showButton) {
-      showButton.setAttribute("aria-expanded", "true");
-      return;
-    }
-
-    const hideButton = target.closest(".analysis.hide");
-    if (hideButton) {
-      const showButtonId = hideButton.getAttribute("data-analysis-toggle");
-      if (showButtonId) {
-        doc
-          .getElementById(showButtonId)
-          ?.setAttribute("aria-expanded", "false");
-      }
-      return;
-    }
-
-    const selectButton = target.closest(".analysis.selector");
-    const group = selectButton?.closest(".full-or-synopsis-selector");
-    if (selectButton && group) {
-      const panel = selectButton.getAttribute("data-analysis-select");
-      if (panel) group.setAttribute("data-selected", panel);
-      group.querySelectorAll(".analysis.selector").forEach((button) => {
-        button.setAttribute("aria-pressed", String(button === selectButton));
-      });
-      return;
-    }
-
-    // poetic.js (never loaded here) is what would normally turn this button
-    // into an always-visible player (see render-share.ts, which does the same
-    // server-side for the share page's "full player", AC25). The editor
-    // preview only owes a best-effort representation, so instead of loading a
-    // player script into the preview sandbox (which would need allow-scripts,
-    // weighed against AC86 and out of scope here), a click opens the embed in
-    // a new tab — keeping the button's clickable styling honest rather than
-    // leaving it dead (TD-PPpfid-26072603). window.open runs here in the
-    // parent page's own realm, not the sandboxed preview's, so this new tab is
-    // Fiddle's own doing, not the iframe content's.
-    const embedButton = target.closest(".song-embed-btn[data-embed-src]");
-    if (embedButton) {
-      const src = embedButton.getAttribute("data-embed-src");
-      if (!src) return;
-
-      let url: URL;
-      try {
-        url = new URL(src);
-      } catch {
+        const expanded =
+          postscriptToggle.getAttribute("aria-expanded") === "true";
+        postscriptToggle.setAttribute("aria-expanded", String(!expanded));
+        content.classList.toggle("postscript-expanded", !expanded);
+        // The visible label is poetic.css's ::after content, keyed off
+        // aria-expanded; this span is the button's accessible name.
+        const label = postscriptToggle.querySelector(".sr-only");
+        if (label) label.textContent = expanded ? "See more" : "See less";
         return;
       }
-      // Same allow-list enforcement as render-share.ts's activation gate
-      // (embed-hosts.ts) — a poet's audio value can only ever fill the URL's
-      // path, never its origin, but this is still checked explicitly rather
-      // than trusted implicitly.
-      if (
-        url.protocol !== "https:" ||
-        !EMBED_ALLOWED_HOSTS.has(url.hostname.toLowerCase())
-      ) {
+
+      const showButton = target.closest(".analysis.show");
+      if (showButton) {
+        showButton.setAttribute("aria-expanded", "true");
         return;
       }
-      window.open(url.toString(), "_blank", "noopener,noreferrer");
-      return;
+
+      const hideButton = target.closest(".analysis.hide");
+      if (hideButton) {
+        const showButtonId = hideButton.getAttribute("data-analysis-toggle");
+        if (showButtonId) {
+          doc
+            .getElementById(showButtonId)
+            ?.setAttribute("aria-expanded", "false");
+        }
+        return;
+      }
+
+      const selectButton = target.closest(".analysis.selector");
+      const group = selectButton?.closest(".full-or-synopsis-selector");
+      if (selectButton && group) {
+        const panel = selectButton.getAttribute("data-analysis-select");
+        if (panel) group.setAttribute("data-selected", panel);
+        group.querySelectorAll(".analysis.selector").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button === selectButton));
+        });
+        return;
+      }
+
+      // poetic.js (never loaded here) is what would normally turn this
+      // button into an always-visible player (see render-share.ts, which
+      // does the same server-side for the share page's "full player", AC25).
+      // The editor preview only owes a best-effort representation, so
+      // instead of loading a player script into the preview sandbox (which
+      // would need allow-scripts, weighed against AC86 and out of scope
+      // here), a click opens the embed in a new tab — keeping the button's
+      // clickable styling honest rather than leaving it dead
+      // (TD-PPpfid-26072603). window.open runs here in the parent page's own
+      // realm, not the sandboxed preview's, so this new tab is Fiddle's own
+      // doing, not the iframe content's.
+      const embedButton = target.closest(".song-embed-btn[data-embed-src]");
+      if (embedButton) {
+        const src = embedButton.getAttribute("data-embed-src");
+        if (!src) return;
+
+        let url: URL;
+        try {
+          url = new URL(src);
+        } catch {
+          return;
+        }
+        // Same allow-list enforcement as render-share.ts's activation gate
+        // (embed-hosts.ts) — a poet's audio value can only ever fill the
+        // URL's path, never its origin, but this is still checked explicitly
+        // rather than trusted implicitly.
+        if (
+          url.protocol !== "https:" ||
+          !EMBED_ALLOWED_HOSTS.has(url.hostname.toLowerCase())
+        ) {
+          return;
+        }
+        window.open(url.toString(), "_blank", "noopener,noreferrer");
+        return;
+      }
     }
 
     // Any other clicked link (the postscript's Markdown links, e.g. the
@@ -180,14 +199,9 @@ export function wirePoemToggles(doc: Document) {
     // but only where the frame's sandbox permits it (TD-PPpfid-26081401): a
     // sandboxed frame without `allow-popups` would otherwise swallow the
     // gesture and leave it dead, which is worse than the foreground tab a
-    // plain left-click already settles for.
-    const isAuxiliaryClick = event.type === "auxclick";
-    const isModified =
-      event.ctrlKey ||
-      event.metaKey ||
-      event.shiftKey ||
-      event.altKey ||
-      isAuxiliaryClick;
+    // plain left-click already settles for. `isModified`/`isAuxiliaryClick`
+    // are computed once, at the top of this handler, and gate the non-link
+    // branches above too.
     if (isModified && canFallThroughSandbox(doc)) return;
 
     event.preventDefault();
