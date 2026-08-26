@@ -8,9 +8,13 @@ name: Tech-debt tooling drift check
 # than hard-coding the file list here, so a script poetic's manifest adds is
 # covered by this check before any consumer has manually mirrored the file.
 # A manifest entry this repo doesn't have is reported as missing, not skipped.
-# This check fails when a copy drifts from poetic main or a manifest entry is
-# missing, so divergence is noticed instead of festering, and files a
-# deduplicated issue, mirroring check-poetic-release.yml's pattern.
+# A manifest entry that can't be fetched from poetic main (e.g. a rename that
+# landed upstream between the manifest update and the file move, or raw-CDN
+# staleness) is reported as unfetchable, not skipped either.
+# This check fails when a copy drifts from poetic main, a manifest entry is
+# missing, or a manifest entry can't be fetched, so divergence is noticed
+# instead of festering, and files a deduplicated issue, mirroring
+# check-poetic-release.yml's pattern.
 
 on:
   schedule:
@@ -49,7 +53,11 @@ jobs:
               drifted="${drifted}${f}|missing"$'\n'
               continue
             fi
-            curl -fsSL "https://raw.githubusercontent.com/Poetic-Poems/poetic/main/$f" -o /tmp/upstream
+            if ! curl -fsSL "https://raw.githubusercontent.com/Poetic-Poems/poetic/main/$f" -o /tmp/upstream; then
+              echo "::error file=$f::$f is listed in poetic's td-tooling-manifest but could not be fetched from poetic main"
+              drifted="${drifted}${f}|unfetchable"$'\n'
+              continue
+            fi
             if ! diff -u /tmp/upstream "$f"; then
               echo "::error file=$f::$f has drifted from Poetic-Poems/poetic main"
               drifted="${drifted}${f}|drifted"$'\n'
@@ -94,6 +102,8 @@ jobs:
               [ -n "$f" ] || continue
               if [ "$reason" = "missing" ]; then
                 printf -- '- `%s` — listed in the manifest but missing from this repo\n' "$f"
+              elif [ "$reason" = "unfetchable" ]; then
+                printf -- '- `%s` — listed in the manifest but could not be fetched from poetic main\n' "$f"
               else
                 printf -- '- `%s` has drifted from poetic main\n' "$f"
               fi
