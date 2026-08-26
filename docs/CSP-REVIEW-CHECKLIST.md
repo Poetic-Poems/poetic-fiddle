@@ -40,6 +40,17 @@ real header instead of the dev server's.
       that frame, which `frame-src` blocks (issue #315). Where the poem links
       to one of its own headings, clicking that scrolls the frame instead of
       opening anything.
+- [ ] **Modifier and middle clicks on a poem link behave like an ordinary
+      link.** (TD-PPpfid-26081401.) Ctrl/Cmd+click, Shift+click and
+      middle-click that same link. In the editor preview
+      (`PoemPreview`, `sandbox="allow-same-origin"`, no `allow-popups`), each
+      opens a foreground tab — same as a plain left-click — rather than doing
+      nothing; a middle-click especially must not renavigate the frame. On a
+      saved poem's `/share/<id>` page (`SharedPoemView`,
+      `sandbox="allow-scripts allow-same-origin allow-popups"`), each instead
+      falls through to the browser's own handling: Ctrl/Cmd+click opens a
+      *background* tab, Shift+click opens a *new window*, and middle-click
+      opens a background tab — none of them foreground tabs.
 - [ ] **Console is free of CSP reports.** Open the browser devtools console
       before loading the page. No `Content-Security-Policy` violation
       messages appear for the top document or either `srcDoc` iframe

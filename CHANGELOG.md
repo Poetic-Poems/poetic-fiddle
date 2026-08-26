@@ -355,6 +355,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   link did nothing and the browser console reported a Content-Security-Policy
   violation. External links now open in a new tab, and a link to a heading
   within the poem scrolls to it (#315).
+- Ctrl/Cmd/Shift+click and middle-click on a link in a poem now behave like
+  they do on an ordinary link, instead of always opening a foreground tab
+  (or, for middle-click, still renavigating the frame the way a plain
+  left-click used to). Where the preview frame's sandbox allows it, the
+  gesture falls through to the browser's own handling — a background tab, a
+  new window, or the browser's default for a middle-click; where it doesn't,
+  it opens a foreground tab, the same trade a plain left-click already made
+  (TD-PPpfid-26081401).
 
 ### Security
 
