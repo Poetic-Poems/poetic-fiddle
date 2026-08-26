@@ -787,3 +787,237 @@ describe("wirePoemToggles body/postscript links", () => {
     );
   });
 });
+
+// Regression coverage for TD-PPpfid-26081401: a modified click
+// (Ctrl/Cmd/Shift/Alt) dispatches a plain `click`, so it used to be
+// intercepted into an ordinary foreground tab regardless of what the poet
+// asked for, and a middle-click dispatches `auxclick`, not `click`, so it
+// wasn't intercepted at all and still renavigated the frame — issue #315's
+// violation, surviving on that one gesture. The fix reads the frame
+// element's live `sandbox` attribute to decide whether to fall through to
+// native handling or intercept exactly like a plain left-click.
+describe("wirePoemToggles modifier and auxiliary link clicks", () => {
+  const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+  afterEach(() => {
+    openSpy.mockClear();
+    document.body.innerHTML = "";
+    vi.useRealTimers();
+  });
+
+  // Same real-iframe rationale as the describe block above: `doc.baseURI`
+  // resolves like the browser's own srcdoc base, and — the part this suite
+  // is actually about — `doc.defaultView.frameElement` is only readable
+  // through a real nested browsing context, which is what the sandbox
+  // fall-through decision reads.
+  function previewDocument(bodyHtml: string, sandbox?: string): Document {
+    const iframe = document.createElement("iframe");
+    if (sandbox !== undefined) iframe.setAttribute("sandbox", sandbox);
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument as Document;
+    doc.body.innerHTML = bodyHtml;
+    return doc;
+  }
+
+  function linkDocument(sandbox: string | undefined, href: string): Document {
+    return previewDocument(`<a href="${href}">syntax reference</a>`, sandbox);
+  }
+
+  function fire(
+    doc: Document,
+    type: "click" | "auxclick",
+    init: MouseEventInit = {},
+  ): MouseEvent {
+    const view = doc.defaultView as Window & typeof globalThis;
+    const event = new view.MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      ...init,
+    });
+    doc.querySelector("a")?.dispatchEvent(event);
+    return event;
+  }
+
+  // A `click` event left unprevented makes jsdom itself schedule a real
+  // navigation attempt (HTMLHyperlinkElementUtils-impl.js), which logs a
+  // "Not implemented: navigation" error to the console once its timer fires
+  // — harmless (the assertions below run first), but noisy. Fake timers
+  // stop that timer from ever firing during the test.
+  function fireUnpreventedClick(
+    doc: Document,
+    init: MouseEventInit,
+  ): MouseEvent {
+    vi.useFakeTimers();
+    return fire(doc, "click", init);
+  }
+
+  const MODIFIERS: [string, MouseEventInit][] = [
+    ["ctrlKey", { ctrlKey: true }],
+    ["metaKey", { metaKey: true }],
+    ["shiftKey", { shiftKey: true }],
+    ["altKey", { altKey: true }],
+  ];
+
+  it.each(MODIFIERS)(
+    "intercepts a %s+click into a foreground tab when the sandbox has no allow-popups",
+    (_name, init) => {
+      const doc = linkDocument(
+        "allow-same-origin",
+        "https://example.com/notes",
+      );
+      wirePoemToggles(doc);
+
+      const event = fire(doc, "click", init);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(openSpy).toHaveBeenCalledWith(
+        "https://example.com/notes",
+        "_blank",
+        "noopener,noreferrer",
+      );
+    },
+  );
+
+  it.each(MODIFIERS)(
+    "lets a %s+click fall through natively when the sandbox grants allow-popups",
+    (_name, init) => {
+      const doc = linkDocument(
+        "allow-scripts allow-same-origin allow-popups",
+        "https://example.com/notes",
+      );
+      wirePoemToggles(doc);
+
+      const event = fireUnpreventedClick(doc, init);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(openSpy).not.toHaveBeenCalled();
+    },
+  );
+
+  it("falls through an unsandboxed frame (no sandbox attribute) on a modified click", () => {
+    const doc = linkDocument(undefined, "https://example.com/notes");
+    wirePoemToggles(doc);
+
+    const event = fireUnpreventedClick(doc, { ctrlKey: true });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("intercepts a modified click when the frame element cannot be read (detached document)", () => {
+    // document.implementation.createHTMLDocument() has no defaultView (see
+    // the "body/postscript links" describe block above), the same "not
+    // readable" case a cross-origin frameElement access would throw for —
+    // both fall into the same never-leave-it-dead default.
+    const doc = document.implementation.createHTMLDocument("preview");
+    doc.body.innerHTML = `<a href="https://example.com/notes">syntax reference</a>`;
+    wirePoemToggles(doc);
+
+    const event = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+    });
+    doc.querySelector("a")?.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://example.com/notes",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("intercepts a middle-click (auxclick, button 1) into a foreground tab when the sandbox has no allow-popups", () => {
+    const doc = linkDocument("allow-same-origin", "https://example.com/notes");
+    wirePoemToggles(doc);
+
+    const event = fire(doc, "auxclick", { button: 1 });
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://example.com/notes",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("lets a middle-click (auxclick, button 1) fall through natively when the sandbox grants allow-popups", () => {
+    const doc = linkDocument(
+      "allow-scripts allow-same-origin allow-popups",
+      "https://example.com/notes",
+    );
+    wirePoemToggles(doc);
+
+    const event = fire(doc, "auxclick", { button: 1 });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("does nothing on a right-click auxclick (button 2)", () => {
+    const doc = linkDocument("allow-same-origin", "https://example.com/notes");
+    wirePoemToggles(doc);
+
+    const event = fire(doc, "auxclick", { button: 2 });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps a fragment link's scroll-and-preventDefault behaviour under a modified click", () => {
+    const doc = previewDocument(
+      `<a href="#some-heading">jump</a><h2 id="some-heading">Heading</h2>`,
+      "allow-scripts allow-same-origin allow-popups",
+    );
+    const scrollIntoView = vi.fn();
+    (
+      doc.defaultView as Window & typeof globalThis
+    ).Element.prototype.scrollIntoView = scrollIntoView;
+    wirePoemToggles(doc);
+
+    const event = fire(doc, "click", { ctrlKey: true });
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("keeps a fragment link's scroll-and-preventDefault behaviour under a middle-click, at the cost of the frame's native autoscroll", () => {
+    const doc = previewDocument(
+      `<a href="#some-heading">jump</a><h2 id="some-heading">Heading</h2>`,
+      "allow-scripts allow-same-origin allow-popups",
+    );
+    const scrollIntoView = vi.fn();
+    (
+      doc.defaultView as Window & typeof globalThis
+    ).Element.prototype.scrollIntoView = scrollIntoView;
+    wirePoemToggles(doc);
+
+    const event = fire(doc, "auxclick", { button: 1 });
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("leaves a non-http(s) link untouched under a modified click", () => {
+    const doc = linkDocument("allow-same-origin", "mailto:poet@example.com");
+    wirePoemToggles(doc);
+
+    const event = fireUnpreventedClick(doc, { ctrlKey: true });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("leaves a non-http(s) link untouched under a middle-click", () => {
+    const doc = linkDocument("allow-same-origin", "mailto:poet@example.com");
+    wirePoemToggles(doc);
+
+    const event = fire(doc, "auxclick", { button: 1 });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+});

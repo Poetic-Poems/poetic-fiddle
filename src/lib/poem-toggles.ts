@@ -10,8 +10,33 @@ import { EMBED_ALLOWED_HOSTS } from "@/lib/embed-hosts";
 // sandboxed content. Setting the same attributes (rather than inline styles or
 // classes of Fiddle's own) is what keeps the CSS in charge of what is visible,
 // so the preview matches a published page.
+
+// Whether a modified/auxiliary click may fall through to the browser's own
+// handling instead of being intercepted into a `window.open`, per the
+// decision rule in TD-PPpfid-26081401: read from the frame element's *live*
+// `sandbox` attribute at event time (rather than a parameter threaded through
+// `wirePoemToggles`) so this can never drift out of step with the attribute
+// docs/CSP-REVIEW-CHECKLIST.md exists to keep in review. `allow-same-origin`
+// on both preview frames is what makes `frameElement` (and its `sandbox`
+// attribute) readable at all from inside the iframe's own document.
+function canFallThroughSandbox(doc: Document): boolean {
+  let frameElement: Element | null;
+  try {
+    frameElement = doc.defaultView?.frameElement ?? null;
+  } catch {
+    // Cross-origin or otherwise unreadable — never leave the gesture dead.
+    return false;
+  }
+  // No frame element at all: a detached document or a top-level window.
+  if (!frameElement) return false;
+  if (!frameElement.hasAttribute("sandbox")) return true;
+  const tokens =
+    frameElement.getAttribute("sandbox")?.trim().split(/\s+/) ?? [];
+  return tokens.includes("allow-popups");
+}
+
 export function wirePoemToggles(doc: Document) {
-  doc.addEventListener("click", (event) => {
+  const handlePreviewClick = (event: MouseEvent) => {
     // Not `instanceof Element`: in the preview iframe these nodes come from
     // another realm, whose Element is a different constructor.
     const target = event.target as Element | null;
@@ -102,7 +127,7 @@ export function wirePoemToggles(doc: Document) {
       return;
     }
 
-    // Any other left-clicked link (the postscript's Markdown links, e.g. the
+    // Any other clicked link (the postscript's Markdown links, e.g. the
     // syntax-reference link in EXAMPLE_POEM, are the common case) would
     // otherwise navigate the sandboxed iframe itself in place — which the
     // page's own frame-src CSP directive blocks, since frame-src governs
@@ -149,8 +174,36 @@ export function wirePoemToggles(doc: Document) {
     }
     if (url.protocol !== "https:" && url.protocol !== "http:") return;
 
+    // A plain left-click always gets today's interception. A modified click
+    // (Ctrl/Cmd/Shift/Alt) or a middle-click (auxclick, button 1) asks for a
+    // background tab or a new window, which native handling gives for free —
+    // but only where the frame's sandbox permits it (TD-PPpfid-26081401): a
+    // sandboxed frame without `allow-popups` would otherwise swallow the
+    // gesture and leave it dead, which is worse than the foreground tab a
+    // plain left-click already settles for.
+    const isAuxiliaryClick = event.type === "auxclick";
+    const isModified =
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey ||
+      isAuxiliaryClick;
+    if (isModified && canFallThroughSandbox(doc)) return;
+
     event.preventDefault();
     window.open(url.toString(), "_blank", "noopener,noreferrer");
+  };
+
+  doc.addEventListener("click", handlePreviewClick);
+  // Middle-click dispatches `auxclick`, not `click`, so it never reached
+  // handlePreviewClick at all before this — the frame-src violation issue
+  // #315 fixed for the plain left-click, surviving on that one gesture
+  // (TD-PPpfid-26081401). Right-click does not reliably produce `auxclick`,
+  // and the browser's own "Open link in new tab" context-menu item already
+  // works (issue #319), so only button 1 (middle) is handled here.
+  doc.addEventListener("auxclick", (event) => {
+    if (event.button !== 1) return;
+    handlePreviewClick(event);
   });
 }
 
