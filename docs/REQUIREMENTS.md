@@ -969,11 +969,13 @@ form of poem (the fiddle/violin).
 violin body** (lightly reshaped to give it a waist) and topped with a **stylised
 neck + pegbox** (no detailed scroll). The nib's **vent hole and slit are
 preserved as cut-outs** (visible on coloured/dark surfaces), keeping the lineage
-to Poetic explicit. The whole mark is a **single purple**. Authored **in-house in
-Inkscape** from the nib source (**ImageMagick** for rasterising favicon/PNG
-fallbacks); not commissioned and not machine-generated. Canonical asset:
-**`public/poetic-fiddle-logo.svg`**. A **lighter-on-dark variant** is still
-needed for dark surfaces (AC106).
+to Poetic explicit. Authored **in-house in Inkscape** from the nib source
+(**sharp/librsvg**, via `scripts/generate-favicons.mjs`, for rasterising
+favicon/PNG fallbacks); not commissioned and not machine-generated. Canonical
+asset: **`public/poetic-fiddle-logo.svg`**. The mark swaps from purple to a
+**lighter, warmer gold** under `prefers-color-scheme: dark` (an embedded SVG
+media query, not a separate file) to meet the AA contrast baseline on dark
+surfaces (AC106).
 
 **Palette (D31/D33).** Primary **`#534AB7`** (Poetic purple) + a warm **amber
 accent `~#C88A3A`** (violin wood) that warms the cool purple and reads as

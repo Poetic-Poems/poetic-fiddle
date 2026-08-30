@@ -537,11 +537,19 @@ public launch, **P2** soon after, **P3** insurance/polish.
   `poems/NNN-<slug>.poem`) built the same way the admin script's is. A
   "Export your data" control sits in the My poems dashboard's Danger zone,
   alongside W13's account-deletion control.
-- **W15 (P2, S–M)** — **Branding: theme-aware logo + favicon set** (AC106).
-  `poetic-fiddle-logo.svg` has hard-coded fills and no dark variant;
-  favicons are a bare `favicon.ico` + `icon.svg`. Make the logo respect
-  theme (currentColor or media-query variant), add apple-touch/manifest
-  icons. Visual change — flag the PR for Warwick's eye.
+- **W15 (P2, S–M)** — **Branding: theme-aware logo + favicon set** (AC106) —
+  **done**: `public/poetic-fiddle-logo.svg` and `src/app/icon.svg` swap the
+  logo mark's fill from brand-primary purple to brand-accent gold under
+  `prefers-color-scheme: dark` via an embedded `<style>` media query — the
+  same swap globals.css already applies to `--focus-ring` (AC76), and a
+  media query rather than `currentColor` because both files are loaded as
+  standalone images, not inlined. `scripts/generate-favicons.mjs` rasterises
+  the (light-mode) mark into `src/app/favicon.ico` (16/32/48, one ICO
+  container), `src/app/apple-icon.png` (180×180), and
+  `public/icon-{192,512}.png`; `src/app/manifest.ts` lists the latter two as
+  the web app manifest's icons. Next's App Router file-based metadata
+  convention auto-injects every `<link>` tag (`favicon.ico`, `icon.svg`,
+  `apple-touch-icon`, `manifest`) — no layout changes needed.
 - **W16 (P3, M)** — **Keep-alive cron + O4 monitors** (§6.5, AC93;
   OBSERVABILITY-PLAN O4). Deliberately dormant insurance; nothing built. When
   picked up: heartbeat route + `vercel.json` cron + uptime monitor per the
