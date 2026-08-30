@@ -108,6 +108,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   dashboard's Danger zone (AC92, W14): downloads a gzipped archive of every
   saved poem (as JSON metadata and as `.poem` source text) and your profile
   settings, generated on demand and scoped to your own account only.
+- A theme-aware favicon/icon set (AC106, W15): the logo mark swaps from
+  brand-primary purple to brand-accent gold under `prefers-color-scheme:
+  dark`, matching the same swap already applied to the focus ring, and the
+  favicon set gains an `apple-touch-icon` and a web app manifest with
+  192×192/512×512 icons for home-screen/PWA installs.
 
 ### Changed
 

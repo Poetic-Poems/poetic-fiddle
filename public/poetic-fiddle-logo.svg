@@ -5,7 +5,15 @@
   upright to form the violin body, with a neck and pegbox added. The
   vent hole and slit remain as cut-outs.
 
-  Colour:     #534AB7 (purple)
+  Colour:     #534AB7 (purple) in light mode, #C88A3A (gold) in dark mode —
+              the same brand-primary/brand-accent swap globals.css applies
+              to the focus-ring colour, since a fixed purple fill fails 3:1 non-text
+              contrast (AC76) against the dark-mode background. The swap is
+              driven by an embedded `prefers-color-scheme` media query (see
+              the <style> block below) rather than currentColor, because
+              this file is loaded as a plain image (BrandHeader's <img>,
+              and any favicon use), where currentColor cannot inherit a
+              colour from the embedding page.
   Canvas:     72 x 88 px viewBox (portrait)
   Background: transparent; suitable for use over any surface
 
@@ -74,6 +82,12 @@
     fountain-pen nib flipped upright; the vent hole and slit are
     transparent cut-outs that reveal whatever surface the logo is on.
   </desc>
+  <style>
+    .brand-fill { fill: #534ab7; }
+    @media (prefers-color-scheme: dark) {
+      .brand-fill { fill: #c88a3a; }
+    }
+  </style>
   <defs
      id="defs2">
     <!--
@@ -110,12 +124,14 @@
   <path
      d="M 32 0 L 40 0 L 38 3 L 34 3 Z"
      id="pegbox"
-     style="fill:#534ab7;fill-opacity:1;stroke:none"
+     class="brand-fill"
+     style="stroke:none"
   />
   <rect
      height="32"
      id="neck_left"
-     style="fill:#534ab7;fill-opacity:1;stroke:none;"
+     class="brand-fill"
+     style="stroke:none;"
      width="1.25"
      x="34"
      y="2"
@@ -123,7 +139,8 @@
   <rect
      height="32"
      id="neck_right"
-     style="fill:#534ab7;fill-opacity:1;stroke:none;"
+     class="brand-fill"
+     style="stroke:none;"
      width="1.25"
      x="36.75"
      y="2"
@@ -132,7 +149,7 @@
      d="M 40,72 36,68 22,44 28,34 22,25 28,16 h 24 l 6,9 -6,9 6,10 L 44,68 Z"
      id="corpus"
      mask="url(#nib-mask)"
-     style="fill:#534ab7;fill-opacity:1"
+     class="brand-fill"
      transform="matrix(1,0,0,-1,-4,103.5)"
   />
   <metadata
