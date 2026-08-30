@@ -49,6 +49,24 @@ export function getSupabaseServer(): SupabaseClient {
  * CI's plain `npm run build`, and a top-level throw on a missing env var
  * would fail that build step even though nothing has tried to use it yet.
  */
+export function getSupabaseAdmin(): SupabaseClient {
+  if (cachedAdmin) return cachedAdmin;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — see .env.example.",
+    );
+  }
+
+  cachedAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: createTimeoutFetch() },
+  });
+  return cachedAdmin;
+}
+
 /**
  * A request-scoped, RLS-enforcing client for a route acting on behalf of a
  * signed-in poet using their own access token — never the service-role key.
@@ -78,22 +96,4 @@ export function getSupabaseForToken(accessToken: string): SupabaseClient {
       fetch: createTimeoutFetch(),
     },
   });
-}
-
-export function getSupabaseAdmin(): SupabaseClient {
-  if (cachedAdmin) return cachedAdmin;
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — see .env.example.",
-    );
-  }
-
-  cachedAdmin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: createTimeoutFetch() },
-  });
-  return cachedAdmin;
 }

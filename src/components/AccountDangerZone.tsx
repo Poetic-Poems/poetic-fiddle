@@ -12,17 +12,26 @@ interface AccountDangerZoneProps {
 }
 
 /**
- * Self-service account deletion (AC92, W13), gated behind a confirmation
- * modal that requires typing the account's own email — the same
- * type-to-confirm pattern as most "delete forever" flows, chosen because a
- * bare confirm button is too easy to click through on an action this
- * irreversible.
+ * The two self-service data-subject controls AC92 asks for, side by side:
+ * export (W14) and account deletion (W13).
  *
- * On success, signs the browser out (the server has already invalidated the
- * session's refresh token by deleting the `auth.users` row — this is belt
- * and braces for the client's own copy) and redirects to the home page,
- * matching every other surface's signed-out state rather than adding a
- * dedicated confirmation page.
+ * Export is a plain button — nothing about it is destructive — and hands the
+ * archive the route returns straight to the browser as a download, so the
+ * poet's data never round-trips through a link they could share by accident.
+ * It sits in this section rather than beside it because the two belong to
+ * the same right, and a poet about to delete everything is exactly who wants
+ * a copy first.
+ *
+ * Deletion is gated behind a confirmation modal that requires typing the
+ * account's own email — the same type-to-confirm pattern as most "delete
+ * forever" flows, chosen because a bare confirm button is too easy to click
+ * through on an action this irreversible.
+ *
+ * On a successful deletion, signs the browser out (the server has already
+ * invalidated the session's refresh token by deleting the `auth.users` row —
+ * this is belt and braces for the client's own copy) and redirects to the
+ * home page, matching every other surface's signed-out state rather than
+ * adding a dedicated confirmation page.
  */
 export function AccountDangerZone({ session }: AccountDangerZoneProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
