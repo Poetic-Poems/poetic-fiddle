@@ -1,8 +1,39 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseForToken } from "@/lib/supabase-server";
 import { reportSwallowedError } from "@/lib/observability";
-import { buildExportArchive, type ExportPayload } from "@/lib/export-archive";
+import {
+  buildExportArchive,
+  type ExportPayload,
+  type ExportedPoem,
+} from "@/lib/export-archive";
+
+// PostgREST projects can cap rows per request ("Max rows" in the Supabase
+// dashboard); paging unconditionally in a loop until a short page comes back
+// makes this export complete regardless of that setting, present or not.
+const POEMS_PAGE_SIZE = 1000;
+
+async function fetchAllPoems(client: SupabaseClient) {
+  const poems: ExportedPoem[] = [];
+  for (let page = 0; ; page++) {
+    const start = page * POEMS_PAGE_SIZE;
+    const end = start + POEMS_PAGE_SIZE - 1;
+    const { data, error } = await client
+      .from("poems")
+      .select(
+        "id, title, source_text, status, share_id, allow_remix, created_at, updated_at",
+      )
+      .order("created_at", { ascending: true })
+      .range(start, end);
+    if (error) {
+      return { data: null, error };
+    }
+    poems.push(...((data as ExportedPoem[] | null) ?? []));
+    if (!data || data.length < POEMS_PAGE_SIZE) break;
+  }
+  return { data: poems, error: null };
+}
 
 /**
  * Self-service data export (AC92, W14), completing the pair `DELETE
@@ -38,12 +69,7 @@ export async function GET(request: NextRequest) {
       .select("remix_default, created_at, updated_at")
       .eq("id", userData.user.id)
       .maybeSingle(),
-    client
-      .from("poems")
-      .select(
-        "id, title, source_text, status, share_id, allow_remix, created_at, updated_at",
-      )
-      .order("created_at", { ascending: true }),
+    fetchAllPoems(client),
   ]);
 
   if (profileResult.error || poemsResult.error) {

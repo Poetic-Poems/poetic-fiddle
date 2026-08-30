@@ -18,6 +18,11 @@ const UUID_RE =
 // through every account and matching case-insensitively.
 const LIST_USERS_PAGE_SIZE = 200;
 
+// PostgREST projects can cap rows per request ("Max rows" in the Supabase
+// dashboard); paging unconditionally in a loop until a short page comes back
+// makes this export complete regardless of that setting, present or not.
+const POEMS_PAGE_SIZE = 1000;
+
 export function looksLikeUserId(identifier) {
   return UUID_RE.test(identifier);
 }
@@ -48,6 +53,28 @@ export async function resolveUserId(admin, identifier) {
     : findUserIdByEmail(admin, identifier);
 }
 
+async function fetchAllPoems(admin, userId) {
+  const poems = [];
+  for (let page = 0; ; page++) {
+    const start = page * POEMS_PAGE_SIZE;
+    const end = start + POEMS_PAGE_SIZE - 1;
+    const { data, error } = await admin
+      .from("poems")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: true })
+      .range(start, end);
+    if (error) {
+      throw new Error(`Couldn't read poems for ${userId}: ${error.message}`, {
+        cause: error,
+      });
+    }
+    poems.push(...(data ?? []));
+    if (!data || data.length < POEMS_PAGE_SIZE) break;
+  }
+  return poems;
+}
+
 /**
  * The full export payload for one poet: their auth account, profile row, and
  * every poem row they own (drafts included — this is the maintainer-run
@@ -76,23 +103,13 @@ export async function exportPoetData(admin, identifier) {
     );
   }
 
-  const { data: poems, error: poemsError } = await admin
-    .from("poems")
-    .select("*")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true });
-  if (poemsError) {
-    throw new Error(
-      `Couldn't read poems for ${userId}: ${poemsError.message}`,
-      { cause: poemsError },
-    );
-  }
+  const poems = await fetchAllPoems(admin, userId);
 
   return {
     exported_at: new Date().toISOString(),
     account: userData.user,
     profile: profile ?? null,
-    poems: poems ?? [],
+    poems,
   };
 }
 

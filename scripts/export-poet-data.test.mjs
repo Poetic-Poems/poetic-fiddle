@@ -13,7 +13,13 @@ function fakeAdmin({
   listUsersPages = [],
   getUserByIdResult,
   profileResult = { data: null, error: null },
+  // A single-page result, returned regardless of the requested range —
+  // covers the existing tests, where pagination never gets far enough to
+  // matter.
   poemsResult = { data: [], error: null },
+  // The full row set to page through, sliced per `.range(start, end)` call —
+  // covers the many-rows pagination test.
+  poems,
 } = {}) {
   let call = 0;
   const listUsers = vi.fn(() =>
@@ -23,7 +29,7 @@ function fakeAdmin({
   );
   const getUserById = vi.fn(() => Promise.resolve(getUserByIdResult));
   // Chainable PostgREST-style builder: from().select().eq() resolves for
-  // profiles' .maybeSingle(), and .order() resolves for poems.
+  // profiles' .maybeSingle(), and .order().range() resolves for poems.
   const profileQuery = {
     select: vi.fn(() => profileQuery),
     eq: vi.fn(() => profileQuery),
@@ -32,7 +38,14 @@ function fakeAdmin({
   const poemsQuery = {
     select: vi.fn(() => poemsQuery),
     eq: vi.fn(() => poemsQuery),
-    order: vi.fn(() => Promise.resolve(poemsResult)),
+    order: vi.fn(() => poemsQuery),
+    range: vi.fn((start, end) => {
+      if (poems === undefined) return Promise.resolve(poemsResult);
+      return Promise.resolve({
+        data: poems.slice(start, end + 1),
+        error: null,
+      });
+    }),
   };
   const from = vi.fn((table) =>
     table === "profiles" ? profileQuery : poemsQuery,
@@ -187,6 +200,37 @@ describe("exportPoetData", () => {
       { id: "poem-1", title: "Draft", status: "draft" },
     ]);
     expect(typeof result.exported_at).toBe("string");
+  });
+
+  it("pages through every poem when there are more rows than one page", async () => {
+    // Mirrors exportPoetData's own POEMS_PAGE_SIZE (1000): one row past a
+    // full page proves the loop doesn't stop at the first `.range()` call.
+    const PAGE_SIZE = 1000;
+    const poems = Array.from({ length: PAGE_SIZE + 1 }, (_, i) => ({
+      id: `poem-${i}`,
+      title: `Poem ${i}`,
+      status: "draft",
+    }));
+    const admin = fakeAdmin({
+      getUserByIdResult: {
+        data: { user: { id: "user-1", email: "poet@example.com" } },
+        error: null,
+      },
+      poems,
+    });
+
+    const result = await exportPoetData(
+      admin,
+      "11111111-1111-1111-1111-111111111111",
+    );
+
+    expect(result.poems).toHaveLength(PAGE_SIZE + 1);
+    expect(result.poems.map((p) => p.id)).toEqual(poems.map((p) => p.id));
+    expect(admin.poemsQuery.range).toHaveBeenCalledWith(0, PAGE_SIZE - 1);
+    expect(admin.poemsQuery.range).toHaveBeenCalledWith(
+      PAGE_SIZE,
+      PAGE_SIZE * 2 - 1,
+    );
   });
 
   it("throws when no account exists for the id", async () => {
