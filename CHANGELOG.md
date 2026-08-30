@@ -104,6 +104,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A minimum-age statement on the sign-in prompt — "By continuing you confirm
   you're 16 or older and agree to the Terms" — linking to the Terms of
   Service (D39, AC115, W11).
+- An "Export your data" control alongside account deletion in the My poems
+  dashboard's Danger zone (AC92, W14): downloads a gzipped archive of every
+  saved poem (as JSON metadata and as `.poem` source text) and your profile
+  settings, generated on demand and scoped to your own account only.
 
 ### Changed
 
@@ -147,6 +151,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   mailto address as a fallback for poets who can't sign in, matching the
   Privacy Policy, instead of saying account deletion requires emailing the
   maintainer.
+- The Privacy Policy's "Your rights" section now describes self-service data
+  export from the My poems dashboard's Danger zone, keeping the mailto
+  address as a fallback for poets who can't sign in, instead of saying an
+  export requires emailing the maintainer.
 - The Acceptable Use Policy and Privacy Policy publish a designated takedown
   address (`takedown@poeticfiddle.com`) and describe the removal process:
   valid requests result in content being removed from every surface — the
