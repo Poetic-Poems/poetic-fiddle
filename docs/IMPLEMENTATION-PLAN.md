@@ -525,11 +525,18 @@ public launch, **P2** soon after, **P3** insurance/polish.
   deletion does (W12), and a deleted poet's permalinks 404 at once rather than
   at the share cache's next expiry. A "Danger zone" section on the My poems
   dashboard gates the whole thing behind a type-your-email confirmation.
-- **W14 (P2, M)** — **Data export** (AC92) — **partially done** (PR #191):
+- **W14 (P2, M)** — **Data export** (AC92) — **done** (PR #191, PR #350):
   `scripts/export-poet-data.mjs` delivers admin-run export (poems + profile
   as JSON/`.poem` files) via the maintainer-run runbook
-  `docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`. Self-service in-app export
-  remains open.
+  `docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`. `GET /api/account/export`
+  delivers the self-service counterpart: it verifies the caller's access
+  token the same way `DELETE /api/account/delete` (W13) does, but reads
+  through a client scoped to that token rather than the service-role key,
+  so row-level security — not the admin key's RLS bypass — confines the
+  export to the caller's own rows. Streams a gzipped tar (`export.json` +
+  `poems/NNN-<slug>.poem`) built the same way the admin script's is. A
+  "Export your data" control sits in the My poems dashboard's Danger zone,
+  alongside W13's account-deletion control.
 - **W15 (P2, S–M)** — **Branding: theme-aware logo + favicon set** (AC106).
   `poetic-fiddle-logo.svg` has hard-coded fills and no dark variant;
   favicons are a bare `favicon.ico` + `icon.svg`. Make the logo respect

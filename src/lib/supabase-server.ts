@@ -66,3 +66,34 @@ export function getSupabaseAdmin(): SupabaseClient {
   });
   return cachedAdmin;
 }
+
+/**
+ * A request-scoped, RLS-enforcing client for a route acting on behalf of a
+ * signed-in poet using their own access token — never the service-role key.
+ * Passing the token straight to `auth.getUser(accessToken)` verifies its
+ * signature and expiry against Supabase Auth itself, and attaching it as
+ * this client's own `Authorization` header means every subsequent query
+ * runs as `authenticated` with that token, so RLS — not application code —
+ * is what confines each read to the caller's own rows (`poems_select_own`,
+ * `profiles_select_own`, `supabase/migrations/20260716104021_poems_and_profiles.sql`).
+ *
+ * Built fresh per call, unlike the two clients above: the token varies per
+ * request, so nothing here is safe to cache across calls.
+ */
+export function getSupabaseForToken(accessToken: string): SupabaseClient {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — see .env.example.",
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      fetch: createTimeoutFetch(),
+    },
+  });
+}

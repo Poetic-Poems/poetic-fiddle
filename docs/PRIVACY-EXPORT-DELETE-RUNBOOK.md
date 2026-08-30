@@ -2,12 +2,11 @@
 
 How to fulfil a poet's request, made under the Privacy Policy's "Your
 rights" section (`src/app/privacy/page.tsx`), to export or delete their
-data. Both are **maintainer-run, admin-only procedures** — a poet cannot
-trigger either from the app except the two self-service paths noted below,
-and nothing in this doc is exposed to poets. This is the O3-style
-counterpart to [`TRIAGE.md`](TRIAGE.md) for data-subject requests rather
-than production faults: the New Zealand Privacy Act 2020 is the reason this
-exists, in the same way AC121/AC122 are the reason `TRIAGE.md` does.
+data, for the cases the self-service paths below don't cover. Nothing in
+this doc is exposed to poets. This is the O3-style counterpart to
+[`TRIAGE.md`](TRIAGE.md) for data-subject requests rather than production
+faults: the New Zealand Privacy Act 2020 is the reason this exists, in the
+same way AC121/AC122 are the reason `TRIAGE.md` does.
 
 ## What a poet can already do without the maintainer
 
@@ -18,19 +17,28 @@ exists, in the same way AC121/AC122 are the reason `TRIAGE.md` does.
   dashboard's Danger zone. It authenticates the caller with their own session
   token and deletes only that account, so a poet who can still sign in
   never needs the dashboard procedure below.
+- **Export their own data** — `GET /api/account/export`
+  (`src/app/api/account/export/route.ts`, W14), reachable from the same
+  Danger zone. It authenticates the caller the same way the delete route
+  does, then reads through a client scoped to that token — never the
+  service-role key — so row-level security confines the export to the
+  caller's own `poems`/`profiles` rows. Downloads a gzipped tar
+  (`export.json` + `poems/NNN-<slug>.poem`), the same shape the
+  maintainer-run script below produces.
 
 The runbook below is for the request that reaches the maintainer directly
 (an email to `warwick@datumprocess.co.nz`, per the Privacy Policy) — most
-often because the poet wants an export (no self-service export exists), or
-wants deletion but cannot or would rather not sign in to do it themselves.
+often because the poet can't or would rather not sign in to use one of the
+self-service paths above.
 
 ## Exporting a poet's data
 
-There is no self-service export. `scripts/export-poet-data.mjs` is the only
-mechanism that reads a poet's data out of Supabase — it authenticates with
-`SUPABASE_SERVICE_ROLE_KEY`, which bypasses row-level security, so it is
-deliberately a maintainer-run script and not a route: nothing under `src/`
-imports it, and it must never be wired into the deployed app.
+Use this only when the poet can't (or won't) sign in to use the self-service
+export above. `scripts/export-poet-data.mjs` is the maintainer-run
+mechanism that reads a poet's data out of Supabase on their behalf — it
+authenticates with `SUPABASE_SERVICE_ROLE_KEY`, which bypasses row-level
+security, so it is deliberately a script and not a route: nothing under
+`src/` imports it, and it must never be wired into the deployed app.
 
 1. **Confirm the request is genuinely from the account holder.** Reply to
    the email address the request came from and check it matches (or ask the
