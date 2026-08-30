@@ -371,6 +371,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   new window, or the browser's default for a middle-click; where it doesn't,
   it opens a foreground tab, the same trade a plain left-click already made
   (TD-PPpfid-26081401).
+- Both self-service and maintainer-run data exports now page through every
+  `poems` row instead of reading them in one request, so an export can never
+  silently truncate if the Supabase project's PostgREST "Max rows" setting is
+  ever set below a poet's row count (#352).
 
 ### Security
 

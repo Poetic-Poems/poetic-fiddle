@@ -19,17 +19,34 @@ function request(headers?: Record<string, string>) {
   });
 }
 
+// Walks the decompressed tar for export.json's own body, the same way
+// src/lib/export-archive.test.ts's listTarEntries does — enough to pull out
+// the JSON payload without depending on export.json being first or the
+// archive containing nothing else.
+function readExportJson(tarBuffer: Buffer) {
+  const header = tarBuffer.subarray(0, 512);
+  const size = parseInt(header.toString("utf8", 124, 136), 8);
+  return JSON.parse(tarBuffer.subarray(512, 512 + size).toString("utf8"));
+}
+
 function fakeClient({
   getUserResult,
   profileResult,
   poemsResult,
+  poems,
 }: {
   getUserResult: {
     data: { user: { id: string; email?: string; created_at?: string } | null };
     error: unknown;
   };
   profileResult?: { data: unknown; error: unknown };
+  // A single-page result, returned regardless of the requested range —
+  // covers the error-path tests, where pagination never gets far enough to
+  // matter.
   poemsResult?: { data: unknown[] | null; error: unknown };
+  // The full row set to page through, sliced per `.range(start, end)` call —
+  // covers the many-rows pagination test.
+  poems?: unknown[];
 }) {
   const profileQuery = {
     select: vi.fn(() => profileQuery),
@@ -40,9 +57,14 @@ function fakeClient({
   };
   const poemsQuery = {
     select: vi.fn(() => poemsQuery),
-    order: vi.fn(() =>
-      Promise.resolve(poemsResult ?? { data: [], error: null }),
-    ),
+    order: vi.fn(() => poemsQuery),
+    range: vi.fn((start: number, end: number) => {
+      if (poemsResult) return Promise.resolve(poemsResult);
+      return Promise.resolve({
+        data: (poems ?? []).slice(start, end + 1),
+        error: null,
+      });
+    }),
   };
   return {
     auth: { getUser: vi.fn(() => Promise.resolve(getUserResult)) },
@@ -146,6 +168,49 @@ describe("GET /api/account/export", () => {
     const decompressed = gunzipSync(bytes).toString("utf8");
     expect(decompressed).toContain('"email": "poet@example.com"');
     expect(decompressed).toContain("Leaves fall.");
+  });
+
+  it("pages through every poem when there are more rows than one page", async () => {
+    // Mirrors the route's own POEMS_PAGE_SIZE (1000): one row past a full
+    // page proves the loop doesn't stop at the first `.range()` call.
+    const PAGE_SIZE = 1000;
+    const poems = Array.from({ length: PAGE_SIZE + 1 }, (_, i) => ({
+      id: `poem-${i}`,
+      title: `Poem ${i}`,
+      source_text: `line ${i}\n`,
+      status: "draft",
+      share_id: null,
+      allow_remix: null,
+      created_at: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
+      updated_at: "2026-01-01T00:00:00.000Z",
+    }));
+    const client = fakeClient({
+      getUserResult: {
+        data: { user: { id: "user-123", email: "poet@example.com" } },
+        error: null,
+      },
+      poems,
+    });
+    vi.mocked(getSupabaseForToken).mockReturnValue(
+      client as unknown as ReturnType<typeof getSupabaseForToken>,
+    );
+
+    const response = await GET(
+      request({ Authorization: "Bearer a-real-token" }),
+    );
+
+    expect(response.status).toBe(200);
+    const tarBuffer = gunzipSync(Buffer.from(await response.arrayBuffer()));
+    const exportJson = readExportJson(tarBuffer);
+    expect(exportJson.poems).toHaveLength(PAGE_SIZE + 1);
+    expect(exportJson.poems.map((p: { id: string }) => p.id)).toEqual(
+      poems.map((p) => p.id),
+    );
+    expect(client.poemsQuery.range).toHaveBeenCalledWith(0, PAGE_SIZE - 1);
+    expect(client.poemsQuery.range).toHaveBeenCalledWith(
+      PAGE_SIZE,
+      PAGE_SIZE * 2 - 1,
+    );
   });
 
   it("reports failure and does not leak the cause when the profile query errors", async () => {
