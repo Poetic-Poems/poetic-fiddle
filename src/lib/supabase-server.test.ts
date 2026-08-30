@@ -59,6 +59,44 @@ describe("getSupabaseServer", () => {
   });
 });
 
+describe("getSupabaseForToken", () => {
+  it("throws when NEXT_PUBLIC_SUPABASE_URL is unset", async () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    vi.resetModules();
+    const { getSupabaseForToken } = await import("./supabase-server");
+
+    expect(() => getSupabaseForToken("a-token")).toThrow(
+      /NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY/,
+    );
+  });
+
+  it("throws when NEXT_PUBLIC_SUPABASE_ANON_KEY is unset", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    vi.resetModules();
+    const { getSupabaseForToken } = await import("./supabase-server");
+
+    expect(() => getSupabaseForToken("a-token")).toThrow(
+      /NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY/,
+    );
+  });
+
+  it("constructs a fresh client per call, carrying the given token", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    vi.resetModules();
+    const { getSupabaseForToken } = await import("./supabase-server");
+
+    const first = getSupabaseForToken("token-a");
+    const second = getSupabaseForToken("token-b");
+
+    expect(first).toBeTruthy();
+    expect(second).toBeTruthy();
+    expect(first).not.toBe(second);
+  });
+});
+
 describe("getSupabaseAdmin", () => {
   it("throws when NEXT_PUBLIC_SUPABASE_URL is unset", async () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;

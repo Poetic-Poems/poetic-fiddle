@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase-client";
-import { deleteAccount } from "@/lib/account";
+import { deleteAccount, exportAccountData } from "@/lib/account";
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { errorMessage } from "@/lib/errors";
 
@@ -30,6 +30,8 @@ export function AccountDangerZone({ session }: AccountDangerZoneProps) {
   const [confirmEmail, setConfirmEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -77,12 +79,48 @@ export function AccountDangerZone({ session }: AccountDangerZoneProps) {
     }
   }
 
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const { blob, filename } = await exportAccountData();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(errorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="mx-6 flex flex-col items-start gap-2 rounded-lg border border-red-700/40 p-4 dark:border-red-400/40">
       <h2 className="font-serif text-lg font-semibold text-red-700 dark:text-red-400">
         Danger zone
       </h2>
       <p className="text-sm text-foreground/70">
+        Download a copy of every saved poem and your account details, as a
+        gzipped archive.
+      </p>
+      <button
+        type="button"
+        onClick={handleExport}
+        disabled={exporting}
+        className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/5"
+      >
+        {exporting ? "Exporting…" : "Export your data"}
+      </button>
+      {exportError && (
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {exportError}
+        </p>
+      )}
+      <p className="mt-2 text-sm text-foreground/70">
         Permanently delete your account, including every saved poem and share
         link. This can&rsquo;t be undone.
       </p>

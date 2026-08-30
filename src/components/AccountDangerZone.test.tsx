@@ -2,11 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Session } from "@supabase/supabase-js";
 import { AccountDangerZone } from "./AccountDangerZone";
-import { deleteAccount } from "@/lib/account";
+import { deleteAccount, exportAccountData } from "@/lib/account";
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 
 vi.mock("@/lib/account", () => ({
   deleteAccount: vi.fn(),
+  exportAccountData: vi.fn(),
 }));
 
 vi.mock("@/lib/revalidate-share", () => ({
@@ -36,6 +37,14 @@ beforeEach(() => {
     configurable: true,
     value: { ...originalLocation, href: "" },
   });
+  // jsdom doesn't implement the object-URL registry; the export button only
+  // needs these called, not a working blob: URL.
+  URL.createObjectURL = vi.fn(() => "blob:mock-url");
+  URL.revokeObjectURL = vi.fn();
+  // jsdom has no `download` attribute support, so a real anchor.click() on a
+  // blob: href tries — and fails, noisily — to navigate the test document.
+  // The export button only needs the click to happen, not a real download.
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -201,5 +210,37 @@ describe("AccountDangerZone", () => {
     expect(
       screen.queryByRole("button", { name: /delete account forever/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("exports and downloads the archive via an object URL", async () => {
+    const blob = new Blob(["archive bytes"]);
+    vi.mocked(exportAccountData).mockResolvedValue({
+      blob,
+      filename: "poetic-fiddle-export-2026.tar.gz",
+    });
+    render(<AccountDangerZone session={SESSION} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /^export your data$/i }),
+    );
+
+    await waitFor(() => expect(exportAccountData).toHaveBeenCalled());
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledWith(blob));
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
+  });
+
+  it("shows an error and does not create a download when export fails", async () => {
+    vi.mocked(exportAccountData).mockRejectedValue(
+      new Error("Couldn't export your data — please try again."),
+    );
+    render(<AccountDangerZone session={SESSION} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /^export your data$/i }),
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/couldn't export your data/i);
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 });
