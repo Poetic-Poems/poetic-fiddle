@@ -457,3 +457,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `eslint` major bump, so `npm run audit` (the gate's new single definition,
   used by both `ci.yml` and the new weekly `dependency-audit.yml`) now runs
   with no exemption and passes clean (TD-PPpfid-26080110).
+- Bumped `fast-uri` (a transitive dependency of `ajv`) from 3.1.5 to 3.1.7,
+  resolving a high-severity host-confusion vulnerability via skipped IDN
+  canonicalization on scheme-relative references
+  ([GHSA-5jgf-p345-68v8](https://github.com/advisories/GHSA-5jgf-p345-68v8)).
+  Also bumped `browserslist` (transitive, via `@sentry/nextjs`) from 4.28.6
+  to 4.28.8, resolving an unrelated high-severity advisory the same
+  whole-tree `npm audit` gate surfaced: unbounded memory growth from
+  unbounded distinct-query caching
+  ([GHSA-c83g-rgw3-j3cx](https://github.com/advisories/GHSA-c83g-rgw3-j3cx))
+  and an uncaught crash/prototype write via untrusted
+  `browserslist-stats.json` custom stats
+  ([GHSA-73wf-gq98-2v4g](https://github.com/advisories/GHSA-73wf-gq98-2v4g)).
