@@ -116,6 +116,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Tech debt is now filed as GitHub issues labelled `pw::type:tech-debt`,
+  not as new files under `tech-debt/`.** Fleet-wide roadmap decision D15
+  (revised, Poetic-Poems/agent-ops#869) moves debt off the in-repo per-item
+  register: filing is now one API call instead of an ID reservation and a
+  pull request, and resolving is a closing keyword (`Fixes #<n>`) plus a
+  `td-record` block in the resolving pull request's body, which the
+  squash-merge commit carries into `main`'s own immutable history.
+  `tech-debt/` freezes in place as a historical archive — every record ever
+  allocated stays, never edited, deleted, or renamed. The one record still
+  `open` at the time of the freeze (`TD-PPpfid-26083101`) was migrated to
+  #376 and carries a `Migrated to` line. `TECH-DEBT.md` is now a short
+  policy pointer.
 - **CI is one workflow (`.github/workflows/ci.yml`) behind one required
   status check (`CI`).** `build.yml` and `database.yml` are merged into it.
   The app build and the pgTAP data-layer suite are now conditional on what
