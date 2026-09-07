@@ -182,6 +182,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The account data export could silently fail to reach the poet: the
+  download's anchor was revoked in the same task as the click, racing the
+  browser's own download start (a race some browsers lose), and was never
+  attached to the document. The anchor is now appended to the document for
+  the click and removed immediately after, and the object URL revoke is
+  deferred past the click.
 - Poem text in the preview and share views now meets AA contrast. Poetic's
   byline, song-segment, song-link, postscript and empty-section text was a
   grey calibrated against the white card that poetic's own site paints behind

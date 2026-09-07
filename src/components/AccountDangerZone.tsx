@@ -98,8 +98,16 @@ export function AccountDangerZone({ session }: AccountDangerZoneProps) {
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
+      // The HTML spec runs an `<a download>` activation's fetch in parallel
+      // with the click, so revoking on the very next line races the download
+      // starting (WebKit/iOS Safari has been reported to lose that race) —
+      // defer the revoke past the click. A detached anchor is also unreliable
+      // for a synthetic click in some browsers, so it goes into the document
+      // for the click and comes back out immediately after.
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (err) {
       setExportError(errorMessage(err));
     } finally {
