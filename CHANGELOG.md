@@ -469,3 +469,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and an uncaught crash/prototype write via untrusted
   `browserslist-stats.json` custom stats
   ([GHSA-73wf-gq98-2v4g](https://github.com/advisories/GHSA-73wf-gq98-2v4g)).
+- Bumped `sharp` (an override, transitive via `next`'s image optimisation)
+  from 0.35.3 to 0.35.4, pulling in libheif 1.23.2 and resolving a pair of
+  high-rated heap-based buffer overflows that could lead to RCE when
+  decoding untrusted AVIF/HEIF input
+  ([GHSA-g89c-p67h-r497](https://github.com/strukturag/libheif/security/advisories/GHSA-g89c-p67h-r497),
+  [GHSA-2jg2-4ch7-h545](https://github.com/strukturag/libheif/security/advisories/GHSA-2jg2-4ch7-h545)).
+  Also bumped `next` from 16.3.1 to 16.3.4 and, via a nested
+  `overrides["@eslint/eslintrc"].js-yaml` entry, that dev-only `js-yaml`
+  chain from 4.3.1 to 4.3.2 — both surfaced by the same whole-tree
+  `npm audit` gate while regenerating the lockfile for the `sharp` bump
+  ([GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36),
+  [GHSA-2xp9-vwfh-vxw4](https://github.com/advisories/GHSA-2xp9-vwfh-vxw4),
+  [GHSA-2883-xcg3-v3hh](https://github.com/advisories/GHSA-2883-xcg3-v3hh)).
