@@ -431,6 +431,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   5.0.9, resolving a high-severity denial of service via unbounded intermediate
   arrays that bypassed the 5.0.8 mitigation above
   ([GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895)).
+- Bumped `next` to `16.3.4` (and `eslint-config-next` to match), resolving a
+  critical unauthenticated remote-code-execution advisory affecting apps
+  hosted on a Windows filesystem, in the Pages and App routers without Cache
+  Component
+  ([GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36)).
 - Raised the new-account password minimum length from 6 to 10 characters, with
   a visible hint on the requirement. The same field imposes no minimum when
   signing in to an existing account, so accounts created under the old minimum
