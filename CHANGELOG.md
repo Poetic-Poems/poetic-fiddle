@@ -471,7 +471,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([GHSA-73wf-gq98-2v4g](https://github.com/advisories/GHSA-73wf-gq98-2v4g)).
 - Bumped `sharp` (an override, transitive via `next`'s image optimisation)
   from 0.35.3 to 0.35.4, pulling in libheif 1.23.2 and resolving a pair of
-  critical-rated heap-based buffer overflows that could lead to RCE when
+  high-rated heap-based buffer overflows that could lead to RCE when
   decoding untrusted AVIF/HEIF input
   ([GHSA-g89c-p67h-r497](https://github.com/strukturag/libheif/security/advisories/GHSA-g89c-p67h-r497),
   [GHSA-2jg2-4ch7-h545](https://github.com/strukturag/libheif/security/advisories/GHSA-2jg2-4ch7-h545)).
