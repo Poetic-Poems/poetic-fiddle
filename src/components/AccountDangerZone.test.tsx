@@ -212,11 +212,17 @@ describe("AccountDangerZone", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("exports and downloads the archive via an object URL", async () => {
+  it("exports and downloads the archive via an in-document anchor, deferring the revoke", async () => {
     const blob = new Blob(["archive bytes"]);
     vi.mocked(exportAccountData).mockResolvedValue({
       blob,
       filename: "poetic-fiddle-export-2026.tar.gz",
+    });
+    let anchorInDocumentAtClick = false;
+    vi.mocked(HTMLAnchorElement.prototype.click).mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      anchorInDocumentAtClick = document.body.contains(this);
     });
     render(<AccountDangerZone session={SESSION} />);
 
@@ -224,9 +230,22 @@ describe("AccountDangerZone", () => {
       screen.getByRole("button", { name: /^export your data$/i }),
     );
 
-    await waitFor(() => expect(exportAccountData).toHaveBeenCalled());
-    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledWith(blob));
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
+    // Drain the microtask queue only — not a macrotask — so `handleExport`
+    // runs past the click and registers its deferred revoke without that
+    // `setTimeout(..., 0)` callback itself having had a chance to fire yet.
+    for (let i = 0; i < 5; i++) {
+      await Promise.resolve();
+    }
+
+    expect(exportAccountData).toHaveBeenCalled();
+    expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+    expect(anchorInDocumentAtClick).toBe(true);
+    // The revoke must not happen synchronously within the click's own task.
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+
+    await waitFor(() =>
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url"),
+    );
   });
 
   it("shows an error and does not create a download when export fails", async () => {
