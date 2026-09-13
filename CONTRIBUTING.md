@@ -33,7 +33,7 @@ Thanks for your interest in contributing! Poetic Fiddle is a collaborative proje
 
 ## Getting help
 
-For detailed information on the project's architecture, development setup, and conventions, see [CLAUDE.md](./CLAUDE.md).
+For detailed information on the project's architecture, development setup, and conventions, see [AGENTS.md](./AGENTS.md) (its `CLAUDE.md` imports it).
 
 For the full tech-debt register and project implementation plan, see:
 - [TECH-DEBT.md](./TECH-DEBT.md) — known deferred work
