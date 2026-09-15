@@ -24,7 +24,6 @@
 required:
   - CI
   - commit-format
-  - register
 
 exempt:
   - workflow: codeql.yml
