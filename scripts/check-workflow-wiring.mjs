@@ -20,9 +20,7 @@
 // branch-protection ruleset's required checks, and nothing caught it. This
 // script parses only the small, regular subset of YAML that workflow files
 // in this repo actually use (flat `on:`/`jobs:` mappings, scalar/flow-list/
-// block-list `needs:`) rather than depending on a full YAML library — see
-// scripts/td-check.pl for the same house style of a small, targeted parser
-// over a full dependency.
+// block-list `needs:`) rather than depending on a full YAML library.
 //
 // A companion job, `workflow-wiring` in ci.yml, runs this on every pull
 // request and feeds into the required `ci` check — so this check protects

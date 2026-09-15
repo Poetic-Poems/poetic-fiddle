@@ -127,7 +127,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   allocated stays, never edited, deleted, or renamed. The one record still
   `open` at the time of the freeze (`TD-PPpfid-26083101`) was migrated to
   #376 and carries a `Migrated to` line. `TECH-DEBT.md` is now a short
-  policy pointer.
+  policy pointer. The machinery that enforced the old register is retired
+  with it: the `tech-debt-register.yml` and `td-tooling-drift.yml` workflows
+  and the vendored register-tooling scripts under `scripts/` are removed, and
+  `register` is no longer a required status check on `main`.
 - **CI is one workflow (`.github/workflows/ci.yml`) behind one required
   status check (`CI`).** `build.yml` and `database.yml` are merged into it.
   The app build and the pgTAP data-layer suite are now conditional on what
