@@ -36,8 +36,8 @@ and CodeQL's `javascript-typescript` scan (`.github/workflows/codeql.yml`) run
 on every pull request and push to `main`. `ci.yml`'s jobs are conditional on
 what the diff touches, and its `CI` job is what asserts that none of them
 failed — it is the one status check that workflow contributes to the
-`main` ruleset's required checks (`commit-format`, `CI` and `register`);
-see the comment at the top of that file before adding a job to it.
+`main` ruleset's required checks (`commit-format` and `CI`); see the
+comment at the top of that file before adding a job to it.
 
 ## Architecture & stack
 
