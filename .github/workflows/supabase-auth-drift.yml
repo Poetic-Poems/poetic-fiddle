@@ -97,7 +97,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           set -o pipefail
-          node scripts/check-supabase-auth-drift.mjs 2>&1 | tee /tmp/auth-drift.log
+          node scripts/diag-supabase.mjs 2>&1 | tee /tmp/auth-drift.log
 
       - name: File an issue if the check failed
         if: steps.drift.outcome == 'failure'
