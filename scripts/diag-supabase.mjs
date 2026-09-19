@@ -15,7 +15,7 @@ async function probe(label, url, opts = {}) {
   }
 }
 
-await probe("list all projects", "https://api.supabase.com/v1/projects");
-await probe("get project", `https://api.supabase.com/v1/projects/${ref}`);
-await probe("v1 config/auth", `https://api.supabase.com/v1/projects/${ref}/config/auth`);
-await probe("v2 project config", `https://api.supabase.com/v2/projects/${ref}/config`);
+// No management token needed for these — just checks whether the project's
+// own data-plane hostname resolves and answers at all.
+await probe("project REST gateway (no auth)", `https://${ref}.supabase.co/rest/v1/`, { headers: {} });
+await probe("project auth health (no auth)", `https://${ref}.supabase.co/auth/v1/health`, { headers: {} });
