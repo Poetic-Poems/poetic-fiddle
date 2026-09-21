@@ -70,8 +70,16 @@ name: Supabase auth-config drift check
 # never printing the token is enforced nowhere the publishing step can see.
 
 on:
-  schedule:
-    - cron: "27 6 * * *" # daily, 06:27 UTC
+  # Disabled (issue #417, #418, #422): the live project (ixerygypaevxzmiknokg)
+  # was dropped when the Supabase organisation returned to the free plan, so
+  # every run of this check would 404 against a project that no longer
+  # exists rather than ever detecting drift. Commenting the schedule out
+  # (rather than deleting it) keeps every other step intact, ready to
+  # re-enable the day a project ref exists again — restore the schedule
+  # below *and* confirm or repoint PROJECT_REF in
+  # scripts/check-supabase-auth-drift.mjs at the same time.
+  # schedule:
+  #   - cron: "27 6 * * *" # daily, 06:27 UTC
   workflow_dispatch:
 
 permissions:

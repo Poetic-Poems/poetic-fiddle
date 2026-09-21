@@ -41,6 +41,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// This ref names a project that no longer exists (issue #418: dropped when
+// the Supabase organisation returned to the free plan) — do not take it for
+// a live project. Its scheduled caller
+// (.github/workflows/supabase-auth-drift.yml) is parked and ci.yml's
+// `deploy` job is `if: false` for the same reason (issue #417, #422); this
+// script itself is unchanged and still exits non-zero on an unset token, a
+// non-ok Management API response, or a genuine disagreement.
 export const PROJECT_REF = "ixerygypaevxzmiknokg";
 
 // The Management API expresses `password_requirements` as a literal
