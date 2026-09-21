@@ -7,6 +7,10 @@ vi.mock("@/lib/use-session", () => ({
   useSession: () => ({ session: null, loading: false }),
 }));
 
+vi.mock("@/lib/use-backend-health", () => ({
+  useBackendHealth: () => ({ status: "available", retry: vi.fn() }),
+}));
+
 vi.mock("@/lib/supabase-client", () => ({
   supabase: { auth: { signOut: vi.fn() } },
 }));

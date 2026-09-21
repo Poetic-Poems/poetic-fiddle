@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import ErrorBoundary from "./error";
 import { MISSING_SUPABASE_ENV_MESSAGE } from "@/lib/env-errors";
 
@@ -26,5 +26,44 @@ describe("root error boundary", () => {
       screen.getByRole("heading", { name: /something went wrong/i }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/\.env\.example/)).not.toBeInTheDocument();
+  });
+
+  describe("in a production build (issue #422)", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it("shows the same 'unavailable' wording as the rest of the app instead of dev setup instructions", () => {
+      vi.stubEnv("NODE_ENV", "production");
+
+      render(
+        <ErrorBoundary
+          error={new Error(MISSING_SUPABASE_ENV_MESSAGE)}
+          reset={vi.fn()}
+        />,
+      );
+
+      expect(
+        screen.queryByText(/\.env\.example/),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/aren.t available right now/i),
+      ).toBeInTheDocument();
+    });
+
+    it("still offers a way to retry", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      const reset = vi.fn();
+
+      render(
+        <ErrorBoundary
+          error={new Error(MISSING_SUPABASE_ENV_MESSAGE)}
+          reset={reset}
+        />,
+      );
+      screen.getByRole("button", { name: /try again/i }).click();
+
+      expect(reset).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -401,6 +401,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `poems` row instead of reading them in one request, so an export can never
   silently truncate if the Supabase project's PostgREST "Max rows" setting is
   ever set below a poet's row count (#352).
+- The app now degrades gracefully when its Supabase project is unreachable
+  (#422), rather than leaving sign-in and saving broken with no explanation:
+  the editor and live preview keep working, an "unavailable right now" banner
+  replaces Save/Share/sign-in and the "My poems" list, a stale signed-in
+  session is no longer trusted, and a shared poem's permalink says the link
+  isn't broken instead of 404ing.
 
 ### Security
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { MISSING_SUPABASE_ENV_MESSAGE } from "@/lib/env-errors";
+import { BACKEND_UNAVAILABLE_MESSAGE } from "@/lib/backend-health";
 
 /**
  * The editor loads via `next/dynamic(..., { ssr: false })`, so
@@ -16,6 +17,31 @@ export default function Error({
   reset: () => void;
 }) {
   if (error.message === MISSING_SUPABASE_ENV_MESSAGE) {
+    // A production visitor never gets to fix this themselves — the
+    // ".env.local" instructions below are for whoever is developing the app.
+    // Clearing the Vercel env vars (issue #422) must degrade to the same
+    // "unavailable right now" wording every other surface uses, not to
+    // setup instructions aimed at a developer.
+    if (process.env.NODE_ENV === "production") {
+      return (
+        <main className="flex flex-1 flex-col items-start gap-3 px-6 py-6">
+          <h1 className="font-serif text-2xl font-semibold tracking-tight">
+            Sign-in and saving aren&rsquo;t available right now
+          </h1>
+          <p role="status" className="text-sm text-foreground/70">
+            {BACKEND_UNAVAILABLE_MESSAGE}
+          </p>
+          <button
+            type="button"
+            onClick={reset}
+            className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
+          >
+            Try again
+          </button>
+        </main>
+      );
+    }
+
     return (
       <main className="flex flex-1 flex-col items-start gap-3 px-6 py-6">
         <h1 className="font-serif text-2xl font-semibold tracking-tight">

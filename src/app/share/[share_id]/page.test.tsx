@@ -27,7 +27,10 @@ const POEM = {
 
 describe("SharePage", () => {
   it("renders the poem via SharedPoemView when found (AC17, AC18)", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({
+      kind: "found",
+      poem: POEM,
+    });
     vi.mocked(renderSharedPoemHtml).mockReturnValue({
       html: "<p>Hi</p>",
       error: false,
@@ -44,15 +47,31 @@ describe("SharePage", () => {
   });
 
   it("calls notFound() for a share id that doesn't resolve (AC87)", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(null);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({ kind: "not-found" });
 
     await expect(
       SharePage({ params: Promise.resolve({ share_id: "no-such-id" }) }),
     ).rejects.toThrow();
   });
 
+  it("shows an unavailable message, not a 404, when the backend is down (issue #422)", async () => {
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({ kind: "unavailable" });
+
+    render(
+      await SharePage({ params: Promise.resolve({ share_id: "abc123" }) }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /unavailable right now/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/isn.t broken/i)).toBeInTheDocument();
+  });
+
   it("renders the poem title as a visible heading outside the iframe (F-UX-03)", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({
+      kind: "found",
+      poem: POEM,
+    });
     vi.mocked(renderSharedPoemHtml).mockReturnValue({
       html: "<p>Hi</p>",
       error: false,
@@ -68,7 +87,10 @@ describe("SharePage", () => {
   });
 
   it("offers no Remix action by default (AC113)", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({
+      kind: "found",
+      poem: POEM,
+    });
     vi.mocked(renderSharedPoemHtml).mockReturnValue({
       html: "<p>Hi</p>",
       error: false,
@@ -85,8 +107,8 @@ describe("SharePage", () => {
 
   it("offers Remix when the owner has enabled it (AC20, AC113)", async () => {
     vi.mocked(getCachedSharedPoem).mockResolvedValue({
-      ...POEM,
-      allowRemix: true,
+      kind: "found",
+      poem: { ...POEM, allowRemix: true },
     });
     vi.mocked(renderSharedPoemHtml).mockReturnValue({
       html: "<p>Hi</p>",
@@ -105,7 +127,10 @@ describe("SharePage", () => {
   });
 
   it("shows a friendly message instead of crashing when the poem can't be rendered", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({
+      kind: "found",
+      poem: POEM,
+    });
     vi.mocked(renderSharedPoemHtml).mockReturnValue({ html: "", error: true });
 
     const element = await SharePage({
@@ -121,7 +146,10 @@ describe("SharePage", () => {
 
 describe("generateMetadata", () => {
   it("uses the poem's title for <title> and Open Graph (AC18)", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({
+      kind: "found",
+      poem: POEM,
+    });
 
     const metadata = await generateMetadata({
       params: Promise.resolve({ share_id: "abc123" }),
@@ -132,12 +160,22 @@ describe("generateMetadata", () => {
   });
 
   it("falls back to a generic title when the poem isn't found", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(null);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({ kind: "not-found" });
 
     const metadata = await generateMetadata({
       params: Promise.resolve({ share_id: "no-such-id" }),
     });
 
     expect(metadata.title).toBe("Poem not found");
+  });
+
+  it("uses a distinct title when the backend is unavailable", async () => {
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({ kind: "unavailable" });
+
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ share_id: "abc123" }),
+    });
+
+    expect(metadata.title).toBe("Poem unavailable");
   });
 });
