@@ -28,9 +28,10 @@
 // single project or to read-only, so a second token would only widen the
 // credential surface for no gain. That is also why this must never run from
 // a `pull_request`-triggered workflow: a fork's PR could otherwise exfiltrate
-// it. .github/workflows/supabase-auth-drift.yml (schedule + workflow_dispatch
-// only) and ci.yml's `deploy` job (push-to-main only, and already holds this
-// same token to push migrations) are the only callers.
+// it. .github/workflows/supabase-auth-drift.yml (workflow_dispatch only, its
+// schedule parked — see the PROJECT_REF note below) and ci.yml's `deploy` job
+// (push-to-main only, and already holds this same token to push migrations)
+// are the only callers.
 //
 // Usage: node scripts/check-supabase-auth-drift.mjs
 // Reads SUPABASE_ACCESS_TOKEN from the environment; exits non-zero if it is
