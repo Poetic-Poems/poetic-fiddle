@@ -43,12 +43,10 @@ describe("root error boundary", () => {
         />,
       );
 
-      expect(
-        screen.queryByText(/\.env\.example/),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.getByText(/aren.t available right now/i),
-      ).toBeInTheDocument();
+      expect(screen.queryByText(/\.env\.example/)).not.toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /aren.t available right now/i,
+      );
     });
 
     it("still offers a way to retry", () => {

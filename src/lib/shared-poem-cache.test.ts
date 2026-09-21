@@ -28,6 +28,7 @@ vi.mock("@/lib/backend-health", () => ({
 }));
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.mocked(probeBackendHealth).mockResolvedValue("available");
 });
 

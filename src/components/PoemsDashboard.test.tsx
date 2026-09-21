@@ -560,7 +560,10 @@ describe("PoemsDashboard", () => {
     });
 
     it("shows the unavailable explanation instead of the poem list for a stale session, and attempts no request", () => {
-      vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
       unavailable();
 
       render(<PoemsDashboard />);
@@ -584,7 +587,10 @@ describe("PoemsDashboard", () => {
     });
 
     it("behaves as usual while the probe is still checking", () => {
-      vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
       vi.mocked(useBackendHealth).mockReturnValue({
         status: "checking",
         retry: vi.fn(),

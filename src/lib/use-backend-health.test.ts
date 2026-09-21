@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { probeBackendHealth } from "./backend-health";
-import { resetBackendHealthForTest, useBackendHealth } from "./use-backend-health";
+import {
+  resetBackendHealthForTest,
+  useBackendHealth,
+} from "./use-backend-health";
 
 vi.mock("./backend-health", async () => {
   const actual =

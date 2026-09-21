@@ -63,9 +63,7 @@ describe("Editor with the backend unavailable (issue #422)", () => {
     render(<Editor poeticCss="" />);
 
     expect(screen.queryByText(SESSION.user.email!)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/remixing this poem/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/remixing this poem/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: /my poems/i }),
     ).not.toBeInTheDocument();
