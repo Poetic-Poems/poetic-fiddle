@@ -11,6 +11,8 @@ import { POEM_SYNTAX_REFERENCE_URL } from "@/lib/example-poem";
 import { supabase } from "@/lib/supabase-client";
 import { usePoemPersistence } from "@/lib/use-poem-persistence";
 import { useNonce } from "@/lib/nonce-context";
+import { useBackendHealth } from "@/lib/use-backend-health";
+import { BACKEND_UNAVAILABLE_MESSAGE } from "@/lib/backend-health";
 
 export { tryRenderPoem } from "@/lib/use-poem-persistence";
 
@@ -124,7 +126,12 @@ export default function Editor({
     signInPromptAction,
     dismissSignInPrompt,
   } = usePoemPersistence({ initialPoemId, initialSource });
-
+  // AC1–AC3: gated on a *settled* "unavailable" — while the probe is still
+  // "checking", behaviour is unchanged, the same way `opening` below is kept
+  // apart from a real openError.
+  const { status: backendStatus, retry: retryBackendHealth } =
+    useBackendHealth();
+  const backendUnavailable = backendStatus === "unavailable";
   if (openError) {
     return (
       <div className="flex flex-1 flex-col items-start gap-3 px-6 pb-6">
@@ -166,7 +173,13 @@ export default function Editor({
         >
           {saveStatus}
         </span>
-        {session && (
+        {/* A stale localStorage session must not keep showing "My poems",
+            the account email and Sign out once the backend that session
+            depends on is unreachable (AC3) — the poet is treated as signed
+            out for display purposes only; usePoemPersistence's own
+            session-driven bookkeeping (poem id, migration) is untouched so
+            a recovered backend resumes exactly where it left off. */}
+        {session && !backendUnavailable && (
           <>
             <Link
               href="/poems"
@@ -189,7 +202,10 @@ export default function Editor({
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || backendUnavailable}
+          aria-describedby={
+            backendUnavailable ? "backend-unavailable-banner" : undefined
+          }
           className="rounded-md border border-black/10 px-3 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-60 dark:border-white/10 dark:hover:bg-white/5"
         >
           Save
@@ -197,13 +213,32 @@ export default function Editor({
         <button
           type="button"
           onClick={handleShare}
-          disabled={sharing}
+          disabled={sharing || backendUnavailable}
+          aria-describedby={
+            backendUnavailable ? "backend-unavailable-banner" : undefined
+          }
           className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
         >
           {sharing ? "Sharing…" : "Share"}
         </button>
       </div>
-      {session && (
+      {backendUnavailable && (
+        <div
+          role="status"
+          id="backend-unavailable-banner"
+          className="flex flex-wrap items-center gap-3 rounded-md border border-amber-700/30 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <span>{BACKEND_UNAVAILABLE_MESSAGE}</span>
+          <button
+            type="button"
+            onClick={retryBackendHealth}
+            className="rounded-md border border-current px-2 py-1 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      {session && !backendUnavailable && (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/10">
           <label htmlFor="poem-allow-remix" className="text-foreground/70">
             Remixing this poem:

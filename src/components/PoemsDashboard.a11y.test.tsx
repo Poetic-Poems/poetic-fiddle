@@ -17,6 +17,10 @@ vi.mock("@/lib/use-session", () => ({
   useSession: vi.fn(),
 }));
 
+vi.mock("@/lib/use-backend-health", () => ({
+  useBackendHealth: () => ({ status: "available", retry: vi.fn() }),
+}));
+
 const SESSION = {
   user: { id: "user-1", email: "poet@example.com" },
 } as Session;

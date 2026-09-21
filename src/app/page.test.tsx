@@ -13,6 +13,10 @@ vi.mock("@/lib/supabase-client", () => ({
   supabase: { auth: authMock },
 }));
 
+vi.mock("@/lib/use-backend-health", () => ({
+  useBackendHealth: () => ({ status: "available", retry: vi.fn() }),
+}));
+
 describe("Home", () => {
   beforeEach(() => {
     window.localStorage.clear();

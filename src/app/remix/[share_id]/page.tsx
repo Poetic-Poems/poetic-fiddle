@@ -33,8 +33,21 @@ export const metadata: Metadata = {
  */
 export default async function RemixPage({ params }: RemixPageProps) {
   const { share_id: shareId } = await params;
-  const poem = await getCachedSharedPoem(shareId);
-  if (!poem?.allowRemix) notFound();
+  const result = await getCachedSharedPoem(shareId);
+  if (result.kind === "unavailable") {
+    return (
+      <main className="flex flex-1 flex-col gap-3 px-6 py-6">
+        <h1 className="font-serif text-2xl font-semibold tracking-tight">
+          Shared poems are unavailable right now
+        </h1>
+        <p role="status" className="text-sm text-foreground/70">
+          This link isn&rsquo;t broken — try again in a little while.
+        </p>
+      </main>
+    );
+  }
+  if (result.kind === "not-found" || !result.poem.allowRemix) notFound();
+  const poem = result.poem;
 
   return (
     <main className="flex flex-1 flex-col gap-4">

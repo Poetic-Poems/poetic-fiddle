@@ -45,6 +45,21 @@ for (const { name, path, waitForReady, axeOptions, legacyMode } of PAGES) {
   test(`${name} (signed out) has no automatically detectable accessibility violations`, async ({
     page,
   }) => {
+    // The webServer's placeholder Supabase URL (playwright.config.ts) isn't a
+    // real project, so issue #422's health probe would otherwise resolve
+    // "unavailable" and replace these pages' signed-out state with the
+    // backend-unavailable banner — a state the jsdom suites
+    // (Editor.backend-unavailable.test.tsx, PoemsDashboard.test.tsx) already
+    // cover. Answer it healthy so this suite keeps scanning the same
+    // signed-out pages it always has.
+    await page.route("**/auth/v1/health", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "{}",
+      }),
+    );
+
     await page.goto(path);
     await waitForReady(page);
 

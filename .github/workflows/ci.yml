@@ -339,8 +339,18 @@ jobs:
     # On a push to main (never on a pull request) that clears `database`, push
     # the same migrations to the live project, so a merged migration reaches
     # production without a human running `supabase db push` by hand.
+    #
+    # Disabled (issue #422, #418): the live project (ixerygypaevxzmiknokg)
+    # was dropped when the Supabase organisation returned to the free plan,
+    # so `supabase link --project-ref ixerygypaevxzmiknokg` below now 404s.
+    # `if: false` keeps every step intact, ready to re-enable the day a
+    # project ref exists again — restore the condition above
+    # (`github.event_name == 'push' && needs.changes.outputs.database ==
+    # 'true'`) at the same time. Reports `skipped`, which `ci`'s `needs`
+    # assertion (bottom of this file) treats as a pass, not a missing
+    # dependency.
     needs: [changes, database]
-    if: github.event_name == 'push' && needs.changes.outputs.database == 'true'
+    if: false
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

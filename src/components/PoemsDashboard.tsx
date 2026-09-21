@@ -11,6 +11,8 @@ import {
 } from "@/lib/poems-store";
 import { revalidateSharedPoem } from "@/lib/revalidate-share";
 import { useSession } from "@/lib/use-session";
+import { useBackendHealth } from "@/lib/use-backend-health";
+import { BACKEND_UNAVAILABLE_MESSAGE } from "@/lib/backend-health";
 import { errorMessage } from "@/lib/errors";
 import { AccountDangerZone } from "@/components/AccountDangerZone";
 
@@ -33,6 +35,9 @@ type PendingFocus =
 
 export function PoemsDashboard() {
   const { session, loading: sessionLoading } = useSession();
+  const { status: backendStatus, retry: retryBackendHealth } =
+    useBackendHealth();
+  const backendUnavailable = backendStatus === "unavailable";
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [remixDefaultState, setRemixDefaultState] = useState<RemixDefaultState>(
     { kind: "loading" },
@@ -67,7 +72,7 @@ export function PoemsDashboard() {
   }
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || backendUnavailable) return;
     let cancelled = false;
     listPoems(session.user.id)
       .then((poems) => {
@@ -84,12 +89,12 @@ export function PoemsDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, backendUnavailable]);
 
   // AC114: the poet's global remix default, loaded alongside their poems so
   // the setting is visible as soon as the dashboard is.
   useEffect(() => {
-    if (!session) return;
+    if (!session || backendUnavailable) return;
     let cancelled = false;
     getRemixDefault(session.user.id)
       .then((value) => {
@@ -106,7 +111,7 @@ export function PoemsDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, backendUnavailable]);
 
   // Moves focus onto the confirmation as soon as it appears (TD-PPpfid-26080102):
   // the "Delete" button it replaces is gone from the DOM, so without this the
@@ -210,6 +215,27 @@ export function PoemsDashboard() {
       <p role="status" className="px-6 text-sm text-foreground/70">
         Loading…
       </p>
+    );
+  }
+
+  // AC4: a settled "unavailable" pre-empts both the sign-in prompt and the
+  // poem list — whichever `session` would otherwise have shown — since
+  // neither can do anything useful without the backend.
+  if (backendUnavailable) {
+    return (
+      <div
+        role="status"
+        className="mx-6 flex flex-wrap items-center gap-3 rounded-md border border-amber-700/30 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-200"
+      >
+        <span>{BACKEND_UNAVAILABLE_MESSAGE}</span>
+        <button
+          type="button"
+          onClick={retryBackendHealth}
+          className="rounded-md border border-current px-2 py-1 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
+        >
+          Try again
+        </button>
+      </div>
     );
   }
 

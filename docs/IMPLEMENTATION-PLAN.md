@@ -793,22 +793,20 @@ and coalesces `allow_remix` correctly through both the per-poem override and
 
 ### 6.3 Hosting / environment
 Vercel project (D11) — **created, `www.poeticfiddle.com` live** since
-2026-07-13 (Root Directory = repo root; Next.js auto-detected). Supabase
-project **"Poetic Fiddle"** — **created** 2026-07-13
-([ixerygypaevxzmiknokg.supabase.co](https://ixerygypaevxzmiknokg.supabase.co)),
-region **`ap-southeast-1` (Southeast Asia, Singapore)** — data-residency choice
-disclosed per D41 (see REQUIREMENTS.md §15). Client wiring landed with M4
-(`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`); the variable
-contract the app codes against is captured in `.env.example` (copy to
-`.env.local` for local dev; set the same variables in Vercel for deploys) —
-see README.md "Environment & secrets".
+2026-07-13 (Root Directory = repo root; Next.js auto-detected).
 
-The Supabase organisation is on the **Pro** plan, because of *other* projects
-on the same account rather than any Fiddle requirement — nothing in Fiddle's
-architecture needs paid infrastructure, so AC28/AC47 ("no paid infrastructure
-*required*") still hold, and the design stays free-tier-viable so the plan can
-be dropped again (§6.5). Pro's practical effect here is that idle-pausing does
-not apply (AC93).
+The Supabase project **"Poetic Fiddle"** (`ixerygypaevxzmiknokg`,
+`ap-southeast-1`) that backed auth/save/share from M4 no longer exists: the
+Supabase organisation dropped back to the free plan, which does not cover
+this project alongside its others, and the project was deleted to make that
+possible (issue #418). No live Supabase project currently backs the deployed
+app: the app degrades gracefully while none exists (issue #422) — editing,
+preview and local draft persistence keep working, and sign-in, saving and
+sharing show an "unavailable right now" state instead of failing outright.
+Client wiring (`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`) is
+unchanged; the variable contract the app codes against is captured in
+`.env.example` (copy to `.env.local` for local dev; set the same variables in
+Vercel for deploys) — see README.md "Environment & secrets".
 
 Auth mail still needs custom SMTP before anyone outside the project team can
 sign in — see §6.4 and `TECH-DEBT.md` TD26071601.

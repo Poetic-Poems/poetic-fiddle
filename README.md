@@ -5,6 +5,12 @@ A user-friendly interface to the Poetic poem-authoring framework.
 
 ## Environment & secrets
 
+No live Supabase project currently backs the deployed app (issue #418) — it
+runs in the degraded mode issue #422 describes: the editor and live preview
+work as normal, and sign-in, saving and sharing show an "unavailable right
+now" state instead of failing outright. See `docs/IMPLEMENTATION-PLAN.md`
+§6.3.
+
 The app reads its configuration from environment variables. `.env.example`
 lists every variable the app expects, with comments on which are public and
 which are server-only secrets — it is the contract to code against and holds

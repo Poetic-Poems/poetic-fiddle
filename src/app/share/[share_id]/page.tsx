@@ -21,10 +21,11 @@ export async function generateMetadata({
   params,
 }: SharePageProps): Promise<Metadata> {
   const { share_id: shareId } = await params;
-  const poem = await getCachedSharedPoem(shareId);
-  if (!poem) return { title: "Poem not found" };
+  const result = await getCachedSharedPoem(shareId);
+  if (result.kind === "unavailable") return { title: "Poem unavailable" };
+  if (result.kind === "not-found") return { title: "Poem not found" };
 
-  const title = poem.title || "Untitled poem";
+  const title = result.poem.title || "Untitled poem";
   return {
     title,
     description: FALLBACK_DESCRIPTION,
@@ -46,8 +47,21 @@ export async function generateMetadata({
  */
 export default async function SharePage({ params }: SharePageProps) {
   const { share_id: shareId } = await params;
-  const poem = await getCachedSharedPoem(shareId);
-  if (!poem) notFound();
+  const result = await getCachedSharedPoem(shareId);
+  if (result.kind === "unavailable") {
+    return (
+      <main className="flex flex-1 flex-col gap-3 px-6 py-6">
+        <h1 className="font-serif text-2xl font-semibold tracking-tight">
+          Shared poems are unavailable right now
+        </h1>
+        <p role="status" className="text-sm text-foreground/70">
+          This link isn&rsquo;t broken — try again in a little while.
+        </p>
+      </main>
+    );
+  }
+  if (result.kind === "not-found") notFound();
+  const poem = result.poem;
 
   const { html, error } = renderSharedPoemHtml(poem.source);
   const title = poem.title || "Untitled poem";

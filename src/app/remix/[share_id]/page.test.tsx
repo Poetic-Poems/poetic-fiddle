@@ -22,7 +22,10 @@ const POEM = {
 
 describe("RemixPage", () => {
   it("opens the shared poem's source in the editor as an unowned copy (AC20)", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(POEM);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({
+      kind: "found",
+      poem: POEM,
+    });
 
     render(
       await RemixPage({ params: Promise.resolve({ share_id: "abc123" }) }),
@@ -33,8 +36,8 @@ describe("RemixPage", () => {
 
   it("calls notFound() when the owner hasn't enabled remixing (AC113)", async () => {
     vi.mocked(getCachedSharedPoem).mockResolvedValue({
-      ...POEM,
-      allowRemix: false,
+      kind: "found",
+      poem: { ...POEM, allowRemix: false },
     });
 
     // The route enforces the permission itself: hiding the share page's link
@@ -45,10 +48,23 @@ describe("RemixPage", () => {
   });
 
   it("calls notFound() for a share id that doesn't resolve (AC87)", async () => {
-    vi.mocked(getCachedSharedPoem).mockResolvedValue(null);
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({ kind: "not-found" });
 
     await expect(
       RemixPage({ params: Promise.resolve({ share_id: "no-such-id" }) }),
     ).rejects.toThrow();
+  });
+
+  it("shows an unavailable message, not a 404, when the backend is down (issue #422)", async () => {
+    vi.mocked(getCachedSharedPoem).mockResolvedValue({ kind: "unavailable" });
+
+    render(
+      await RemixPage({ params: Promise.resolve({ share_id: "abc123" }) }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /unavailable right now/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("editor")).not.toBeInTheDocument();
   });
 });

@@ -9,6 +9,7 @@ import {
   updateRemixDefault,
 } from "@/lib/poems-store";
 import { useSession } from "@/lib/use-session";
+import { useBackendHealth } from "@/lib/use-backend-health";
 
 vi.mock("@/lib/poems-store", () => ({
   deletePoem: vi.fn(),
@@ -21,6 +22,10 @@ vi.mock("@/lib/use-session", () => ({
   useSession: vi.fn(),
 }));
 
+vi.mock("@/lib/use-backend-health", () => ({
+  useBackendHealth: vi.fn(),
+}));
+
 const SESSION = {
   user: { id: "user-1", email: "poet@example.com" },
 } as Session;
@@ -28,6 +33,10 @@ const SESSION = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getRemixDefault).mockResolvedValue(false);
+  vi.mocked(useBackendHealth).mockReturnValue({
+    status: "available",
+    retry: vi.fn(),
+  });
 });
 
 describe("PoemsDashboard", () => {
@@ -525,6 +534,75 @@ describe("PoemsDashboard", () => {
           screen.getByRole("heading", { name: /my poems/i }),
         ).toHaveFocus(),
       );
+    });
+  });
+
+  describe("backend unavailable (issue #422)", () => {
+    function unavailable(retry = vi.fn()) {
+      vi.mocked(useBackendHealth).mockReturnValue({
+        status: "unavailable",
+        retry,
+      });
+    }
+
+    it("shows the unavailable explanation instead of the sign-in prompt when signed out", () => {
+      vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
+      unavailable();
+
+      render(<PoemsDashboard />);
+
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /aren.t available right now/i,
+      );
+      expect(
+        screen.queryByText(/sign in to see your saved poems/i),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows the unavailable explanation instead of the poem list for a stale session, and attempts no request", () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      unavailable();
+
+      render(<PoemsDashboard />);
+
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /aren.t available right now/i,
+      );
+      expect(listPoems).not.toHaveBeenCalled();
+      expect(getRemixDefault).not.toHaveBeenCalled();
+    });
+
+    it("re-probes when Try again is clicked", () => {
+      vi.mocked(useSession).mockReturnValue({ session: null, loading: false });
+      const retry = vi.fn();
+      unavailable(retry);
+
+      render(<PoemsDashboard />);
+      fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+
+      expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it("behaves as usual while the probe is still checking", () => {
+      vi.mocked(useSession).mockReturnValue({
+        session: SESSION,
+        loading: false,
+      });
+      vi.mocked(useBackendHealth).mockReturnValue({
+        status: "checking",
+        retry: vi.fn(),
+      });
+      vi.mocked(listPoems).mockResolvedValue([]);
+
+      render(<PoemsDashboard />);
+
+      expect(
+        screen.queryByText(/aren.t available right now/i),
+      ).not.toBeInTheDocument();
+      expect(listPoems).toHaveBeenCalledWith("user-1");
     });
   });
 });
