@@ -28,9 +28,10 @@
 // single project or to read-only, so a second token would only widen the
 // credential surface for no gain. That is also why this must never run from
 // a `pull_request`-triggered workflow: a fork's PR could otherwise exfiltrate
-// it. .github/workflows/supabase-auth-drift.yml (schedule + workflow_dispatch
-// only) and ci.yml's `deploy` job (push-to-main only, and already holds this
-// same token to push migrations) are the only callers.
+// it. .github/workflows/supabase-auth-drift.yml (workflow_dispatch only, its
+// schedule parked — see the PROJECT_REF note below) and ci.yml's `deploy` job
+// (push-to-main only, and already holds this same token to push migrations)
+// are the only callers.
 //
 // Usage: node scripts/check-supabase-auth-drift.mjs
 // Reads SUPABASE_ACCESS_TOKEN from the environment; exits non-zero if it is
@@ -41,6 +42,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// This ref names a project that no longer exists (issue #418: dropped when
+// the Supabase organisation returned to the free plan) — do not take it for
+// a live project. Its scheduled caller
+// (.github/workflows/supabase-auth-drift.yml) is parked and ci.yml's
+// `deploy` job is `if: false` for the same reason (issue #417, #422); this
+// script itself is unchanged and still exits non-zero on an unset token, a
+// non-ok Management API response, or a genuine disagreement.
 export const PROJECT_REF = "ixerygypaevxzmiknokg";
 
 // The Management API expresses `password_requirements` as a literal

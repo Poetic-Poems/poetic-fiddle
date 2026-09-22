@@ -407,6 +407,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   replaces Save/Share/sign-in and the "My poems" list, a stale signed-in
   session is no longer trusted, and a shared poem's permalink says the link
   isn't broken instead of 404ing.
+- The scheduled Supabase auth-config drift check
+  (`.github/workflows/supabase-auth-drift.yml`) no longer runs on a
+  schedule, since the live project it asserts against no longer exists
+  (#417, #418): every step stays in place, ready to re-enable the day a
+  project ref exists again.
 
 ### Security
 
