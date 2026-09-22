@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import Editor from "./Editor";
+import { loadPoem } from "@/lib/poems-store";
 import { useSession } from "@/lib/use-session";
 import { useBackendHealth } from "@/lib/use-backend-health";
 import { makeSession, resetEditorTestState } from "./editor-test-support";
+
+vi.mock("@/lib/poems-store", () => ({
+  loadPoem: vi.fn(),
+  savePoem: vi.fn(),
+}));
 
 vi.mock("@/lib/use-session", () => ({
   useSession: vi.fn(),
@@ -67,6 +73,26 @@ describe("Editor with the backend unavailable (issue #422)", () => {
     expect(
       screen.queryByRole("link", { name: /my poems/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the unavailable banner instead of a raw error when a saved poem fails to open (issue #429)", async () => {
+    vi.mocked(useSession).mockReturnValue({ session: SESSION, loading: false });
+    vi.mocked(loadPoem).mockRejectedValue(new Error("network error"));
+    const retry = vi.fn();
+    unavailable(retry);
+
+    render(<Editor poeticCss="" initialPoemId="poem-1" />);
+
+    const message = await screen.findByText(/aren.t available right now/i);
+    expect(message.closest('[role="status"]')).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+    expect(retry).toHaveBeenCalledTimes(1);
+
+    expect(
+      screen.getByRole("link", { name: /back to my poems/i }),
+    ).toHaveAttribute("href", "/poems");
   });
 
   it("re-probes when Try again is clicked", () => {
