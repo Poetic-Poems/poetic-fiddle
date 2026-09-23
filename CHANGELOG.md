@@ -406,7 +406,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the editor and live preview keep working, an "unavailable right now" banner
   replaces Save/Share/sign-in and the "My poems" list, a stale signed-in
   session is no longer trusted, and a shared poem's permalink says the link
-  isn't broken instead of 404ing.
+  isn't broken instead of 404ing. Opening a saved poem via `/poems/[id]` now
+  shows the same banner instead of a raw load error when the backend is
+  unreachable (#429).
 - The scheduled Supabase auth-config drift check
   (`.github/workflows/supabase-auth-drift.yml`) no longer runs on a
   schedule, since the live project it asserts against no longer exists

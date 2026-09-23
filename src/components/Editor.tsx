@@ -135,9 +135,25 @@ export default function Editor({
   if (openError) {
     return (
       <div className="flex flex-1 flex-col items-start gap-3 px-6 pb-6">
-        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-          {openError}
-        </p>
+        {backendUnavailable ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-md border border-amber-700/30 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <span>{BACKEND_UNAVAILABLE_MESSAGE}</span>
+            <button
+              type="button"
+              onClick={retryBackendHealth}
+              className="rounded-md border border-current px-2 py-1 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+            {openError}
+          </p>
+        )}
         <Link
           href="/poems"
           className="text-sm text-link underline underline-offset-2"
