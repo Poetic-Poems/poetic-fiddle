@@ -31,3 +31,11 @@ exempt:
     reason: >-
       CodeQL findings post to the Security tab, not a merge-blocking check —
       scanning is advisory by design (see codeql.yml's own header comment).
+  - workflow: changelog-section.yml
+    job: changelog-section
+    reason: >-
+      Not yet added to the default ruleset's required status checks — that
+      is an owner act (pinned to integration_id 15368) that follows once
+      this check has reported on at least one pull request (issue #434 step
+      7). Move this to required: once that ruleset update lands, so this
+      snapshot and the live rules agree again.

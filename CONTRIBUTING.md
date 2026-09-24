@@ -38,7 +38,7 @@ For detailed information on the project's architecture, development setup, and c
 For the full tech-debt register and project implementation plan, see:
 - [TECH-DEBT.md](./TECH-DEBT.md) — known deferred work
 - [docs/IMPLEMENTATION-PLAN.md](./docs/IMPLEMENTATION-PLAN.md) — milestone sequencing
-- [CHANGELOG.md](./CHANGELOG.md) — notable changes
+- [CHANGELOG.md](./CHANGELOG.md) — notable changes, assembled at release time from merged pull-request descriptions
 
 ## Questions?
 
