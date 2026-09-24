@@ -206,26 +206,42 @@ review or bus-factor redundancy.
 
 <!-- agent-info:end fragment=maintainer -->
 
-<!-- agent-info:start fragment=documentation-principles source=Pullwright/.agent@b517d3d sha256=16c87f33286a -->
+<!-- agent-info:start fragment=documentation-principles source=Pullwright/.agent@641d8b5 sha256=6a7998927249 -->
 <!-- Stamped by Poetic-Poems/.agent scripts/sync.sh from Pullwright/.agent:fragments/documentation-principles.md - a hand edit inside this region is overwritten at the next sync; edit the source instead. -->
 
 ## Documentation principles
 
-- **`CHANGELOG.md`** is the only place for recording what changed and when.
-  Add an entry under `[Unreleased]` for any notable change (one visible to users of the app).
-  Patch-level fixes and routine doc updates do not need entries.
+- **The changelog entry lives in the pull request, not in a file the change
+  edits.** A notable change (one visible to users of the app) records itself under a
+  `## Changelog` heading in the pull request's description: one or more of
+  the six Keep a Changelog category sub-headings — `### Added`,
+  `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`,
+  `### Security` — each followed by bullet points written for that audience.
+  A change that is not notable — a patch-level fix, a routine documentation
+  update — says so with the single line `None.` under the same heading, so
+  the omission is visibly deliberate rather than forgotten. A pull request
+  whose title's type is `feat`, `fix` or `perf`, or which carries the `!`
+  breaking-change marker, must carry the section, even if only to say
+  `None.`; other types may omit it. The squash merge carries the
+  description onto `main` as the commit message, and `CHANGELOG.md` (Keep a
+  Changelog format) is assembled from those commit messages by the release
+  pull request — or, in a repository that does not cut releases, by the
+  scheduled roll — which is the only pull request that edits the file. Two
+  pull requests therefore never conflict over the changelog.
 - **All other docs are as-built.** Write them to describe the current state
   only — no "previously", "used to be", "now uses", "migration completed", or
   "old format (deprecated)" phrasing. Git log already records history; docs
   that repeat it become misleading as the codebase evolves.
-- If you encounter historical language in an existing doc, remove it and move
-  the substance to `CHANGELOG.md` if it is significant.
+- If you encounter historical language in an existing doc, remove it and
+  move the substance into your pull request's `## Changelog` section if it
+  is significant.
 
 <!-- agent-info:end fragment=documentation-principles -->
 
-One exception to the `CHANGELOG.md` rule: a dependency bump that clears a
-security advisory is notable even when it is not user-visible (transitive and
-dev-toolchain dependencies included) — record it under `Security`.
+One exception: a dependency bump that clears a security advisory is notable
+even when it is not user-visible (transitive and dev-toolchain dependencies
+included), and records itself under `### Security` in the pull request's
+`## Changelog` section.
 
 <!-- agent-info:start fragment=tech-debt-issues source=Pullwright/.agent@b517d3d sha256=d8f56e7b41a0 -->
 <!-- Stamped by Poetic-Poems/.agent scripts/sync.sh from Pullwright/.agent:fragments/tech-debt-issues.md - a hand edit inside this region is overwritten at the next sync; edit the source instead. -->
@@ -274,4 +290,4 @@ both belong to the frozen format, not the current policy.
 | `docs/CSP-REVIEW-CHECKLIST.md` | Manual browser checks for PRs touching CSP/srcDoc rendering |
 | `SECURITY.md` | Vulnerability reporting, CodeQL scanning |
 | `TECH-DEBT.md` | Tech-debt policy pointer; `tech-debt/` is the frozen archive |
-| `CHANGELOG.md` | Notable changes, Keep a Changelog format |
+| `CHANGELOG.md` | Notable changes, Keep a Changelog format, assembled at release time from merged pull-request descriptions |

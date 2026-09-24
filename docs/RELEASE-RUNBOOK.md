@@ -10,14 +10,28 @@ bumps to.
 
 1. **Open a `chore: release vX.Y.Z` pull request** that bumps `package.json`'s
    `version` field to the new version.
-2. **In the same pull request, rename `CHANGELOG.md`'s `## [Unreleased]`
-   heading to `## [X.Y.Z]`** (the version from step 1), and open a fresh,
-   empty `## [Unreleased]` heading above it. This is what keeps each release's
-   notes scoped to what actually shipped in it, rather than restating
-   everything earlier releases already announced —
-   `scripts/extract-changelog-notes.mjs` (used by `release.yml` to build the
-   release body) reads the `## [X.Y.Z]` section when present, falling back to
-   `## [Unreleased]` only when it is not.
+2. **In the same pull request, run `scripts/assemble-changelog.sh`** to write
+   every merged pull request's `## Changelog` section into `CHANGELOG.md`'s
+   `## [Unreleased]` section, then rename that heading to `## [X.Y.Z]` (the
+   version from step 1) and open a fresh, empty `## [Unreleased]` heading
+   above it. This is what keeps each release's notes scoped to what actually
+   shipped in it, rather than restating everything earlier releases already
+   announced — `scripts/extract-changelog-notes.mjs` (used by `release.yml`
+   to build the release body) reads the `## [X.Y.Z]` section when present,
+   falling back to `## [Unreleased]` only when it is not.
+
+   The assembler takes its commit range from the
+   `<!-- changelog:assembled-through sha=… -->` marker it keeps near the top
+   of `CHANGELOG.md`, advancing that marker to `HEAD` on every run. A file
+   that carries no marker yet has no range to read, and the script exits
+   non-zero rather than guess one: on that first run, pass
+   `--since <sha>`, naming `main`'s
+   `ci(changelog): adopt the pull-request-description changelog (D27)`
+   commit — every entry from before it is already in the file, and every
+   pull request after it carries its own `## Changelog` section. Run it
+   from a clone with full history; a `--depth` shallow checkout cannot
+   resolve the range.
+
 3. **Merge the pull request to `main`.** `.github/workflows/ci.yml`'s
    `changelog-rename` job checks that steps 1 and 2 were both done — it fails
    a pull request that bumps the version without the matching rename — so a
