@@ -21,6 +21,13 @@ create table public.heartbeat (
 
 insert into public.heartbeat (id, pinged_at) values (1, now());
 
+-- Table privileges, stated explicitly rather than inherited from the
+-- project's default privileges, matching poems_and_profiles.sql's own
+-- rationale: RLS governs which rows a role may touch, not whether it may
+-- touch the table at all, so both are needed. Nobody gets a grant here —
+-- the only door is the security-definer RPC below.
+revoke all on public.heartbeat from anon, authenticated;
+
 alter table public.heartbeat enable row level security;
 
 create function public.bump_heartbeat()

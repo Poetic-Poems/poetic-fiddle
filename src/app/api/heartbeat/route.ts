@@ -53,7 +53,5 @@ function hasValidSecret(request: NextRequest, secret: string): boolean {
 
   const expected = Buffer.from(secret);
   const actual = Buffer.from(provided);
-  return (
-    expected.length === actual.length && timingSafeEqual(expected, actual)
-  );
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }

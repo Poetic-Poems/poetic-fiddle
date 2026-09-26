@@ -7,7 +7,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(7);
 
 select is(
   (select count(*)::int from public.heartbeat),
@@ -16,6 +16,7 @@ select is(
 );
 
 set local role anon;
+set local request.jwt.claims to '{"role":"anon"}';
 
 select lives_ok(
   $$select public.bump_heartbeat()$$,
@@ -37,6 +38,15 @@ select throws_ok(
 );
 
 reset role;
+
+-- `now()` is fixed for the lifetime of this transaction, and this migration's
+-- own seed row was written by an earlier one, so this equality is only true
+-- if the anon-called RPC above actually wrote a fresh timestamp.
+select is(
+  (select pinged_at = now() from public.heartbeat where id = 1),
+  true,
+  'bump_heartbeat() advances pinged_at to the current transaction time'
+);
 
 select is(
   (select count(*)::int from public.heartbeat),
