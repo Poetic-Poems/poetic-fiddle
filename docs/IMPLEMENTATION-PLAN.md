@@ -550,16 +550,18 @@ public launch, **P2** soon after, **P3** insurance/polish.
   the web app manifest's icons. Next's App Router file-based metadata
   convention auto-injects every `<link>` tag (`favicon.ico`, `icon.svg`,
   `apple-touch-icon`, `manifest`) — no layout changes needed.
-- **W16 (P3, M)** — **Keep-alive cron + O4 monitors** (§6.5, AC93;
-  OBSERVABILITY-PLAN O4). Deliberately dormant insurance; nothing built. When
-  picked up: heartbeat route + `vercel.json` cron + uptime monitor per the
-  §6.5 decision. `CRON_SECRET` is **already set in Vercel (2026-07-21)** —
-  a value we minted ourselves, not one Vercel issues; Vercel replays it on
-  every cron invocation as `Authorization: Bearer <value>`, and the
-  heartbeat route must reject any request not carrying it, so outsiders
-  cannot trigger the endpoint. Vercel is its only home: the route reads the
-  same env var at runtime, so nothing is added to the repo, GitHub secrets,
-  or Supabase.
+- **W16 (P3, M)** — **Keep-alive cron** (§6.5, AC93) — **done** (PR #439):
+  `GET /api/heartbeat` rejects anything not carrying `CRON_SECRET` (already
+  set in Vercel, 2026-07-21) as an `Authorization: Bearer` header, then calls
+  the `bump_heartbeat()` RPC (`supabase/migrations/20260926225141_heartbeat.sql`)
+  — a security-definer function that is the only path to the single-row
+  `heartbeat` table, since RLS on that table carries no policies at all.
+  `vercel.json` schedules the route once daily (the Hobby plan's limit).
+  Deliberately dormant insurance: nothing added to the repo, GitHub secrets,
+  or Supabase beyond this. The O4 uptime/cron monitor
+  (OBSERVABILITY-PLAN.md O4) still needs a human to point Sentry's dashboard
+  at the now-live route — outside what this pipeline's read-only Sentry
+  credential (`docs/TRIAGE.md`) can do.
 
 **MVP non-goals to verify absent (AC30–AC32, AC48–AC51, AC101–AC103):** no
 publishing/GitHub/Blogger UI, no collections/site-config, no realtime
