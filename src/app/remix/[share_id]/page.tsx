@@ -37,12 +37,12 @@ export default async function RemixPage({ params }: RemixPageProps) {
   if (result.kind === "unavailable") {
     return (
       <main className="flex flex-1 flex-col gap-3 px-6 py-6">
-        <h1 className="font-serif text-2xl font-semibold tracking-tight">
-          Shared poems are unavailable right now
-        </h1>
-        <p role="status" className="text-sm text-foreground/70">
-          This link isn&rsquo;t broken — try again in a little while.
-        </p>
+        <RouteHeading
+          title="Shared poems are unavailable right now"
+          description="This link isn’t broken — try again in a little while."
+          descriptionRole="status"
+          wrapperClassName={null}
+        />
       </main>
     );
   }
