@@ -877,7 +877,7 @@ provider — named in REQUIREMENTS.md §15 and in the published Privacy Policy
 
 **Decision: implement the daily keep-alive cron, as insurance for future restoration.** The Supabase organisation dropped back to the free plan
 (issue #418), and the Poetic Fiddle project was deleted; no live project currently backs the app. The keep-alive cron remains implemented
-because if a project is restored in the future (currently indefinite), AC93's idle-pause failure mode would otherwise silently re-arm without it. A free project pauses after
+because if a project is restored in the future, AC93's idle-pause failure mode would otherwise silently re-arm without it. A free project pauses after
 **7 days without database activity** (data is preserved; restore is manual),
 and the moment that bites hardest is just after launch — when the first visitor
 to a permanent share link (D34) arrives before there is enough organic traffic

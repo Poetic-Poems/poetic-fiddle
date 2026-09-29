@@ -49,10 +49,11 @@ Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
 
 ## Backups
 
-The Supabase project runs on the organisation's Pro plan (no live project currently exists — see issue #418/#422), which includes
-automatic daily backups with 7 days' retention by default. Point-in-Time
-Recovery is available as a separate paid add-on but is not enabled for this
-project. See
+The Supabase project ran on the organisation's Pro plan, which includes
+automatic daily backups with 7 days' retention by default and Point-in-Time
+Recovery as a separate paid add-on (not enabled for this project) — but no
+live project currently exists: the organisation dropped back to the free
+plan and the project was deleted (see issue #418/#422). See
 [`docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`](docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md#backup--pitr-coverage)
 for the full guarantee, its restore procedure, and how to fulfil a poet's
 export/delete request.
