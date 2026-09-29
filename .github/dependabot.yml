@@ -10,6 +10,18 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/coverage-v8"
+      testing-library:
+        patterns:
+          - "@testing-library/*"
     ignore:
       # jsdom is pinned to 26.x: 27+ pulls in the ESM-only @exodus/bytes via
       # html-encoding-sniffer@6, which 500s /share/<id> at runtime on Vercel
