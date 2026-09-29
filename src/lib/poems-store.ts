@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase-client";
 import { derivePoemTitle } from "@/lib/poem-title";
+import { domainError } from "@/lib/errors";
 
 /** A poem row as the editor and dashboard need it. */
 export interface SavedPoem {
@@ -15,27 +16,19 @@ export interface SavedPoem {
  * underlying Supabase/network error is kept as `cause` for diagnosis, since it
  * can carry detail (row identifiers, policy names) that no reader needs.
  */
-export class PoemSaveError extends Error {
-  constructor(cause: unknown) {
-    super(
-      "Couldn't save your poem — your work is still here. Please try again.",
-    );
-    this.name = "PoemSaveError";
-    this.cause = cause;
-  }
-}
+export const PoemSaveError = domainError(
+  "PoemSaveError",
+  "Couldn't save your poem — your work is still here. Please try again.",
+);
 
 /**
  * A poem couldn't be listed. `message` is safe to show a poet as-is; the
  * underlying Supabase/network error is kept as `cause` for diagnosis.
  */
-export class PoemListError extends Error {
-  constructor(cause: unknown) {
-    super("Couldn't load your poems — please try again.");
-    this.name = "PoemListError";
-    this.cause = cause;
-  }
-}
+export const PoemListError = domainError(
+  "PoemListError",
+  "Couldn't load your poems — please try again.",
+);
 
 /**
  * A specific poem couldn't be opened — it doesn't exist, or it belongs to
@@ -43,93 +36,66 @@ export class PoemListError extends Error {
  * is the point: a poem that isn't the caller's reads back as absent, not as
  * a permission error that would confirm it exists.
  */
-export class PoemLoadError extends Error {
-  constructor(cause: unknown) {
-    super(
-      "That poem couldn't be found — it may have been deleted, or belongs to someone else.",
-    );
-    this.name = "PoemLoadError";
-    this.cause = cause;
-  }
-}
+export const PoemLoadError = domainError(
+  "PoemLoadError",
+  "That poem couldn't be found — it may have been deleted, or belongs to someone else.",
+);
 
 /**
  * A poem couldn't be deleted. `message` is safe to show a poet as-is; the
  * underlying Supabase/network error is kept as `cause` for diagnosis.
  */
-export class PoemDeleteError extends Error {
-  constructor(cause: unknown) {
-    super("Couldn't delete your poem — please try again.");
-    this.name = "PoemDeleteError";
-    this.cause = cause;
-  }
-}
+export const PoemDeleteError = domainError(
+  "PoemDeleteError",
+  "Couldn't delete your poem — please try again.",
+);
 
 /**
  * A share couldn't be created or confirmed. `message` is safe to show a poet
  * as-is; the underlying Supabase/network error is kept as `cause`.
  */
-export class PoemShareError extends Error {
-  constructor(cause: unknown) {
-    super(
-      "Couldn't create a share link — your poem is still saved. Please try again.",
-    );
-    this.name = "PoemShareError";
-    this.cause = cause;
-  }
-}
+export const PoemShareError = domainError(
+  "PoemShareError",
+  "Couldn't create a share link — your poem is still saved. Please try again.",
+);
 
 /**
  * A share couldn't be revoked. `message` is safe to show a poet as-is; the
  * underlying Supabase/network error is kept as `cause`.
  */
-export class PoemUnshareError extends Error {
-  constructor(cause: unknown) {
-    super(
-      "Couldn't remove the share link — your poem is still saved. Please try again.",
-    );
-    this.name = "PoemUnshareError";
-    this.cause = cause;
-  }
-}
+export const PoemUnshareError = domainError(
+  "PoemUnshareError",
+  "Couldn't remove the share link — your poem is still saved. Please try again.",
+);
 
 /**
  * A poet's global remix default (`profiles.remix_default`) couldn't be read.
  * `message` is safe to show a poet as-is; the underlying Supabase/network
  * error is kept as `cause`.
  */
-export class RemixDefaultLoadError extends Error {
-  constructor(cause: unknown) {
-    super("Couldn't load your remix setting — please try again.");
-    this.name = "RemixDefaultLoadError";
-    this.cause = cause;
-  }
-}
+export const RemixDefaultLoadError = domainError(
+  "RemixDefaultLoadError",
+  "Couldn't load your remix setting — please try again.",
+);
 
 /**
  * A poet's global remix default couldn't be saved. `message` is safe to show
  * a poet as-is; the underlying Supabase/network error is kept as `cause`.
  */
-export class RemixDefaultSaveError extends Error {
-  constructor(cause: unknown) {
-    super("Couldn't save your remix setting — please try again.");
-    this.name = "RemixDefaultSaveError";
-    this.cause = cause;
-  }
-}
+export const RemixDefaultSaveError = domainError(
+  "RemixDefaultSaveError",
+  "Couldn't save your remix setting — please try again.",
+);
 
 /**
  * A poem's per-poem remix override (`poems.allow_remix`) couldn't be saved.
  * `message` is safe to show a poet as-is; the underlying Supabase/network
  * error is kept as `cause`.
  */
-export class PoemRemixOverrideError extends Error {
-  constructor(cause: unknown) {
-    super("Couldn't update remixing for this poem — please try again.");
-    this.name = "PoemRemixOverrideError";
-    this.cause = cause;
-  }
-}
+export const PoemRemixOverrideError = domainError(
+  "PoemRemixOverrideError",
+  "Couldn't update remixing for this poem — please try again.",
+);
 
 const SAVED_POEM_COLUMNS = "id, title, updated_at, share_id";
 

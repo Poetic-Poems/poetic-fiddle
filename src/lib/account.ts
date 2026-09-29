@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase-client";
+import { domainError } from "@/lib/errors";
 
 /**
  * A self-service account deletion couldn't be completed. `message` is safe
@@ -6,13 +7,10 @@ import { supabase } from "@/lib/supabase-client";
  * route's own error response) is kept as `cause` for diagnosis, matching the
  * typed-error convention in poems-store.ts.
  */
-export class AccountDeleteError extends Error {
-  constructor(cause: unknown) {
-    super("Couldn't delete your account — please try again.");
-    this.name = "AccountDeleteError";
-    this.cause = cause;
-  }
-}
+export const AccountDeleteError = domainError(
+  "AccountDeleteError",
+  "Couldn't delete your account — please try again.",
+);
 
 /**
  * Deletes the signed-in poet's account (AC92, W13): calls the server-side
@@ -67,13 +65,10 @@ export async function deleteAccount(): Promise<string[]> {
  * show a poet as-is; the underlying cause is kept as `cause` for diagnosis,
  * matching `AccountDeleteError` above.
  */
-export class AccountExportError extends Error {
-  constructor(cause: unknown) {
-    super("Couldn't export your data — please try again.");
-    this.name = "AccountExportError";
-    this.cause = cause;
-  }
-}
+export const AccountExportError = domainError(
+  "AccountExportError",
+  "Couldn't export your data — please try again.",
+);
 
 const DEFAULT_EXPORT_FILENAME = "poetic-fiddle-export.tar.gz";
 
