@@ -14,11 +14,22 @@ export function domainError(
   name: string,
   message: string,
 ): new (cause: unknown) => Error {
-  return class extends Error {
+  const DomainError = class extends Error {
     constructor(cause: unknown) {
       super(message);
       this.name = name;
       this.cause = cause;
     }
   };
+  // A class expression built inside a function is anonymous, so its own static
+  // `.name` — and hence `err.constructor.name` — would read as "" rather than
+  // the name a hand-written `class PoemSaveError extends Error` gives. The
+  // instance's `.name` is set above either way; this makes the *class* match
+  // too, so error serialisers that reach for `constructor.name` see the same
+  // string as before.
+  Object.defineProperty(DomainError, "name", {
+    value: name,
+    configurable: true,
+  });
+  return DomainError;
 }
