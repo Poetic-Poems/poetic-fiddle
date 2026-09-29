@@ -875,15 +875,9 @@ provider — named in REQUIREMENTS.md §15 and in the published Privacy Policy
 
 ### 6.5 Supabase idle-pause *(operability)* — ✅ **DECIDED 2026-07-16**
 
-**Decision: implement the daily keep-alive cron, as insurance rather than a
-live need.** The Supabase organisation is on the **Pro** plan — an upgrade
-forced by *other* projects on the same account, not by anything Fiddle needs —
-and Pro projects are never paused for inactivity, so AC93's failure mode is
-currently dormant.
-
-It is implemented anyway because the constraint that made the upgrade necessary
-is external to Fiddle and may lift: a future drop back to the free tier would
-otherwise silently re-arm a real outage mode. A free project pauses after
+**Decision: implement the daily keep-alive cron, as insurance for future restoration.** The Supabase organisation dropped back to the free plan
+(issue #418), and the Poetic Fiddle project was deleted; no live project currently backs the app. The keep-alive cron remains implemented
+because if a project is restored in the future, AC93's idle-pause failure mode would otherwise silently re-arm without it. A free project pauses after
 **7 days without database activity** (data is preserved; restore is manual),
 and the moment that bites hardest is just after launch — when the first visitor
 to a permanent share link (D34) arrives before there is enough organic traffic
