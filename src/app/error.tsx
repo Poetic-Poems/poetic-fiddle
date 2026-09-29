@@ -1,5 +1,6 @@
 "use client";
 
+import { RouteHeading } from "@/components/RouteHeading";
 import { MISSING_SUPABASE_ENV_MESSAGE } from "@/lib/env-errors";
 import { BACKEND_UNAVAILABLE_MESSAGE } from "@/lib/backend-health";
 
@@ -25,12 +26,12 @@ export default function Error({
     if (process.env.NODE_ENV === "production") {
       return (
         <main className="flex flex-1 flex-col items-start gap-3 px-6 py-6">
-          <h1 className="font-serif text-2xl font-semibold tracking-tight">
-            Sign-in and saving aren&rsquo;t available right now
-          </h1>
-          <p role="status" className="text-sm text-foreground/70">
-            {BACKEND_UNAVAILABLE_MESSAGE}
-          </p>
+          <RouteHeading
+            title="Sign-in and saving aren’t available right now"
+            description={BACKEND_UNAVAILABLE_MESSAGE}
+            descriptionRole="status"
+            wrapperClassName={null}
+          />
           <button
             type="button"
             onClick={reset}
@@ -44,25 +45,28 @@ export default function Error({
 
     return (
       <main className="flex flex-1 flex-col items-start gap-3 px-6 py-6">
-        <h1 className="font-serif text-2xl font-semibold tracking-tight">
-          Supabase isn&rsquo;t configured
-        </h1>
-        <p className="text-sm text-foreground/70">
-          Copy <code>.env.example</code> to <code>.env.local</code> and fill in
-          your Supabase project URL and anon key, then restart the dev server.
-        </p>
+        <RouteHeading
+          title="Supabase isn’t configured"
+          description={
+            <>
+              Copy <code>.env.example</code> to <code>.env.local</code> and fill
+              in your Supabase project URL and anon key, then restart the dev
+              server.
+            </>
+          }
+          wrapperClassName={null}
+        />
       </main>
     );
   }
 
   return (
     <main className="flex flex-1 flex-col items-start gap-3 px-6 py-6">
-      <h1 className="font-serif text-2xl font-semibold tracking-tight">
-        Something went wrong
-      </h1>
-      <p className="text-sm text-foreground/70">
-        Please reload the page. If the problem continues, try again later.
-      </p>
+      <RouteHeading
+        title="Something went wrong"
+        description="Please reload the page. If the problem continues, try again later."
+        wrapperClassName={null}
+      />
       <button
         type="button"
         onClick={reset}

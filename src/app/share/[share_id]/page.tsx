@@ -5,6 +5,7 @@ import { poeticCss } from "@/lib/poetic-css.generated";
 import { getCachedSharedPoem } from "@/lib/shared-poem-cache";
 import { renderSharedPoemHtml } from "@/lib/render-share";
 import { SharedPoemView } from "@/components/SharedPoemView";
+import { RouteHeading } from "@/components/RouteHeading";
 
 interface SharePageProps {
   params: Promise<{ share_id: string }>;
@@ -51,12 +52,12 @@ export default async function SharePage({ params }: SharePageProps) {
   if (result.kind === "unavailable") {
     return (
       <main className="flex flex-1 flex-col gap-3 px-6 py-6">
-        <h1 className="font-serif text-2xl font-semibold tracking-tight">
-          Shared poems are unavailable right now
-        </h1>
-        <p role="status" className="text-sm text-foreground/70">
-          This link isn&rsquo;t broken — try again in a little while.
-        </p>
+        <RouteHeading
+          title="Shared poems are unavailable right now"
+          description="This link isn’t broken — try again in a little while."
+          descriptionRole="status"
+          wrapperClassName={null}
+        />
       </main>
     );
   }
@@ -68,14 +69,18 @@ export default async function SharePage({ params }: SharePageProps) {
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-6">
-      <h1 className="font-serif text-2xl font-semibold tracking-tight">
-        {title}
-      </h1>
-      {error ? (
-        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-          This poem couldn&rsquo;t be displayed right now.
-        </p>
-      ) : (
+      <RouteHeading
+        title={title}
+        description={
+          error ? "This poem couldn’t be displayed right now." : undefined
+        }
+        descriptionRole={error ? "alert" : undefined}
+        descriptionClassName={
+          error ? "text-sm text-red-700 dark:text-red-400" : undefined
+        }
+        wrapperClassName={null}
+      />
+      {!error && (
         <>
           <SharedPoemView html={html} css={poeticCss} title={title} />
           {poem.allowRemix && (
