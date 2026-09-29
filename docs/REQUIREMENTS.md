@@ -877,9 +877,10 @@ headline security requirement.
 
 - **AC93** [D10] — Given the Supabase free tier, when a project is idle ~7 days and
   is paused (a known caveat), then no user data is lost across the pause. The
-  Supabase organisation is currently on the Pro plan — for reasons external to
-  Fiddle — so pausing does not apply; a keep-alive cron is nevertheless built
-  (IMPLEMENTATION-PLAN.md §6.5) so the free tier stays a viable fallback.
+  Supabase organisation dropped back to the free plan, and the Poetic Fiddle project
+  was deleted (issue #418); no live Supabase project currently backs the deployed app.
+  The no-backend state is indefinite, to be revisited if usage or cost changes. A keep-alive cron is nevertheless built
+  (IMPLEMENTATION-PLAN.md §6.5) so the free tier stays a viable fallback if a project is restored.
 - **AC94** [D12] — Given failure conditions, when they occur, then the app degrades
   gracefully: a parse error keeps the last good preview (AC4); an anonymous draft
   survives reload via localStorage (AC8); a failed save surfaces an error and does

@@ -42,14 +42,14 @@ as the service-role key) must not.
 
 **CI (GitHub Actions):** `.github/workflows/ci.yml`'s `deploy` job
 pushes `supabase/migrations/` to the live project on every merge to `main`
-that touches them,
+that touches them (currently disabled — see issue #418/#422),
 authenticating with two repo secrets (Settings → Secrets and variables →
 Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account → Access
 Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
 
 ## Backups
 
-The Supabase project runs on the organisation's Pro plan, which includes
+The Supabase project runs on the organisation's Pro plan (no live project currently exists — see issue #418/#422), which includes
 automatic daily backups with 7 days' retention by default. Point-in-Time
 Recovery is available as a separate paid add-on but is not enabled for this
 project. See
