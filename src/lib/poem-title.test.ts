@@ -1,8 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { derivePoemTitle } from "./poem-title";
 import { EXAMPLE_POEM } from "@/lib/example-poem";
+import { parseAndAugment } from "poetic/browser";
+
+vi.mock("poetic/browser", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("poetic/browser")>();
+  return { ...actual, parseAndAugment: vi.fn(actual.parseAndAugment) };
+});
 
 describe("derivePoemTitle", () => {
+  it("returns an empty title when the parser doesn't return a string title", () => {
+    // parseAndAugment always either returns a string title or throws (never
+    // observed to return a non-string title for any real source), so this
+    // exercises the ternary's false branch directly via the parser's own
+    // dependency seam rather than hunting for a natural input that hits it.
+    vi.mocked(parseAndAugment).mockReturnValueOnce({
+      title: undefined,
+    } as unknown as ReturnType<typeof parseAndAugment>);
+
+    expect(derivePoemTitle("irrelevant source")).toBe("");
+  });
   it("derives the title from the poem header", () => {
     expect(derivePoemTitle(EXAMPLE_POEM)).toBe(
       "Hello, poet — Welcome to Poetic Fiddle",

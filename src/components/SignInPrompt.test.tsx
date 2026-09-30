@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,9 +19,30 @@ function openPasswordSection() {
   fireEvent.click(screen.getByText(/use a password instead/i));
 }
 
+function TriggerAndPrompt() {
+  const [action, setAction] = useState<"save" | null>(null);
+  return (
+    <>
+      <button onClick={() => setAction("save")}>Save this poem</button>
+      <SignInPrompt action={action} onClose={() => setAction(null)} />
+    </>
+  );
+}
+
 describe("SignInPrompt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("moves focus into the dialog when it opens (F-UX-02)", () => {
+    render(<TriggerAndPrompt />);
+    const trigger = screen.getByRole("button", { name: /save this poem/i });
+
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = document.querySelector("dialog")!;
+    expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
   it("offers magic-link email, Google, and a password fallback (AC11)", () => {

@@ -30,13 +30,42 @@ vi.mock("@sentry/nextjs", () => ({
 
 // jsdom reflects <dialog>'s `open` attribute but implements neither
 // showModal() nor close(); components using <dialog> need a stub to mount.
+// The stub also approximates the HTML spec's dialog-focusing steps (focus an
+// [autofocus] descendant, or else the first focusable one, on open; restore
+// focus to whatever was focused beforehand on close) so tests can assert on
+// focus behaviour that real browsers give <dialog> for free — jsdom doesn't
+// even allow focusing the <dialog> element itself (it has no default
+// tabindex), so falling back to "focus the dialog" the way a real browser
+// does when there's no focusable descendant isn't reproduced here.
 if (typeof HTMLDialogElement.prototype.showModal !== "function") {
+  const previouslyFocused = new WeakMap<HTMLDialogElement, Element | null>();
+
+  const FOCUSABLE_SELECTOR =
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
   HTMLDialogElement.prototype.showModal = function () {
+    previouslyFocused.set(this, document.activeElement);
     this.open = true;
+    const target =
+      this.querySelector<HTMLElement>("[autofocus]") ??
+      this.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    target?.focus();
   };
   HTMLDialogElement.prototype.close = function () {
     this.open = false;
+    const activeElement = document.activeElement;
+    const focusWasInDialog =
+      activeElement === this || this.contains(activeElement);
+    const previous = previouslyFocused.get(this);
+    previouslyFocused.delete(this);
     this.dispatchEvent(new Event("close"));
+    if (
+      focusWasInDialog &&
+      previous instanceof HTMLElement &&
+      document.contains(previous)
+    ) {
+      previous.focus();
+    }
   };
 }
 
