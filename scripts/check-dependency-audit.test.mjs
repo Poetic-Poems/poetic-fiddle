@@ -4,6 +4,7 @@ import {
   CANARY_VERSION,
   evaluateDependencyAudit,
   hasHighOrCriticalVulnerability,
+  runNpmAudit,
   unusableReportReason,
   vulnerabilityCounts,
 } from "./check-dependency-audit.mjs";
@@ -164,5 +165,44 @@ describe("evaluateDependencyAudit", () => {
 
     expect(result.pass).toBe(true);
     expect(getCanaryAuditJson).toHaveBeenCalledOnce();
+  });
+});
+
+describe("runNpmAudit", () => {
+  it("parses the JSON npm audit wrote to stdout on a clean run", () => {
+    const execFile = vi.fn(() => JSON.stringify(auditJson()));
+
+    expect(runNpmAudit("/some/project", execFile)).toEqual(auditJson());
+    expect(execFile).toHaveBeenCalledWith(
+      "npm",
+      ["audit", "--json"],
+      expect.objectContaining({ cwd: "/some/project" }),
+    );
+  });
+
+  it("reads the report off the thrown error's stdout when npm audit exits non-zero for finding advisories", () => {
+    // This is the behaviour the whole script depends on: npm audit's exit
+    // code alone can't be trusted, since it's non-zero for the routine case
+    // of "found an advisory" too.
+    const report = auditJson({ high: 1 });
+    const execFile = vi.fn(() => {
+      const err = new Error("Command failed");
+      err.stdout = JSON.stringify(report);
+      throw err;
+    });
+
+    expect(runNpmAudit("/some/project", execFile)).toEqual(report);
+  });
+
+  it("throws when npm audit fails with no stdout at all", () => {
+    const execFile = vi.fn(() => {
+      const err = new Error("npm not found");
+      err.stdout = "";
+      throw err;
+    });
+
+    expect(() => runNpmAudit("/some/project", execFile)).toThrow(
+      /npm audit produced no output/,
+    );
   });
 });

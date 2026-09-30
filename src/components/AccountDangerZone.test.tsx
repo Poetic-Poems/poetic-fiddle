@@ -56,6 +56,17 @@ afterEach(() => {
 });
 
 describe("AccountDangerZone", () => {
+  it("moves focus into the dialog when it opens (F-UX-02)", () => {
+    render(<AccountDangerZone session={SESSION} />);
+    const trigger = screen.getByRole("button", { name: /^delete account$/i });
+
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = document.querySelector("dialog")!;
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
   it("shows a warning and keeps delete disabled until the account's own email is typed", () => {
     render(<AccountDangerZone session={SESSION} />);
     openDialog();

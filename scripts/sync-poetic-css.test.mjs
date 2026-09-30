@@ -1,5 +1,14 @@
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { syncPoeticCss } from "./sync-poetic-css.mjs";
+
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 
 describe("syncPoeticCss", () => {
   it("throws an error when require.resolve fails to find poetic/browser/poetic.css", () => {
@@ -107,5 +116,28 @@ describe("syncPoeticCss", () => {
         "/fake/package.json",
       );
     }).toThrow(/7.0.0/);
+  });
+});
+
+describe("CLI", () => {
+  it("regenerates poetic-css.generated.ts against the real installed poetic package", () => {
+    // main()'s own wiring — resolving the real package and the real output
+    // path — isn't exercised by the injected-dependency tests above; this
+    // reruns the same postinstall step for real, exactly as `npm install`
+    // does, to check it still resolves against whatever `poetic` version is
+    // actually installed.
+    const out = execFileSync(
+      process.execPath,
+      [path.join(repoRoot, "scripts/sync-poetic-css.mjs")],
+      { encoding: "utf8" },
+    );
+
+    expect(out).toMatch(/^Wrote .*poetic-css\.generated\.ts \(\d+ bytes\)/);
+
+    const generated = readFileSync(
+      path.join(repoRoot, "src/lib/poetic-css.generated.ts"),
+      "utf8",
+    );
+    expect(generated).toContain("export const poeticCss");
   });
 });

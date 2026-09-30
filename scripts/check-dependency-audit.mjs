@@ -38,10 +38,12 @@ export const CANARY_VERSION = "4.17.11";
 // npm audit exits non-zero the moment any advisory is found, but still
 // writes the full report to stdout — so the JSON has to be read off the
 // thrown error's captured stdout in that case, not just the happy path's.
-function runNpmAudit(cwd) {
+// `execFile` is injectable, same as `getCanaryAuditJson` below, so tests can
+// exercise both the happy path and this catch branch without shelling out.
+export function runNpmAudit(cwd, execFile = execFileSync) {
   let stdout;
   try {
-    stdout = execFileSync("npm", ["audit", "--json"], {
+    stdout = execFile("npm", ["audit", "--json"], {
       cwd,
       encoding: "utf8",
     });
