@@ -10,6 +10,8 @@ policy silently dropped the preview/share stylesheets (issue #97), and the
 policy that fixed it still blocked poetic's inline `style` *attributes*
 (issue #119) for a week, invisible in CI both times.
 
+**CORS:** The app does not set an `Access-Control-Allow-Origin` header anywhere. API routes rely on the browser's same-origin default, which is intentional and correct; a future contributor adding a public API should not assume CORS is already handled.
+
 Run through this checklist, in a real browser, for any pull request that
 touches `src/lib/csp.ts`, `src/proxy.ts`, `src/components/PoemPreview.tsx`,
 `src/components/SharedPoemView.tsx`, or `src/lib/poem-toggles.ts` — the app
