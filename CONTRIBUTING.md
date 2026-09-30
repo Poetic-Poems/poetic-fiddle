@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Poetic Fiddle is a collaborative proje
 
 ## Quick start
 
-1. **Branch naming:** Create a branch with a descriptive name. For tech-debt items, use `td/<id>` (e.g., `td/TD26072418`); for other work, use `agent/<description>` or a similar clear prefix.
+1. **Branch naming:** Create a branch with a descriptive name, e.g. `agent/<description>` or a similar clear prefix.
 
 2. **Commit format:** All commits must follow [Conventional Commits](https://www.conventionalcommits.org/). This means:
    - Start with a type: `fix`, `feat`, `docs`, `test`, `refactor`, `chore`, `ci`, `build`, `perf`, `style`, or `revert`
