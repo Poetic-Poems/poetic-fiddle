@@ -35,6 +35,7 @@ interface AccountDangerZoneProps {
  */
 export function AccountDangerZone({ session }: AccountDangerZoneProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -45,8 +46,16 @@ export function AccountDangerZone({ session }: AccountDangerZoneProps) {
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (open) {
+      if (!dialog.open) dialog.showModal();
+      return;
+    }
+    if (dialog.open) dialog.close();
+    // The confirmation form unmounts in the same render that flips `open` to
+    // false, which moves document.activeElement to <body> before this effect
+    // runs — too late for the dialog's own close-time focus restoration to
+    // find anything to restore. Focus the trigger button explicitly instead.
+    triggerRef.current?.focus();
   }, [open]);
 
   function handleClose() {
@@ -142,6 +151,7 @@ export function AccountDangerZone({ session }: AccountDangerZoneProps) {
         link. This can&rsquo;t be undone.
       </p>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         className="rounded-md border border-red-700 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950/40"
