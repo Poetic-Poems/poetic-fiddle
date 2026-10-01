@@ -111,10 +111,15 @@ the request before deleting.
 
 ## Backup / PITR coverage
 
-Poetic Fiddle's Supabase project ("Poetic Fiddle", `ap-southeast-1`) runs on
+Poetic Fiddle's Supabase project ("Poetic Fiddle", `ap-southeast-1`) ran on
 the organisation's **Pro** plan (`docs/IMPLEMENTATION-PLAN.md` §6.3 — Pro is
 incidental, for other projects on the same account, not a Fiddle
-requirement). Per Supabase's published plan documentation:
+requirement). **As of [#418](https://github.com/Poetic-Poems/poetic-fiddle/issues/418)
+and [#422](https://github.com/Poetic-Poems/poetic-fiddle/issues/422), the
+organisation deleted the Supabase project and moved to the free tier. There is
+currently no live Supabase project backing the app, and therefore no backup or
+PITR coverage of any kind.** When a project was active on the Pro plan, per
+Supabase's published plan documentation:
 
 - **Daily backups, 7 days' retention**, included by default on Pro.
 - **Point-in-Time Recovery (PITR)** is a separate paid add-on (from
@@ -127,13 +132,13 @@ requirement). Per Supabase's published plan documentation:
   physical backup, then replays the write-ahead log up to the chosen
   point), and downtime scales with database size.
 
-**PITR is not enabled for this project.** The project runs on Supabase's
-Pro-plan default: daily backups taken at approximately **23:44 UTC** with
-**7 days' retention**, giving a worst case of up to ~24 hours of data loss
-on restore (confirmed from the Supabase dashboard on 2026-08-03; see
+**When the project was active**, it ran on Supabase's Pro-plan default:
+daily backups taken at approximately **23:44 UTC** with **7 days' retention**,
+giving a worst case of up to ~24 hours of data loss on restore (as last
+confirmed from the Supabase dashboard on 2026-08-03; see
 [issue #199](https://github.com/Poetic-Poems/poetic-fiddle/issues/199#issuecomment-5165206422)
-for the confirmation details). The add-on status can change, so refer to
-the issue for when this was last checked.
+for the confirmation details). If a project is restored in the future, refer
+to the issue for when the backup schedule was last checked.
 
 ## Security
 
