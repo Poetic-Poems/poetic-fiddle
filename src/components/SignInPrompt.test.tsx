@@ -45,6 +45,50 @@ describe("SignInPrompt", () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
+  it("returns focus to the trigger button when Close is clicked (#470)", () => {
+    render(<TriggerAndPrompt />);
+    const trigger = screen.getByRole("button", { name: /save this poem/i });
+
+    trigger.focus();
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("returns focus to the trigger button when Escape closes the dialog (#470)", () => {
+    render(<TriggerAndPrompt />);
+    const trigger = screen.getByRole("button", { name: /save this poem/i });
+
+    trigger.focus();
+    fireEvent.click(trigger);
+    document.querySelector("dialog")!.close();
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("returns focus to the trigger button after a successful password sign-in (#470)", async () => {
+    authMock.signInWithPassword.mockResolvedValue({
+      data: { session: {} },
+      error: null,
+    });
+    render(<TriggerAndPrompt />);
+    const trigger = screen.getByRole("button", { name: /save this poem/i });
+
+    trigger.focus();
+    fireEvent.click(trigger);
+    openPasswordSection();
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "poet@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/^password$/i), {
+      target: { value: "hunter2222" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
   it("offers magic-link email, Google, and a password fallback (AC11)", () => {
     render(<SignInPrompt action="save" onClose={() => {}} />);
     expect(

@@ -223,6 +223,32 @@ describe("AccountDangerZone", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("returns focus to the trigger button when Cancel is clicked (#470)", () => {
+    render(<AccountDangerZone session={SESSION} />);
+    const trigger = screen.getByRole("button", { name: /^delete account$/i });
+    trigger.focus();
+    openDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("returns focus to the trigger button when Escape closes the dialog (#470)", () => {
+    const { container } = render(<AccountDangerZone session={SESSION} />);
+    const trigger = screen.getByRole("button", { name: /^delete account$/i });
+    trigger.focus();
+    openDialog();
+
+    container.querySelector("dialog")!.close();
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  // A successful delete leads straight to a full navigation (`window.location.href`
+  // — see the component's own comment), never a `setOpen(false)`, so there is no
+  // dialog-close focus path to assert here: the document is on its way out.
+
   it("exports and downloads the archive via an in-document anchor, deferring the revoke", async () => {
     const blob = new Blob(["archive bytes"]);
     vi.mocked(exportAccountData).mockResolvedValue({
