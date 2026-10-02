@@ -41,19 +41,21 @@ guarded by Row-Level Security — may use that prefix. Server-only secrets (such
 as the service-role key) must not.
 
 **CI (GitHub Actions):** `.github/workflows/ci.yml`'s `deploy` job
-pushes `supabase/migrations/` to the live project on every merge to `main`
-that touches them (currently disabled — see issue #418/#422),
-authenticating with two repo secrets (Settings → Secrets and variables →
-Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account → Access
-Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
+is currently disabled (see issue #418/#422) — it would otherwise push
+`supabase/migrations/` to the live project on every merge to `main`
+that touches them. When operational, it authenticates with two repo secrets
+(Settings → Secrets and variables → Actions): `SUPABASE_ACCESS_TOKEN`
+(Supabase dashboard → Account → Access Tokens) and `SUPABASE_DB_PASSWORD`
+(Project Settings → Database). The job remains in the CI configuration with
+`if: false` to preserve the setup for when a project is restored.
 
 ## Backups
 
-The Supabase project ran on the organisation's Pro plan, which includes
-automatic daily backups with 7 days' retention by default and Point-in-Time
-Recovery as a separate paid add-on (not enabled for this project) — but no
-live project currently exists: the organisation dropped back to the free
-plan and the project was deleted (see issue #418/#422). See
+No live Supabase project currently exists: the organisation operates on the
+free plan, and the previous Poetic Fiddle project was deleted to make that
+possible (see issue #418/#422). If a project is restored in the future, it
+would operate on the free plan initially — automatic daily backups with
+7 days' retention (not a paid add-on). See
 [`docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`](docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md#backup--pitr-coverage)
 for the full guarantee, its restore procedure, and how to fulfil a poet's
 export/delete request.
