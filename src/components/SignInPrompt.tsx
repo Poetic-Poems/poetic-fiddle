@@ -30,12 +30,29 @@ const inputClassName =
 
 export function SignInPrompt({ action, onClose }: SignInPromptProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (action && !dialog.open) dialog.showModal();
-    if (!action && dialog.open) dialog.close();
+    if (action) {
+      if (!dialog.open) {
+        // Captured before showModal() moves focus, so it survives the
+        // dialog's own content unmounting on close (see close branch below).
+        triggerRef.current =
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+        dialog.showModal();
+      }
+      return;
+    }
+    if (dialog.open) dialog.close();
+    // SignInForm unmounts in the same render that flips `action` to null,
+    // which moves document.activeElement to <body> before this effect runs —
+    // too late for the dialog's own close-time focus restoration to find
+    // anything to restore. Focus the captured trigger explicitly instead.
+    triggerRef.current?.focus();
   }, [action]);
 
   return (
