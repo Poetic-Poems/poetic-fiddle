@@ -280,6 +280,18 @@ both belong to the frozen format, not the current policy.
 
 <!-- agent-info:end fragment=tech-debt-issues -->
 
+## Parked issues
+
+An issue that is real and correctly specified but whose action is conditional on a trigger that has not yet fired carries the `blocked` label. `Pullwright/agent-ops`'s `scripts/gather-issues.sh` excludes `blocked`-labelled issues deterministically, so the issue stays open and visible in the tracker without being selected as available work to the pipeline.
+
+The trigger condition must be stated in the issue body or a refinement comment on it, so a reader of the issue tracker can distinguish a parked item from an impeded one at a glance.
+
+**Removing the `blocked` label is what re-arms the issue** — whoever satisfies the trigger removes it, and it becomes available for selection on the next cycle.
+
+Never add `blocked:needs-refinement` alongside a parked issue's `blocked` label. That reason label is the pipeline's own projection (requirement 38b in `Pullwright/agent-ops`) for an under-specified item, and a parked issue is the opposite — fully specified, deliberately held. The two labels serve opposite purposes and cannot coexist.
+
+Issue #457 is the worked example of a parked item: its body marks a conditional observation about orchestration extraction in `PoemsDashboard.tsx`, triggered only when that component undergoes a material change. The issue carries a `blocked` label and remains open; a pointer comment in the component itself (see step 3 of #483's resolution) keeps the trigger visible to whoever next edits the file.
+
 ## Key docs
 
 | File | Contents |
