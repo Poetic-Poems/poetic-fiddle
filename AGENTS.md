@@ -282,7 +282,7 @@ both belong to the frozen format, not the current policy.
 
 ## Parked issues
 
-An issue that is real and correctly specified but whose action is conditional on a trigger that has not yet fired carries the `blocked` label. `scripts/gather-issues.sh` excludes `blocked`-labelled issues deterministically, so the issue stays open and visible in the tracker without being selected as available work to the pipeline.
+An issue that is real and correctly specified but whose action is conditional on a trigger that has not yet fired carries the `blocked` label. `Pullwright/agent-ops`'s `scripts/gather-issues.sh` excludes `blocked`-labelled issues deterministically, so the issue stays open and visible in the tracker without being selected as available work to the pipeline.
 
 The trigger condition must be stated in the issue body or a refinement comment on it, so a reader of the issue tracker can distinguish a parked item from an impeded one at a glance.
 
