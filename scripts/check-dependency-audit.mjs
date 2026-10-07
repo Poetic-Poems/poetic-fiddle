@@ -24,16 +24,44 @@
 // A genuine high-or-critical advisory in this project's own tree still
 // fails outright, without needing the canary at all.
 //
+// One advisory is exempted from that gate: GHSA-vfj7-8cjw-p6xm, a
+// stack-exhaustion DoS in `braces` reached only through this repo's lint
+// toolchain (braces<=3.0.3 — every version ever published — via
+// micromatch -> fast-glob -> @next/eslint-plugin-next -> eslint-config-next,
+// a devDependency). No patched `braces` exists upstream; the owner
+// authorised a scoped exception for this one advisory in #491, reproduced
+// in #489. The exception (`applySuppressedAdvisoryException` below):
+//
+//   1. Only ever suppresses GHSA-vfj7-8cjw-p6xm against `braces`, and only
+//      propagates to packages whose own "high" rating is purely inherited
+//      from depending on the suppressed `braces` entry (no package with an
+//      advisory of its own is ever suppressed).
+//   2. Lapses automatically — causing the gate to fail again with no code
+//      change needed — the moment npm audit's own report on `braces` says a
+//      fix is available that does not require a semver-major bump (i.e.
+//      `fixAvailable` is `true`, or an object with `isSemVerMajor: false`):
+//      that is what it looks like once a patched `braces` exists, whether
+//      published directly or via a `micromatch`/`fast-glob` release that
+//      drops the vulnerable range.
+//   3. Only applies while every `braces` entry in `package-lock.json` is
+//      `dev: true`; if the advisory ever reaches a production dependency,
+//      the gate fails as before.
+//   4. Logs a visible line naming the advisory and why it was allowed,
+//      whenever it actually suppresses something.
+//
 // Usage: node scripts/check-dependency-audit.mjs [cwd]
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const CANARY_PACKAGE = "lodash";
 export const CANARY_VERSION = "4.17.11";
+
+export const SUPPRESSED_ADVISORY_GHSA = "GHSA-vfj7-8cjw-p6xm";
+export const SUPPRESSED_ADVISORY_PACKAGE = "braces";
 
 // npm audit exits non-zero the moment any advisory is found, but still
 // writes the full report to stdout — so the JSON has to be read off the
@@ -118,6 +146,114 @@ export function hasHighOrCriticalVulnerability(auditJson) {
   return high > 0 || critical > 0;
 }
 
+// True for the one `via` entry this exception ever matches: the advisory
+// object (not a bare package-name string) for GHSA-vfj7-8cjw-p6xm itself.
+function isSuppressedAdvisoryEntry(viaEntry) {
+  return (
+    typeof viaEntry === "object" &&
+    viaEntry !== null &&
+    typeof viaEntry.url === "string" &&
+    viaEntry.url.endsWith(`/${SUPPRESSED_ADVISORY_GHSA}`)
+  );
+}
+
+// `fixAvailable` is `false` when npm audit can offer no fix at all, `true`
+// when the vulnerable package itself can be bumped without a semver-major
+// change, or an object naming which top-level package a breaking fix would
+// require. The exception only holds while none of those says a non-breaking
+// fix now exists — that's the "a patched braces was published" signal.
+function nonBreakingFixIsAvailable(fixAvailable) {
+  if (fixAvailable === true) return true;
+  if (fixAvailable && typeof fixAvailable === "object") {
+    return fixAvailable.isSemVerMajor === false;
+  }
+  return false;
+}
+
+// Requirement 3 of the #491 authorisation: the exception only applies while
+// every `braces` entry in package-lock.json is a dev dependency.
+export function allBracesInstancesAreDevOnly(packageLockJson) {
+  const packages = packageLockJson?.packages ?? {};
+  const bracesEntries = Object.entries(packages).filter(
+    ([key]) =>
+      key === `node_modules/${SUPPRESSED_ADVISORY_PACKAGE}` ||
+      key.endsWith(`/node_modules/${SUPPRESSED_ADVISORY_PACKAGE}`),
+  );
+  return (
+    bracesEntries.length > 0 &&
+    bracesEntries.every(([, pkg]) => pkg.dev === true)
+  );
+}
+
+// Packages whose "high" rating is suppressed alongside `braces`: `braces`
+// itself, plus any package whose *entire* `via` array is other packages
+// already in the suppressed set (i.e. it carries no advisory of its own —
+// it is only "high" because it depends on the suppressed chain).
+function suppressedPackageChain(vulnerabilities) {
+  const suppressed = new Set([SUPPRESSED_ADVISORY_PACKAGE]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [name, entry] of Object.entries(vulnerabilities)) {
+      if (suppressed.has(name)) continue;
+      const via = entry.via ?? [];
+      if (
+        via.length > 0 &&
+        via.every((entry) => typeof entry === "string" && suppressed.has(entry))
+      ) {
+        suppressed.add(name);
+        changed = true;
+      }
+    }
+  }
+  return suppressed;
+}
+
+// Applies the #491-authorised GHSA-vfj7-8cjw-p6xm/braces exception (see the
+// header comment) to a real `npm audit --json` report, returning an
+// adjusted report with the suppressed packages' counts removed from
+// `metadata.vulnerabilities`, plus the set of package names actually
+// suppressed (empty when the exception doesn't apply).
+export function applySuppressedAdvisoryException(auditJson, packageLockJson) {
+  const vulnerabilities = auditJson?.vulnerabilities;
+  const bracesEntry = vulnerabilities?.[SUPPRESSED_ADVISORY_PACKAGE];
+  const bracesHasOnlyTheSuppressedAdvisory =
+    Array.isArray(bracesEntry?.via) &&
+    bracesEntry.via.length > 0 &&
+    bracesEntry.via.every(isSuppressedAdvisoryEntry);
+
+  if (
+    !bracesHasOnlyTheSuppressedAdvisory ||
+    nonBreakingFixIsAvailable(bracesEntry.fixAvailable) ||
+    !allBracesInstancesAreDevOnly(packageLockJson)
+  ) {
+    return { auditJson, suppressed: [] };
+  }
+
+  const suppressed = suppressedPackageChain(vulnerabilities);
+  let { high, critical } = vulnerabilityCounts(auditJson);
+  for (const name of suppressed) {
+    const severity = vulnerabilities[name]?.severity;
+    if (severity === "high") high -= 1;
+    else if (severity === "critical") critical -= 1;
+  }
+
+  return {
+    auditJson: {
+      ...auditJson,
+      metadata: {
+        ...auditJson.metadata,
+        vulnerabilities: {
+          ...auditJson.metadata.vulnerabilities,
+          high: Math.max(0, high),
+          critical: Math.max(0, critical),
+        },
+      },
+    },
+    suppressed: [...suppressed],
+  };
+}
+
 // `getCanaryAuditJson` is a thunk rather than a value so the canary audit
 // (a real npm install + audit round trip) only runs on the otherwise-clean
 // path, exactly as the design requires — a real advisory in `realAuditJson`
@@ -171,10 +307,28 @@ export function evaluateDependencyAudit(realAuditJson, getCanaryAuditJson) {
   };
 }
 
+function readPackageLockJson(cwd) {
+  return JSON.parse(readFileSync(path.join(cwd, "package-lock.json"), "utf8"));
+}
+
 function main() {
   const cwd = process.argv[2] ?? process.cwd();
   const realAuditJson = runNpmAudit(cwd);
-  const result = evaluateDependencyAudit(realAuditJson, runCanaryNpmAudit);
+  const packageLockJson = readPackageLockJson(cwd);
+  const { auditJson: adjustedAuditJson, suppressed } =
+    applySuppressedAdvisoryException(realAuditJson, packageLockJson);
+
+  if (suppressed.length > 0) {
+    console.log(
+      `check-dependency-audit: owner-authorised exception (#489, decided in #491) ` +
+        `suppresses ${SUPPRESSED_ADVISORY_GHSA} for ${suppressed.join(", ")} — ` +
+        "braces has no patched release yet and reaches this repo only via a dev " +
+        "dependency; this lapses automatically once a non-breaking braces fix " +
+        "is published.",
+    );
+  }
+
+  const result = evaluateDependencyAudit(adjustedAuditJson, runCanaryNpmAudit);
   console.log(result.message);
   if (!result.pass) process.exit(1);
 }
