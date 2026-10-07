@@ -62,8 +62,26 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
           title="Weekly dependency audit found a high-severity advisory"
+
+          # The gate's owner-authorised exception (see
+          # check-dependency-audit.mjs) means an advisory it suppresses never
+          # fails the audit — so such an advisory can neither explain this
+          # failure nor stand in for it when deduping below. Ask the gate
+          # itself whether the exception applied to *this* report rather than
+          # repeating its id or its lapse conditions here, so the two cannot
+          # drift apart: once the exception lapses, the advisory is a genuine
+          # cause again and is reported as one, with no change needed here.
+          suppressed_ghsa=$(node -e "
+            import('./scripts/check-dependency-audit.mjs').then(async (gate) => {
+              const { readFileSync } = await import('node:fs');
+              const audit = JSON.parse(readFileSync('/tmp/audit.json', 'utf8'));
+              const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+              const { suppressed } = gate.applySuppressedAdvisoryException(audit, lock);
+              if (suppressed.length > 0) console.log(gate.SUPPRESSED_ADVISORY_GHSA);
+            });
+          " 2>/dev/null || true)
 
           # Only a `via` entry that is itself an advisory object (not a bare
           # package-name string naming another package in the chain) names a
@@ -71,7 +89,7 @@ jobs:
           # isSuppressedAdvisoryEntry for the same distinction.
           advisories=""
           if [ -s /tmp/audit.json ]; then
-            advisories=$(jq -r '
+            advisories=$(jq -r --arg suppressed "$suppressed_ghsa" '
               (.vulnerabilities // {}) as $vulns
               | [
                   $vulns | to_entries[]
@@ -79,38 +97,53 @@ jobs:
                   | .key as $pkg
                   | (.value.via[]? | select(type == "object") | .url
                      | capture("(?<id>GHSA-[A-Za-z0-9-]+)$").id) as $id
+                  | select($suppressed == "" or $id != $suppressed)
                   | "\($id) (\($pkg))"
                 ]
               | unique
               | .[]
-            ' /tmp/audit.json 2>/dev/null)
+            ' /tmp/audit.json 2>/dev/null || true)
           fi
 
-          # Dedup on open issues only: once an open report is resolved and
-          # closed, a fresh occurrence is news again and should file a new
-          # issue.
-          already_filed=false
+          # Dedup per advisory rather than over the report as a whole: drop
+          # the advisories an open issue already covers, and still file
+          # whatever is left, so one long-lived report cannot mask an
+          # advisory nobody has seen yet. Open issues only — once a report is
+          # resolved and closed, a fresh occurrence is news again.
+          #
+          # An unreachable search API reads as "not tracked", erring towards
+          # filing a possible duplicate rather than towards silence.
           if [ -n "$advisories" ]; then
+            untracked_file=$(mktemp)
             while IFS= read -r advisory; do
               ghsa_id=${advisory%% *}
               hit=$(gh issue list --state open --search "$ghsa_id in:title,body" \
-                --json number --jq 'length > 0')
+                --json number --jq 'length > 0' || echo false)
               if [ "$hit" = "true" ]; then
-                already_filed=true
-                break
+                echo "Already tracked in an open issue: $advisory"
+              else
+                printf '%s\n' "$advisory" >> "$untracked_file"
               fi
             done <<< "$advisories"
+            advisories=$(cat "$untracked_file")
+            rm -f "$untracked_file"
+            if [ -z "$advisories" ]; then
+              echo "Every advisory in this report is already tracked; skipping."
+              exit 0
+            fi
+            title="Weekly dependency audit: $(printf '%s' "$advisories" \
+              | paste -sd, - | sed 's/,/, /g')"
           else
+            # No advisory id to key off — the gate failed for a reason the
+            # report cannot name (an unusable `npm audit` report, or the
+            # canary catching a silent advisory endpoint). Dedup on the fixed
+            # title instead, as this step always did.
             already_filed=$(gh issue list --state open --limit 200 --json title \
               | jq --arg title "$title" 'any(.[]; .title == $title)')
-          fi
-          if [ "$already_filed" = "true" ]; then
-            echo "Advisory already reported; skipping."
-            exit 0
-          fi
-
-          if [ -n "$advisories" ]; then
-            title="Weekly dependency audit: $(printf '%s' "$advisories" | paste -sd ', ' -)"
+            if [ "$already_filed" = "true" ]; then
+              echo "Advisory already reported; skipping."
+              exit 0
+            fi
           fi
 
           body_file=$(mktemp)
