@@ -48,7 +48,13 @@ jobs:
       - name: Audit dependencies
         id: audit
         continue-on-error: true
-        run: npm run audit
+        run: |
+          # Captured separately from the gate's own exit code below, so a
+          # filed issue can name the advisory instead of just a run URL. The
+          # gate (`npm run audit`) stays the last command in this step, so
+          # `steps.audit.outcome` still reflects only its own pass/fail.
+          npm audit --json > /tmp/audit.json || true
+          npm run audit
 
       - name: File an issue if the audit failed
         if: steps.audit.outcome == 'failure'
@@ -56,24 +62,68 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           title="Weekly dependency audit found a high-severity advisory"
+
+          # Only a `via` entry that is itself an advisory object (not a bare
+          # package-name string naming another package in the chain) names a
+          # real GHSA id — see check-dependency-audit.mjs's own
+          # isSuppressedAdvisoryEntry for the same distinction.
+          advisories=""
+          if [ -s /tmp/audit.json ]; then
+            advisories=$(jq -r '
+              (.vulnerabilities // {}) as $vulns
+              | [
+                  $vulns | to_entries[]
+                  | select(.value.severity == "high" or .value.severity == "critical")
+                  | .key as $pkg
+                  | (.value.via[]? | select(type == "object") | .url
+                     | capture("(?<id>GHSA-[A-Za-z0-9-]+)$").id) as $id
+                  | "\($id) (\($pkg))"
+                ]
+              | unique
+              | .[]
+            ' /tmp/audit.json 2>/dev/null)
+          fi
 
           # Dedup on open issues only: once an open report is resolved and
           # closed, a fresh occurrence is news again and should file a new
           # issue.
-          already_filed=$(gh issue list --state open --limit 200 --json title \
-            | jq --arg title "$title" 'any(.[]; .title == $title)')
+          already_filed=false
+          if [ -n "$advisories" ]; then
+            while IFS= read -r advisory; do
+              ghsa_id=${advisory%% *}
+              hit=$(gh issue list --state open --search "$ghsa_id in:title,body" \
+                --json number --jq 'length > 0')
+              if [ "$hit" = "true" ]; then
+                already_filed=true
+                break
+              fi
+            done <<< "$advisories"
+          else
+            already_filed=$(gh issue list --state open --limit 200 --json title \
+              | jq --arg title "$title" 'any(.[]; .title == $title)')
+          fi
           if [ "$already_filed" = "true" ]; then
             echo "Advisory already reported; skipping."
             exit 0
           fi
 
+          if [ -n "$advisories" ]; then
+            title="Weekly dependency audit: $(printf '%s' "$advisories" | paste -sd ', ' -)"
+          fi
+
           body_file=$(mktemp)
           {
             printf 'The weekly dependency audit (`npm run audit`) failed on '
-            printf '`main`. Run the audit locally to see the advisory, and '
-            printf 'the run that detected it has the log:\n%s\n' "$RUN_URL"
+            printf '`main`.\n'
+            if [ -n "$advisories" ]; then
+              printf '\nAdvisories found:\n'
+              printf '%s\n' "$advisories" | sed 's/^/- /'
+            else
+              printf '\nRun the audit locally to see the advisory.\n'
+            fi
+            printf '\nThe run that detected it has the log:\n%s\n' "$RUN_URL"
           } > "$body_file"
           gh issue create --title "$title" --body-file "$body_file"
 
