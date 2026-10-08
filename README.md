@@ -40,22 +40,24 @@ time, so only values designed to be public — the Supabase URL and anon key,
 guarded by Row-Level Security — may use that prefix. Server-only secrets (such
 as the service-role key) must not.
 
-**CI (GitHub Actions):** `.github/workflows/ci.yml`'s `deploy` job
-pushes `supabase/migrations/` to the live project on every merge to `main`
-that touches them (currently disabled — see issue #418/#422),
+**CI (GitHub Actions):** `.github/workflows/ci.yml`'s `deploy` job is
+disabled (`if: false`) because no live Supabase project backs the app
+(see issue #418, #422). The local Supabase development database is tested
+on every pull request via the `database` job, which applies committed migrations
+to a throwaway local instance and runs the pgTAP suite (see `supabase test db`
+in the Development section). If a live project is restored, the `deploy` job
+can be re-enabled; it would push committed migrations automatically
 authenticating with two repo secrets (Settings → Secrets and variables →
-Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account → Access
-Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
+Actions): `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`.
 
 ## Backups
 
-The Supabase project ran on the organisation's Pro plan, which includes
-automatic daily backups with 7 days' retention by default and Point-in-Time
-Recovery as a separate paid add-on (not enabled for this project) — but no
-live project currently exists: the organisation dropped back to the free
-plan and the project was deleted (see issue #418/#422). See
-[`docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`](docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md#backup--pitr-coverage)
-for the full guarantee, its restore procedure, and how to fulfil a poet's
+No live Supabase project currently backs the deployed app — the organisation
+dropped back to the free plan and deleted the project (see issue #418/#422).
+When a project existed, it was on the Pro plan, which includes automatic daily
+backups with 7 days' retention by default and Point-in-Time Recovery as a
+separate paid add-on. See [`docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md`](docs/PRIVACY-EXPORT-DELETE-RUNBOOK.md#backup--pitr-coverage)
+for the backup guarantee, restore procedure, and how to fulfil a poet's
 export/delete request.
 
 ## Development
