@@ -40,12 +40,18 @@ time, so only values designed to be public — the Supabase URL and anon key,
 guarded by Row-Level Security — may use that prefix. Server-only secrets (such
 as the service-role key) must not.
 
-**CI (GitHub Actions):** `.github/workflows/ci.yml`'s `deploy` job
-pushes `supabase/migrations/` to the live project on every merge to `main`
-that touches them (currently disabled — see issue #418/#422),
-authenticating with two repo secrets (Settings → Secrets and variables →
-Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account → Access
-Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
+**CI (GitHub Actions):** Committed migrations are tested on every pull
+request that touches `supabase/migrations/` by the `database` job, which
+applies them to a throwaway local Supabase instance and runs the pgTAP suite
+via `supabase test db` (see `npm run test:db` in the Development section
+above). The `deploy` job, which pushes migrations to a live Supabase project
+on merge to `main`, is currently disabled (`if: false`) because no live
+project exists — the Supabase organisation dropped to the free plan and
+deleted the project (issue #418, #422). If a live project is restored, the
+job can be re-enabled to push committed migrations automatically to
+production, authenticating with two repo secrets (Settings → Secrets and
+variables → Actions): `SUPABASE_ACCESS_TOKEN` (Supabase dashboard → Account
+→ Access Tokens) and `SUPABASE_DB_PASSWORD` (Project Settings → Database).
 
 ## Backups
 

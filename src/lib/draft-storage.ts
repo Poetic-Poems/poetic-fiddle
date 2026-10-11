@@ -1,14 +1,46 @@
 const DRAFT_STORAGE_KEY = "poetic-fiddle:draft:v1";
 
-function getStorage(): Storage | null {
-  if (typeof window === "undefined") return null;
+interface DegradingStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+function getStorage(): DegradingStorage | null {
+  let storage: Storage;
   try {
-    return window.localStorage;
+    if (typeof window === "undefined") return null;
+    storage = window.localStorage;
   } catch {
     // Storage can throw (private browsing, disabled cookies/storage) — the
     // caller falls back to an in-memory-only draft (AC98 graceful degradation).
     return null;
   }
+  return {
+    getItem(key) {
+      try {
+        return storage.getItem(key);
+      } catch {
+        // A method can also throw after the accessor above succeeded (e.g.
+        // zero-quota / locked-down environments) — degrade the same way.
+        return null;
+      }
+    },
+    setItem(key, value) {
+      try {
+        storage.setItem(key, value);
+      } catch {
+        // Quota exceeded or storage unavailable — the draft simply isn't persisted.
+      }
+    },
+    removeItem(key) {
+      try {
+        storage.removeItem(key);
+      } catch {
+        // Storage unavailable — clearing becomes a no-op.
+      }
+    },
+  };
 }
 
 export function loadDraft(): string | null {
@@ -16,11 +48,7 @@ export function loadDraft(): string | null {
 }
 
 export function saveDraft(source: string): void {
-  try {
-    getStorage()?.setItem(DRAFT_STORAGE_KEY, source);
-  } catch {
-    // Quota exceeded or storage unavailable — the draft simply isn't persisted.
-  }
+  getStorage()?.setItem(DRAFT_STORAGE_KEY, source);
 }
 
 /**
