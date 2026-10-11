@@ -22,7 +22,7 @@ No recommendation was written for F-ARCH-01 (issue #446 already covers it fully)
 
 **Intended end state:** `.github/dependabot.yml` groups `react`+`react-dom` and `vitest`+`@vitest/coverage-v8` (and any other peer-locked pairs found, e.g. `@testing-library/*` if applicable) so Dependabot bumps each pair together in one PR. PRs #424/#426/#442 are closed and Dependabot regenerates them as grouped, green PRs.
 
-**Approach:** Add a `groups:` entry under the npm `updates:` block per [Dependabot's grouped-updates syntax](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#groups). No code change needed beyond the YAML edit; verify by observing the next Dependabot run opens one combined PR per pair instead of two independent ones.
+**Approach:** Add a `groups:` entry under the npm `updates:` block per [Dependabot's grouped-updates syntax](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#groups). No code change needed beyond the YAML edit; verify by observing the next Dependabot run opens one combined PR per pair instead of two independent ones. Tech-debt item: #447.
 
 ## R-02 — Clear the two stalled owner-only GitHub escalations
 
@@ -32,7 +32,7 @@ No recommendation was written for F-ARCH-01 (issue #446 already covers it fully)
 
 **Intended end state:** PR #421 is closed and its branch deleted; the `default` ruleset's required status checks include `changelog-section` alongside `commit-format` and `CI`; `.github/required-checks.yml`'s `changelog-section` entry moves from `exempt:` to `required:` (ordinary follow-up agent work once the ruleset carries the check); issues #431, #432 and #437 are closed.
 
-**Approach:** This is not a coding task — the commands are already given verbatim in issues #432 and #437. This recommendation exists to surface, in one place, that two small owner actions are the only thing blocking both items, and that leaving them unresolved has a real (if small) recurring cost: a stuck draft PR with a live branch risks regenerating itself if mishandled (per the precedent #369/#368 both issues cite), and the changelog-section gate stays advisory rather than enforced in the meantime.
+**Approach:** This is not a coding task — the commands are already given verbatim in issues #432 and #437. This recommendation exists to surface, in one place, that two small owner actions are the only thing blocking both items, and that leaving them unresolved has a real (if small) recurring cost: a stuck draft PR with a live branch risks regenerating itself if mishandled (per the precedent #369/#368 both issues cite), and the changelog-section gate stays advisory rather than enforced in the meantime. Tech-debt items: #432 and #437.
 
 ## R-03 — Reconcile documentation with the current no-backend production state
 
@@ -42,7 +42,7 @@ No recommendation was written for F-ARCH-01 (issue #446 already covers it fully)
 
 **Intended end state:** README's CI section notes the `deploy` job is currently disabled and why (mirroring the framing already used in README's "Environment & secrets" section above it); `docs/REQUIREMENTS.md` AC93 is updated to match `docs/IMPLEMENTATION-PLAN.md` §6.3's accurate description; a one-line status note (even "indefinite, revisit if usage/cost changes") exists somewhere natural so a reader doesn't have to reconstruct the timeline from three closed issues to know whether restoration is planned.
 
-**Approach:** Three small, independent text edits, no code changes. Verify by re-reading README top-to-bottom for internal consistency and confirming REQUIREMENTS.md and IMPLEMENTATION-PLAN.md no longer disagree about the org's current plan.
+**Approach:** Three small, independent text edits, no code changes. Verify by re-reading README top-to-bottom for internal consistency and confirming REQUIREMENTS.md and IMPLEMENTATION-PLAN.md no longer disagree about the org's current plan. Tech-debt item: #448.
 
 ## R-04 — Add regression coverage for the mobile resize/postscript-clamp fix
 
@@ -52,7 +52,7 @@ No recommendation was written for F-ARCH-01 (issue #446 already covers it fully)
 
 **Intended end state:** A test in each of `PoemPreview.test.tsx` and `SharedPoemView.test.tsx` that mocks/polyfills `ResizeObserver`, triggers a resize, and asserts `evaluatePostscriptPreviews` (or its observable effect) fires after the debounce — so a future regression to this specific, previously-shipped bug is caught by CI rather than requiring a human to notice on a phone.
 
-**Approach:** jsdom doesn't implement `ResizeObserver`; use a minimal test-double (a fake class capturing its callback, assigned to `global.ResizeObserver`) consistent with however the rest of the suite already mocks browser APIs jsdom lacks. Verify with `npm test -- PoemPreview SharedPoemView` and confirm the previously-uncovered lines now show as covered in `npm run coverage`.
+**Approach:** jsdom doesn't implement `ResizeObserver`; use a minimal test-double (a fake class capturing its callback, assigned to `global.ResizeObserver`) consistent with however the rest of the suite already mocks browser APIs jsdom lacks. Verify with `npm test -- PoemPreview SharedPoemView` and confirm the previously-uncovered lines now show as covered in `npm run coverage`. Tech-debt item: #449.
 
 ## R-05 — Backfill small targeted unit-test gaps
 
@@ -62,7 +62,7 @@ No recommendation was written for F-ARCH-01 (issue #446 already covers it fully)
 
 **Intended end state:** Each gap has at least one test exercising it: a mocked-throwing `window.localStorage` test per `draft-storage.ts` function; a non-string-title case for `poem-title.ts`; a focus-assertion test for each dialog component; and targeted tests raising the three named scripts closer to the project's typical coverage level (not `generate-favicons.mjs`, which is deliberately excluded from CI per its own header comment — leave it alone).
 
-**Approach:** These are independent, mechanical additions in well-established test patterns already used elsewhere in the suite — good candidates for a lower-cost tier, one gap at a time. Verify with `npm run coverage` and confirm each named file's coverage improves without any existing test breaking.
+**Approach:** These are independent, mechanical additions in well-established test patterns already used elsewhere in the suite — good candidates for a lower-cost tier, one gap at a time. Verify with `npm run coverage` and confirm each named file's coverage improves without any existing test breaking. Tech-debt item: #450.
 
 ## R-06 — Reduce duplication and complexity in the persistence and orchestration layer
 
@@ -72,7 +72,7 @@ No recommendation was written for F-ARCH-01 (issue #446 already covers it fully)
 
 **Intended end state:** `use-poem-persistence.ts`'s session-migration concern (roughly lines 132-229) is split from its save/share/remix CRUD concern (roughly lines 244-365) into two composed hooks; the repeated error-class boilerplate is replaced by a small factory function; if `PoemsDashboard.tsx` grows further, its orchestration is extracted into a `usePoemsDashboard` hook mirroring `usePoemPersistence`'s pattern. None of this changes observable behaviour.
 
-**Approach:** This is a pure refactor with existing test coverage as the safety net (`use-poem-persistence.test.ts` is 546 lines; `poems-store.test.ts` is 418 lines). Best done opportunistically alongside the next feature change that touches each area, rather than as a standalone effort, to avoid refactor-only PRs with no functional payoff. Verify with the existing test suites (`npm test`) passing unchanged, plus `npm run typecheck` to confirm `instanceof` checks against the refactored error classes still narrow correctly.
+**Approach:** This is a pure refactor with existing test coverage as the safety net (`use-poem-persistence.test.ts` is 546 lines; `poems-store.test.ts` is 418 lines). Best done opportunistically alongside the next feature change that touches each area, rather than as a standalone effort, to avoid refactor-only PRs with no functional payoff. Verify with the existing test suites (`npm test`) passing unchanged, plus `npm run typecheck` to confirm `instanceof` checks against the refactored error classes still narrow correctly. Tech-debt item: #451.
 
 ## R-07 — Small documentation-accuracy fixes
 
@@ -82,4 +82,4 @@ No recommendation was written for F-ARCH-01 (issue #446 already covers it fully)
 
 **Intended end state:** A one-line CORS note exists somewhere natural (e.g. `docs/CSP-REVIEW-CHECKLIST.md`); `CONTRIBUTING.md`'s branch-naming guidance either drops the `td/<id>` line or points to `AGENTS.md`'s current tech-debt section instead.
 
-**Approach:** Two independent one-line text edits. Verify by re-reading `CONTRIBUTING.md` and confirming it no longer contradicts `AGENTS.md` on the same procedure.
+**Approach:** Two independent one-line text edits. Verify by re-reading `CONTRIBUTING.md` and confirming it no longer contradicts `AGENTS.md` on the same procedure. Tech-debt item: #452.
