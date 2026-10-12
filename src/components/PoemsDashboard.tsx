@@ -16,6 +16,10 @@ import { BACKEND_UNAVAILABLE_MESSAGE } from "@/lib/backend-health";
 import { errorMessage } from "@/lib/errors";
 import { AccountDangerZone } from "@/components/AccountDangerZone";
 
+// This component keeps its orchestration inline. A material change here should
+// first extract the orchestration into a src/lib/use-poems-dashboard.ts hook
+// mirroring the seam usePoemPersistence established; see issue #457 for detail.
+
 type LoadState =
   | { kind: "loading" }
   | { kind: "loaded"; poems: SavedPoem[] }
