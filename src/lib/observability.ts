@@ -83,12 +83,12 @@ const genAIConfig: Required<NonNullable<DataCollectionConfig["genAI"]>> = {
 };
 
 /**
- * Never attach request bodies, cookies, headers, query params, user
- * identifiers, or source snippets automatically. Typed as `Required<>` over
- * the SDK's own `dataCollection` option so that a future `@sentry/nextjs`
- * minor that adds a collection category fails `npm run typecheck` here —
- * this literal would be missing the new required property — instead of
- * silently defaulting that category to "collect" (AC91).
+ * Never attach request bodies, cookies, headers, query params, or user
+ * identifiers automatically. Typed as `Required<>` over the SDK's own
+ * `dataCollection` option so that a future `@sentry/nextjs` minor that adds
+ * a collection category fails `npm run typecheck` here — this literal would
+ * be missing the new required property — instead of silently defaulting
+ * that category to "collect" (AC91).
  *
  * The categories set to a bare `false` need no such nesting: `false` is
  * total for them, so a sub-option added later is still off. The same goes
