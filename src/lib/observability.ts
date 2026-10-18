@@ -62,6 +62,34 @@ export function scrubEvent(event: ScrubbableEvent): ScrubbableEvent {
 }
 
 /**
+ * Never attach request bodies, cookies, headers, query params, user
+ * identifiers, or source snippets automatically. Typed as `Required<>` over
+ * the SDK's own `dataCollection` option so that a future `@sentry/nextjs`
+ * minor that adds a collection category fails `npm run typecheck` here —
+ * this literal would be missing the new required property — instead of
+ * silently defaulting that category to "collect" (AC91).
+ */
+const dataCollectionConfig: Required<
+  NonNullable<Sentry.NodeOptions["dataCollection"]>
+> = {
+  userInfo: false,
+  cookies: false,
+  httpHeaders: false,
+  httpBodies: [],
+  urlQueryParams: false,
+  graphQL: { document: false, variables: false },
+  genAI: { inputs: false, outputs: false },
+  databaseQueryData: false,
+  queues: false,
+  stackFrameVariables: false,
+  // Source-line context around each stack frame is Fiddle's own server
+  // source text, not visitor data, so this is a readability choice, not
+  // a privacy switch: kept at the SDK default so server traces stay
+  // debuggable without source-map upload (docs/OBSERVABILITY-PLAN.md).
+  frameContextLines: 5,
+};
+
+/**
  * The init options shared by the Node (server) and Edge runtime configs.
  * Read as a function so `SENTRY_DSN` is resolved at init time, not at module
  * load. Errors and structured logs only — no performance tracing
@@ -72,25 +100,7 @@ export function scrubEvent(event: ScrubbableEvent): ScrubbableEvent {
 export function sentryInitOptions(): Sentry.NodeOptions {
   return {
     dsn: process.env.SENTRY_DSN,
-    // Never attach request bodies, cookies, headers, query params, or user
-    // identifiers automatically.
-    dataCollection: {
-      userInfo: false,
-      cookies: false,
-      httpHeaders: false,
-      httpBodies: [],
-      urlQueryParams: false,
-      graphQL: { document: false, variables: false },
-      genAI: { inputs: false, outputs: false },
-      databaseQueryData: false,
-      queues: false,
-      stackFrameVariables: false,
-      // Source-line context around each stack frame is Fiddle's own server
-      // source text, not visitor data, so this is a readability choice, not
-      // a privacy switch: kept at the SDK default so server traces stay
-      // debuggable without source-map upload (docs/OBSERVABILITY-PLAN.md).
-      frameContextLines: 5,
-    },
+    dataCollection: dataCollectionConfig,
     // Errors + logs are the product here; no span sampling.
     tracesSampleRate: 0,
     beforeSend: scrubEvent,
