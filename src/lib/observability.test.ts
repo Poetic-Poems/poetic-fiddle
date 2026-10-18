@@ -71,6 +71,7 @@ describe("sentryInitOptions", () => {
       databaseQueryData: false,
       queues: false,
       stackFrameVariables: false,
+      frameContextLines: 5,
     });
     expect(options.tracesSampleRate).toBe(0);
     expect(options.beforeSend).toBe(scrubEvent);
