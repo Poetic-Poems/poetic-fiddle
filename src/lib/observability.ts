@@ -85,6 +85,11 @@ export function sentryInitOptions(): Sentry.NodeOptions {
       databaseQueryData: false,
       queues: false,
       stackFrameVariables: false,
+      // Source-line context around each stack frame is Fiddle's own server
+      // source text, not visitor data, so this is a readability choice, not
+      // a privacy switch: kept at the SDK default so server traces stay
+      // debuggable without source-map upload (docs/OBSERVABILITY-PLAN.md).
+      frameContextLines: 5,
     },
     // Errors + logs are the product here; no span sampling.
     tracesSampleRate: 0,
