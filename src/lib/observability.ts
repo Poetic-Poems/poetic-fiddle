@@ -36,8 +36,9 @@ function truncate(value: string): string {
  * auth session), and truncates the event message and each exception value so
  * a render error that echoes poem source back in its message can't smuggle
  * the poem out. Poem source is never attached to an event deliberately; this
- * is the belt-and-braces against it arriving by accident. `sendDefaultPii`
- * stays `false`, so no request body or user IP is collected in the first
+ * is the belt-and-braces against it arriving by accident. `dataCollection`
+ * below turns off every automatic-collection category, so no request body,
+ * cookie, header, query param, or user identifier is collected in the first
  * place.
  */
 export function scrubEvent(event: ScrubbableEvent): ScrubbableEvent {
@@ -71,10 +72,20 @@ export function scrubEvent(event: ScrubbableEvent): ScrubbableEvent {
 export function sentryInitOptions(): Sentry.NodeOptions {
   return {
     dsn: process.env.SENTRY_DSN,
-    // Never attach request bodies, IPs, or user identifiers automatically.
-    sendDefaultPii: false,
-    // Goal 3: structured server logs, GA and 5 GB/month free.
-    enableLogs: true,
+    // Never attach request bodies, cookies, headers, query params, or user
+    // identifiers automatically.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      graphQL: { document: false, variables: false },
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      queues: false,
+      stackFrameVariables: false,
+    },
     // Errors + logs are the product here; no span sampling.
     tracesSampleRate: 0,
     beforeSend: scrubEvent,
