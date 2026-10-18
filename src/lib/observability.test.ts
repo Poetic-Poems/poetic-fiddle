@@ -60,8 +60,18 @@ describe("sentryInitOptions", () => {
     const options = sentryInitOptions();
 
     expect(options.dsn).toBe("https://key@example.ingest.sentry.io/1");
-    expect(options.sendDefaultPii).toBe(false);
-    expect(options.enableLogs).toBe(true);
+    expect(options.dataCollection).toEqual({
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      graphQL: { document: false, variables: false },
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      queues: false,
+      stackFrameVariables: false,
+    });
     expect(options.tracesSampleRate).toBe(0);
     expect(options.beforeSend).toBe(scrubEvent);
   });
