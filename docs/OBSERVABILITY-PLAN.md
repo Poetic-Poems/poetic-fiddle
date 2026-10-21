@@ -197,8 +197,12 @@ guard PR #54 adds to `getCachedSharedPoem`, so it lands after that PR.
     PR #54's catch block;
   - `renderSharedPoemHtml` (`src/lib/render-share.ts`) — capture render
     failures before falling back.
-- **Data minimisation in code, not policy prose (AC91):** `sendDefaultPii`
-  stays `false` (default); a `beforeSend` hook strips cookies/headers and
+- **Data minimisation in code, not policy prose (AC91):** every
+  `dataCollection` key is set explicitly — every collection category off,
+  and `frameContextLines` (a line count, not a switch) at the SDK default —
+  in a literal typed `Required<>` over the SDK's own option type, so a
+  category added by a future SDK release fails `npm run typecheck` rather
+  than defaulting to "collect"; a `beforeSend` hook strips cookies/headers and
   truncates any message that could embed poem text. Tag events with
   `share_id`/poem `id` (opaque identifiers) rather than content. Poem
   source **never** leaves the app in an error payload.
