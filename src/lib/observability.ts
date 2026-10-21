@@ -61,6 +61,58 @@ export function scrubEvent(event: ScrubbableEvent): ScrubbableEvent {
   return event;
 }
 
+type DataCollectionConfig = Required<
+  NonNullable<Sentry.NodeOptions["dataCollection"]>
+>;
+
+/**
+ * The two categories the SDK models as nested objects rather than a plain
+ * `false`. `Required<>` is shallow, so each needs its own `Required<>` for
+ * the exhaustiveness guard below to reach its sub-keys: without these, a
+ * future SDK minor adding (say) `genAI.toolCalls` would type-check fine here
+ * and default to collecting.
+ */
+const graphQLConfig: Required<NonNullable<DataCollectionConfig["graphQL"]>> = {
+  document: false,
+  variables: false,
+};
+
+const genAIConfig: Required<NonNullable<DataCollectionConfig["genAI"]>> = {
+  inputs: false,
+  outputs: false,
+};
+
+/**
+ * Never attach request bodies, cookies, headers, query params, or user
+ * identifiers automatically. Typed as `Required<>` over the SDK's own
+ * `dataCollection` option so that a future `@sentry/nextjs` minor that adds
+ * a collection category fails `npm run typecheck` here — this literal would
+ * be missing the new required property — instead of silently defaulting
+ * that category to "collect" (AC91).
+ *
+ * The categories set to a bare `false` need no such nesting: `false` is
+ * total for them, so a sub-option added later is still off. The same goes
+ * for `httpBodies: []`, which disables every body target including any the
+ * SDK adds.
+ */
+const dataCollectionConfig: DataCollectionConfig = {
+  userInfo: false,
+  cookies: false,
+  httpHeaders: false,
+  httpBodies: [],
+  urlQueryParams: false,
+  graphQL: graphQLConfig,
+  genAI: genAIConfig,
+  databaseQueryData: false,
+  queues: false,
+  stackFrameVariables: false,
+  // Source-line context around each stack frame is Fiddle's own server
+  // source text, not visitor data, so this is a readability choice, not
+  // a privacy switch: kept at the SDK default so server traces stay
+  // debuggable without source-map upload (docs/OBSERVABILITY-PLAN.md).
+  frameContextLines: 5,
+};
+
 /**
  * The init options shared by the Node (server) and Edge runtime configs.
  * Read as a function so `SENTRY_DSN` is resolved at init time, not at module
@@ -72,25 +124,7 @@ export function scrubEvent(event: ScrubbableEvent): ScrubbableEvent {
 export function sentryInitOptions(): Sentry.NodeOptions {
   return {
     dsn: process.env.SENTRY_DSN,
-    // Never attach request bodies, cookies, headers, query params, or user
-    // identifiers automatically.
-    dataCollection: {
-      userInfo: false,
-      cookies: false,
-      httpHeaders: false,
-      httpBodies: [],
-      urlQueryParams: false,
-      graphQL: { document: false, variables: false },
-      genAI: { inputs: false, outputs: false },
-      databaseQueryData: false,
-      queues: false,
-      stackFrameVariables: false,
-      // Source-line context around each stack frame is Fiddle's own server
-      // source text, not visitor data, so this is a readability choice, not
-      // a privacy switch: kept at the SDK default so server traces stay
-      // debuggable without source-map upload (docs/OBSERVABILITY-PLAN.md).
-      frameContextLines: 5,
-    },
+    dataCollection: dataCollectionConfig,
     // Errors + logs are the product here; no span sampling.
     tracesSampleRate: 0,
     beforeSend: scrubEvent,
