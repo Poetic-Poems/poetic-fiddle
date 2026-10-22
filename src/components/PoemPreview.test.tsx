@@ -178,6 +178,41 @@ describe("PoemPreview postscript wiring", () => {
   // after unmount": the ref is null by then, so a leaked observer would find
   // no document and look identical — while still accumulating one observer
   // per mount for the life of the page.
+  // contentDocument is null until a same-origin srcdoc iframe finishes
+  // loading; firing `load` before that (or for a cross-origin frame, where
+  // the browser never exposes contentDocument at all) must not throw.
+  it("does nothing when the preview iframe's document isn't reachable on load", () => {
+    const { iframe } = renderPreview();
+    Object.defineProperty(iframe, "contentDocument", {
+      value: null,
+      configurable: true,
+    });
+
+    expect(() => fireEvent.load(iframe)).not.toThrow();
+  });
+
+  // The debounced callback re-reads iframeRef.current?.contentDocument at
+  // fire time rather than closing over the document the resize was observed
+  // against, so a document that stops being reachable in between (the frame
+  // navigates, or loses same-origin access) must not throw when the timer
+  // finally runs.
+  it("does nothing when the preview iframe's document isn't reachable once the debounce fires", () => {
+    vi.useFakeTimers();
+    const { iframe, observer } = renderPreview();
+    stubPreviewDocument(iframe, 130);
+    fireEvent.load(iframe);
+
+    Object.defineProperty(iframe, "contentDocument", {
+      value: null,
+      configurable: true,
+    });
+    observer.trigger();
+
+    expect(() =>
+      vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS),
+    ).not.toThrow();
+  });
+
   it("disconnects its ResizeObserver on unmount", () => {
     const { unmount } = render(
       <NonceProvider nonce="test-nonce-123">
