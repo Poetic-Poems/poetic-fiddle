@@ -222,6 +222,41 @@ describe("SharedPoemView postscript wiring", () => {
     expect(content.classList.contains("postscript-clamped")).toBe(true);
   });
 
+  // contentDocument is null until a same-origin srcdoc iframe finishes
+  // loading; firing `load` before that (or for a cross-origin frame, where
+  // the browser never exposes contentDocument at all) must not throw.
+  it("does nothing when the share iframe's document isn't reachable on load", () => {
+    const iframe = renderShare();
+    Object.defineProperty(iframe, "contentDocument", {
+      value: null,
+      configurable: true,
+    });
+
+    expect(() => fireEvent.load(iframe)).not.toThrow();
+  });
+
+  // The debounced handler re-reads iframeRef.current?.contentDocument at
+  // fire time rather than closing over the document the resize fired
+  // against, so a document that stops being reachable in between (the frame
+  // navigates, or loses same-origin access) must not throw when the timer
+  // finally runs.
+  it("does nothing when the share iframe's document isn't reachable once the debounce fires", () => {
+    vi.useFakeTimers();
+    const iframe = renderShare();
+    stubShareDocument(iframe, 130);
+    fireEvent.load(iframe);
+
+    Object.defineProperty(iframe, "contentDocument", {
+      value: null,
+      configurable: true,
+    });
+    fireEvent(window, new Event("resize"));
+
+    expect(() =>
+      vi.advanceTimersByTime(POSTSCRIPT_RESIZE_DEBOUNCE_MS),
+    ).not.toThrow();
+  });
+
   // Asserted against the listener identity rather than "nothing happens after
   // unmount": the ref is null by then, so a leaked listener would find no
   // document and look identical — while still accumulating one listener per
