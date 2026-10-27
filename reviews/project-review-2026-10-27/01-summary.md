@@ -1,0 +1,38 @@
+# Summary
+
+## What this project is
+
+Poetic Fiddle is a web-app interface to the `poetic` poem-authoring framework: a `.poem` editor with a real-time HTML preview, Supabase-backed accounts (magic link, Google, email/password), and database-backed save/share with row-level security, aimed at non-technical poets. It is built in TypeScript on Next.js 16 (App Router) / React 19, with CodeMirror 6 for the editor, and consumes the sibling `poetic` repository's browser renderer as a pinned release-tarball dependency rather than forking it.
+
+It is a single-maintainer, single-poet-at-a-time MVP of modest size (~18.9k lines across `src/`, `lib/`, `scripts/`, `supabase/`, `e2e/`; 59 test files; 129 Markdown files), operated day-to-day by a fleet of autonomous AI agents working under documented multi-agent conventions (`AGENTS.md`), with the human maintainer retaining final review/merge authority. Per its own `docs/IMPLEMENTATION-PLAN.md`, every planned MVP milestone (M0 through M9, including the W5–W16 hardening items) is delivered; the project is now in a maintenance/dependency-upkeep phase rather than active feature development.
+
+## Overall assessment
+
+This is a well-built, carefully engineered project for its size, and the engineering discipline — architecture, typed error handling, security defaults, test design, observability — is genuinely strong across the board; a prior review's verdict of "unusually rigorous for a project this size" still holds and has not drifted. But the project is in a rough moment operationally, for two unrelated reasons that happen to coincide: **production currently has no live backend at all** (a deliberate, disclosed cost decision, not a new incident, but a real one — sign-in, save, share, and remix are all non-functional for real users right now), and **`main` has been frozen for 9 days** by a structural flaw in the required dependency-audit CI gate, which gridlocks the whole repository the moment two or more packages carry advisories simultaneously. Both situations are already recognised and being worked by the project's own pipeline — a fix for the immediate advisory set is green and ready to merge as this review is written — so this review's most important contribution is less "discovering" these facts and more confirming their current state precisely and making sure the durable fixes (not just the immediate patches) get priority.
+
+Beyond those two headline items, the findings are overwhelmingly Low-severity polish: small documentation drift, a couple of duplicated code shapes, a coverage gap in real-browser testing for signed-in/public-share states, and a few trivial lint/release/README fixes. Nothing found undermines the project's core security or architectural soundness.
+
+## Headline strengths
+
+- Security fundamentals are unusually rigorous: RLS-by-default, a single tightly-scoped service-role client, bearer-token identity verification on every account-mutating route, a nonce-based CSP with no `'unsafe-inline'`, and one shared DOMPurify sanitisation boundary used identically by client preview and server-rendered share pages [F-SEC-01's strengths note, DATA strengths].
+- Code quality is exceptional for the project's size: a near-exhaustive grep across the whole source tree found zero `any` types, zero `@ts-ignore`/`eslint-disable`, and zero `TODO`/`FIXME`/`HACK` markers — self-reported debt is tracked in issues, not left in comments [CODE strengths].
+- Test discipline is strong and risk-proportionate: 620/620 tests pass at 90.5% statement coverage, with the riskiest paths (auth, account delete/export, RLS) carrying the most deliberate test design, including a 34-assertion pgTAP security suite [TEST strengths].
+- Observability is honestly engineered, not just documented: a type-level guard (`Required<>`) ensures a future Sentry SDK category can't silently start collecting PII, and the "no client-side collection" claim in `AGENTS.md` was independently verified true in code [F-SEC-03, OPS strengths].
+- CI/CD tooling is unusually self-auditing: the required-check set is checked against drift by its own scheduled workflow, and several of CI's mechanisms were deliberately designed against named, specific past failure modes [CI strengths].
+- The project's own governance and status documentation is candid about its real limitations (self-review by one person, no succession plan) rather than presenting a healthier picture than reality [GOV strengths].
+
+## Headline risks
+
+- Five unpatched dependency advisories (2 critical, 3 high) are currently live on `main`, including an unauthenticated RCE class in Next.js's Image Optimization API — already diagnosed and in flight, with a green, mergeable fix PR waiting [F-SEC-01, F-CI-01].
+- The CI gate that is supposed to prevent exactly that situation has no baseline against `main`, so it deadlocks the entire repository — not just the vulnerable packages — the moment two or more advisories coincide, and has done so for 9 days as of this review [F-CI-01, F-GOV-03].
+- No live Supabase project currently backs production: sign-in, save, share, and remix are all non-functional for real users, and there is consequently no backup/PITR coverage of any kind — a disclosed, deliberate, indefinite state, not a new incident, but the single most consequential fact about the app's current real-world usability [F-OPS-01].
+- Real-browser (Playwright) accessibility and interaction testing covers only signed-out pages; the public `/share/<id>` page — the project's most exposed, no-sign-in-required surface — has zero automated colour-contrast coverage of any kind [F-UX-01, F-TEST-02].
+- `AGENTS.md`, the document every agent and contributor reads first, has a stale status line claiming M8/M9 work "remains" when the plan it points to shows every item already delivered [F-DOC-01].
+
+## Scope and method
+
+This review reads close to exhaustively given the project's modest size: every file under `src/`, `scripts/`, `supabase/`, and `.github/workflows/` was read or sampled with evidence, and every document under `docs/` plus `README.md`/`CONTRIBUTING.md`/`SECURITY.md`/`AGENTS.md` was read in full. Test files (59, several hundred lines each) were sampled for quality and risk-coverage rather than read line-by-line, given their volume relative to source.
+
+Automated checks were run directly against a fresh clone of `main` at commit `f08427a` (this sandbox's Node 26 required a one-off, review-only `engine-strict=false` override to install — the repository's own Node 22.x pin, enforced by `.npmrc`, was never changed): `npm run format:check` (clean), `npm run lint` (0 errors, 1 pre-existing justified warning), `npm run typecheck` (clean), `npm run coverage` via Vitest (620/620 tests pass, 90.54%/85.12%/90.79%/92.42% stmts/branch/funcs/lines), and `npm audit --json` (5 advisories: 2 critical, 3 high, all `fixAvailable: true`). `gh` was used extensively and read-only throughout, against the live repository, to establish the current state of in-flight work (open issues, PRs, and CI run history) rather than relying on stale assumptions from the prior review.
+
+The review was parallelised across six subagents, each covering two or three of the thirteen checklist dimensions, with findings consolidated and de-duplicated by the lead agent (a small number of facts were independently surfaced by two dimensions — e.g. the dependency advisories by both SEC and DEPS, and a Privacy Policy wording mismatch by both SEC and DATA — and are recorded once, cross-referenced, to avoid double-counting in the severity tally). All thirteen dimensions were covered; none was judged inapplicable, though internationalisation (UX) is recorded as a deliberate, documented non-goal rather than a gap.
