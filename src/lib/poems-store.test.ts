@@ -40,6 +40,7 @@ function mockQuery(result: QueryResult) {
     eq: vi.fn(() => query),
     select: vi.fn(() => query),
     order: vi.fn(() => query),
+    limit: vi.fn(() => query),
     returns: vi.fn(() => Promise.resolve(result)),
     single: vi.fn(() => Promise.resolve(result)),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
@@ -155,6 +156,7 @@ describe("listPoems", () => {
     expect(query.order).toHaveBeenCalledWith("updated_at", {
       ascending: false,
     });
+    expect(query.limit).toHaveBeenCalledWith(expect.any(Number));
     expect(poems).toEqual([
       {
         id: "poem-2",
