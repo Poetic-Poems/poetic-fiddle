@@ -99,6 +99,14 @@ export const PoemRemixOverrideError = domainError(
 
 const SAVED_POEM_COLUMNS = "id, title, updated_at, share_id";
 
+/**
+ * A generous cap on how many of a poet's own poems the dashboard query
+ * returns in one page. The project is single-poet-per-account scale (AGENTS.md,
+ * "Development approach"), so this exists to bound worst-case cost rather than
+ * to paginate a poet's own normal use.
+ */
+const LIST_POEMS_LIMIT = 500;
+
 interface PoemRow {
   id: string;
   title: string;
@@ -173,6 +181,7 @@ export async function listPoems(ownerId: string): Promise<SavedPoem[]> {
     .select(SAVED_POEM_COLUMNS)
     .eq("owner_id", ownerId)
     .order("updated_at", { ascending: false })
+    .limit(LIST_POEMS_LIMIT)
     .returns<PoemRow[]>();
 
   if (error) throw new PoemListError(error);
