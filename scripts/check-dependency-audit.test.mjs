@@ -338,6 +338,40 @@ describe("evaluateDependencyAudit", () => {
       expect(result.message).toContain("ENOAUDIT");
     });
 
+    it("fails conservatively when the head advisory names no GHSA id to compare, without running the baseline audit", () => {
+      const getBaselineAuditJson = vi.fn();
+
+      // A high-severity entry npm counted but named no advisory id for: an
+      // empty diff against any baseline would otherwise read as "nothing
+      // new" and pass.
+      const result = evaluateDependencyAudit(
+        {
+          metadata: {
+            vulnerabilities: {
+              info: 0,
+              low: 0,
+              moderate: 0,
+              high: 1,
+              critical: 0,
+            },
+          },
+          vulnerabilities: {
+            nanoid: {
+              name: "nanoid",
+              severity: "high",
+              via: [{ source: 1, name: "nanoid", title: "no url here" }],
+            },
+          },
+        },
+        vi.fn(),
+        getBaselineAuditJson,
+      );
+
+      expect(result.pass).toBe(false);
+      expect(result.message).toContain("named no GHSA id");
+      expect(getBaselineAuditJson).not.toHaveBeenCalled();
+    });
+
     it("falls back to failing outright with no baseline supplied", () => {
       const result = evaluateDependencyAudit(
         reportWithAdvisories({

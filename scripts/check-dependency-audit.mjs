@@ -369,6 +369,29 @@ export function evaluateDependencyAudit(
       };
     }
 
+    const headIds = highOrCriticalAdvisoryIds(
+      realAuditJson,
+      headSuppressedPackages,
+    );
+
+    // The baseline comparison can only clear an advisory it can name. A
+    // report that counts a high/critical advisory but yields no GHSA id for
+    // it — an advisory object with no `url`, or a `url` that is not a GitHub
+    // advisory link — would otherwise diff to "nothing new" and pass
+    // silently, which is the same false green `unusableReportReason` and the
+    // canary exist to refuse. Checked before the baseline audit runs, since
+    // no baseline could change the answer.
+    if (headIds.size === 0) {
+      return {
+        pass: false,
+        message:
+          "npm audit found a high or critical severity advisory in this " +
+          "project's dependency tree but named no GHSA id for it, so " +
+          "whether the baseline already carries it cannot be established. " +
+          "Treating that as a failure rather than a pass.",
+      };
+    }
+
     const baseline = getBaselineAuditJson();
     const baseProblem = unusableReportReason(baseline.auditJson);
     if (baseProblem) {
@@ -382,10 +405,6 @@ export function evaluateDependencyAudit(
       };
     }
 
-    const headIds = highOrCriticalAdvisoryIds(
-      realAuditJson,
-      headSuppressedPackages,
-    );
     const baseIds = highOrCriticalAdvisoryIds(
       baseline.auditJson,
       baseline.suppressedPackages,
@@ -406,8 +425,8 @@ export function evaluateDependencyAudit(
       pass: true,
       message:
         "npm audit found only advisories already present on " +
-        `${baseline.ref} (${[...headIds].join(", ") || "none"}); not ` +
-        "failing this pull request for a pre-existing advisory.",
+        `${baseline.ref} (${[...headIds].join(", ")}); not failing this ` +
+        "pull request for a pre-existing advisory.",
     };
   }
 
