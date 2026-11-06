@@ -49,7 +49,27 @@
 //   4. Logs a visible line naming the advisory and why it was allowed,
 //      whenever it actually suppresses something.
 //
-// Usage: node scripts/check-dependency-audit.mjs [cwd]
+// Without a baseline, a single new high/critical advisory anywhere in the
+// tree fails every open pull request at once, with no landing order that
+// clears it (#542) — so a PR or merge-group run additionally takes
+// `--baseline-ref=<ref>`, `<ref>` being a commit this script's own `cwd`
+// has fetched: `ci.yml` resolves it to the base commit the pull
+// request/merge group names (`pull_request.base.sha` /
+// `merge_group.base_sha`) and `git fetch`es just that commit first, rather
+// than relying on a branch name resolving locally. In that mode, a
+// high/critical advisory only fails the run if its GHSA id is *not* already
+// present in a second audit run against `<ref>`'s own
+// `package.json`/`package-lock.json` — an advisory already on `main` logs
+// as pre-existing and passes; one this branch introduces still fails. With
+// no `--baseline-ref` (the weekly `dependency-audit.yml` schedule, and
+// `ci.yml`'s own `push`/`workflow_dispatch` runs, which have no PR base to
+// diff against), the gate stays tree-wide exactly as before: the weekly job
+// is not a required check, and is what keeps a pre-existing advisory
+// visible and tracked rather than silently waved through forever.
+//
+// Usage: node scripts/check-dependency-audit.mjs [cwd] [--baseline-ref=<ref>]
+// `<ref>` must already be fetched into `cwd`'s git history (`git show
+// <ref>:package.json` has to resolve) before this script runs.
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -107,6 +127,39 @@ function runCanaryNpmAudit() {
       { cwd: dir, encoding: "utf8" },
     );
     return runNpmAudit(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// Audits `ref`'s own dependency tree (not the working tree's) by checking
+// out just its `package.json`/`package-lock.json` into a throwaway
+// directory and running `npm audit` there — `npm audit` reads the lockfile
+// directly and needs no `node_modules`, so there is no install step (and
+// nothing runs this project's own `postinstall`, which assumes the full
+// checkout it would not have in the throwaway directory). `cwd` must be a
+// git checkout that already has `ref` available locally (`ci.yml` fetches
+// the PR/merge-group base commit before invoking this script in baseline
+// mode).
+function runBaselineNpmAudit(cwd, ref) {
+  const basePackageJson = execFileSync("git", ["show", `${ref}:package.json`], {
+    cwd,
+    encoding: "utf8",
+  });
+  const basePackageLockRaw = execFileSync(
+    "git",
+    ["show", `${ref}:package-lock.json`],
+    { cwd, encoding: "utf8" },
+  );
+
+  const dir = mkdtempSync(path.join(tmpdir(), "dependency-audit-baseline-"));
+  try {
+    writeFileSync(path.join(dir, "package.json"), basePackageJson);
+    writeFileSync(path.join(dir, "package-lock.json"), basePackageLockRaw);
+    return {
+      auditJson: runNpmAudit(dir),
+      packageLockJson: JSON.parse(basePackageLockRaw),
+    };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -254,11 +307,50 @@ export function applySuppressedAdvisoryException(auditJson, packageLockJson) {
   };
 }
 
+// The GHSA id of every high/critical advisory in a report, skipping any
+// package name in `suppressedPackages` (the #491 braces-chain exception) —
+// that set is excluded here rather than in the caller so both the head and
+// the baseline side of a comparison apply it the same way, each against its
+// own report's suppression result. Only a `via` entry that is itself an
+// advisory object (not a bare package-name string naming another package
+// in the chain) names a real GHSA id, same distinction as
+// `isSuppressedAdvisoryEntry` above.
+export function highOrCriticalAdvisoryIds(
+  auditJson,
+  suppressedPackages = new Set(),
+) {
+  const vulnerabilities = auditJson?.vulnerabilities ?? {};
+  const ids = new Set();
+  for (const [name, entry] of Object.entries(vulnerabilities)) {
+    if (suppressedPackages.has(name)) continue;
+    if (entry.severity !== "high" && entry.severity !== "critical") continue;
+    for (const viaEntry of entry.via ?? []) {
+      if (typeof viaEntry !== "object" || viaEntry === null) continue;
+      const match =
+        typeof viaEntry.url === "string" &&
+        viaEntry.url.match(/(GHSA-[A-Za-z0-9-]+)$/);
+      if (match) ids.add(match[1]);
+    }
+  }
+  return ids;
+}
+
 // `getCanaryAuditJson` is a thunk rather than a value so the canary audit
 // (a real npm install + audit round trip) only runs on the otherwise-clean
 // path, exactly as the design requires — a real advisory in `realAuditJson`
-// short-circuits before it's ever called.
-export function evaluateDependencyAudit(realAuditJson, getCanaryAuditJson) {
+// short-circuits before it's ever called. `getBaselineAuditJson` is the same
+// kind of thunk for the `--baseline-ref` comparison (#542): omit it (or pass
+// `null`) to keep the tree-wide, no-baseline behaviour the weekly schedule
+// still wants. `headSuppressedPackages` is the braces-chain exception set
+// already computed for `realAuditJson`, needed here only to key the
+// baseline comparison the same way the caller already adjusted the report's
+// `metadata` counts.
+export function evaluateDependencyAudit(
+  realAuditJson,
+  getCanaryAuditJson,
+  getBaselineAuditJson = null,
+  headSuppressedPackages = new Set(),
+) {
   const realProblem = unusableReportReason(realAuditJson);
   if (realProblem) {
     return {
@@ -268,11 +360,54 @@ export function evaluateDependencyAudit(realAuditJson, getCanaryAuditJson) {
   }
 
   if (hasHighOrCriticalVulnerability(realAuditJson)) {
+    if (!getBaselineAuditJson) {
+      return {
+        pass: false,
+        message:
+          "npm audit found a high or critical severity advisory in this " +
+          "project's dependency tree. Run `npm audit` locally for details.",
+      };
+    }
+
+    const baseline = getBaselineAuditJson();
+    const baseProblem = unusableReportReason(baseline.auditJson);
+    if (baseProblem) {
+      return {
+        pass: false,
+        message:
+          "npm audit found a high or critical severity advisory in this " +
+          `project's dependency tree, and the ${baseline.ref} baseline ` +
+          `could not be established to check whether it's new (${baseProblem}). ` +
+          "Treating that as a failure rather than a pass.",
+      };
+    }
+
+    const headIds = highOrCriticalAdvisoryIds(
+      realAuditJson,
+      headSuppressedPackages,
+    );
+    const baseIds = highOrCriticalAdvisoryIds(
+      baseline.auditJson,
+      baseline.suppressedPackages,
+    );
+    const newIds = [...headIds].filter((id) => !baseIds.has(id));
+
+    if (newIds.length > 0) {
+      return {
+        pass: false,
+        message:
+          "npm audit found a high or critical severity advisory not " +
+          `present on ${baseline.ref}: ${newIds.join(", ")}. Run ` +
+          "`npm audit` locally for details.",
+      };
+    }
+
     return {
-      pass: false,
+      pass: true,
       message:
-        "npm audit found a high or critical severity advisory in this " +
-        "project's dependency tree. Run `npm audit` locally for details.",
+        "npm audit found only advisories already present on " +
+        `${baseline.ref} (${[...headIds].join(", ") || "none"}); not ` +
+        "failing this pull request for a pre-existing advisory.",
     };
   }
 
@@ -311,8 +446,23 @@ function readPackageLockJson(cwd) {
   return JSON.parse(readFileSync(path.join(cwd, "package-lock.json"), "utf8"));
 }
 
+const BASELINE_REF_PREFIX = "--baseline-ref=";
+
+function parseArgs(argv) {
+  let cwd;
+  let baselineRef;
+  for (const arg of argv) {
+    if (arg.startsWith(BASELINE_REF_PREFIX)) {
+      baselineRef = arg.slice(BASELINE_REF_PREFIX.length);
+    } else if (cwd === undefined) {
+      cwd = arg;
+    }
+  }
+  return { cwd: cwd ?? process.cwd(), baselineRef };
+}
+
 function main() {
-  const cwd = process.argv[2] ?? process.cwd();
+  const { cwd, baselineRef } = parseArgs(process.argv.slice(2));
   const realAuditJson = runNpmAudit(cwd);
   const packageLockJson = readPackageLockJson(cwd);
   const { auditJson: adjustedAuditJson, suppressed } =
@@ -328,7 +478,26 @@ function main() {
     );
   }
 
-  const result = evaluateDependencyAudit(adjustedAuditJson, runCanaryNpmAudit);
+  const getBaselineAuditJson = baselineRef
+    ? () => {
+        const { auditJson: baseRealAuditJson, packageLockJson: baseLockJson } =
+          runBaselineNpmAudit(cwd, baselineRef);
+        const { auditJson: adjustedBaseAuditJson, suppressed: baseSuppressed } =
+          applySuppressedAdvisoryException(baseRealAuditJson, baseLockJson);
+        return {
+          ref: baselineRef,
+          auditJson: adjustedBaseAuditJson,
+          suppressedPackages: new Set(baseSuppressed),
+        };
+      }
+    : null;
+
+  const result = evaluateDependencyAudit(
+    adjustedAuditJson,
+    runCanaryNpmAudit,
+    getBaselineAuditJson,
+    new Set(suppressed),
+  );
   console.log(result.message);
   if (!result.pass) process.exit(1);
 }

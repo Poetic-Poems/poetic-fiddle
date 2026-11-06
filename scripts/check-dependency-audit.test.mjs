@@ -6,6 +6,7 @@ import {
   CANARY_VERSION,
   evaluateDependencyAudit,
   hasHighOrCriticalVulnerability,
+  highOrCriticalAdvisoryIds,
   runNpmAudit,
   SUPPRESSED_ADVISORY_GHSA,
   unusableReportReason,
@@ -83,6 +84,33 @@ function auditJson(overrides = {}) {
       },
     },
   };
+}
+
+// A full `npm audit --json` report — `metadata` counts plus the per-package
+// `vulnerabilities` entries the baseline-diff path reads GHSA ids from.
+// `entries` maps a package name to `{ ghsaId, severity }`.
+function reportWithAdvisories(entries) {
+  const counts = { info: 0, low: 0, moderate: 0, high: 0, critical: 0 };
+  const vulnerabilities = {};
+  for (const [name, { ghsaId, severity }] of Object.entries(entries)) {
+    counts[severity] += 1;
+    vulnerabilities[name] = {
+      name,
+      severity,
+      via: [
+        {
+          source: 1,
+          name,
+          dependency: name,
+          title: `${name} advisory`,
+          url: `https://github.com/advisories/${ghsaId}`,
+          severity,
+          range: "*",
+        },
+      ],
+    };
+  }
+  return { metadata: { vulnerabilities: counts }, vulnerabilities };
 }
 
 describe("vulnerabilityCounts", () => {
@@ -220,6 +248,135 @@ describe("evaluateDependencyAudit", () => {
 
     expect(result.pass).toBe(true);
     expect(getCanaryAuditJson).toHaveBeenCalledOnce();
+  });
+
+  describe("with a --baseline-ref comparison (#542)", () => {
+    it("fails on a high-severity advisory absent from the baseline, without consulting the canary", () => {
+      const getCanaryAuditJson = vi.fn();
+      const getBaselineAuditJson = vi.fn(() => ({
+        ref: "origin/main",
+        auditJson: reportWithAdvisories({}),
+        suppressedPackages: new Set(),
+      }));
+
+      const result = evaluateDependencyAudit(
+        reportWithAdvisories({
+          nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+        }),
+        getCanaryAuditJson,
+        getBaselineAuditJson,
+      );
+
+      expect(result.pass).toBe(false);
+      expect(result.message).toContain("GHSA-2v37-7h3g-55p8");
+      expect(result.message).toContain("origin/main");
+      expect(getCanaryAuditJson).not.toHaveBeenCalled();
+    });
+
+    it("passes a high-severity advisory already present on the baseline", () => {
+      const getCanaryAuditJson = vi.fn();
+      const getBaselineAuditJson = vi.fn(() => ({
+        ref: "origin/main",
+        auditJson: reportWithAdvisories({
+          nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+        }),
+        suppressedPackages: new Set(),
+      }));
+
+      const result = evaluateDependencyAudit(
+        reportWithAdvisories({
+          nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+        }),
+        getCanaryAuditJson,
+        getBaselineAuditJson,
+      );
+
+      expect(result.pass).toBe(true);
+      expect(result.message).toContain("origin/main");
+      expect(getCanaryAuditJson).not.toHaveBeenCalled();
+    });
+
+    it("fails when one advisory is pre-existing but another is newly introduced", () => {
+      const getBaselineAuditJson = () => ({
+        ref: "origin/main",
+        auditJson: reportWithAdvisories({
+          nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+        }),
+        suppressedPackages: new Set(),
+      });
+
+      const result = evaluateDependencyAudit(
+        reportWithAdvisories({
+          nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+          zod: { ghsaId: "GHSA-new-advisory-0000", severity: "critical" },
+        }),
+        vi.fn(),
+        getBaselineAuditJson,
+      );
+
+      expect(result.pass).toBe(false);
+      expect(result.message).toContain("GHSA-new-advisory-0000");
+      expect(result.message).not.toContain("GHSA-2v37-7h3g-55p8");
+    });
+
+    it("fails conservatively when the baseline audit itself is unusable", () => {
+      const getBaselineAuditJson = () => ({
+        ref: "origin/main",
+        auditJson: errorJson("ENOAUDIT"),
+        suppressedPackages: new Set(),
+      });
+
+      const result = evaluateDependencyAudit(
+        reportWithAdvisories({
+          nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+        }),
+        vi.fn(),
+        getBaselineAuditJson,
+      );
+
+      expect(result.pass).toBe(false);
+      expect(result.message).toContain("ENOAUDIT");
+    });
+
+    it("falls back to failing outright with no baseline supplied", () => {
+      const result = evaluateDependencyAudit(
+        reportWithAdvisories({
+          nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+        }),
+        vi.fn(),
+      );
+
+      expect(result.pass).toBe(false);
+    });
+  });
+});
+
+describe("highOrCriticalAdvisoryIds", () => {
+  it("collects GHSA ids from high and critical entries only", () => {
+    const report = reportWithAdvisories({
+      nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+      dompurify: { ghsaId: "GHSA-55q2-fjhq-7xh7", severity: "moderate" },
+      zod: { ghsaId: "GHSA-new-advisory-0000", severity: "critical" },
+    });
+
+    expect(highOrCriticalAdvisoryIds(report)).toEqual(
+      new Set(["GHSA-2v37-7h3g-55p8", "GHSA-new-advisory-0000"]),
+    );
+  });
+
+  it("excludes packages named in suppressedPackages", () => {
+    const report = reportWithAdvisories({
+      nanoid: { ghsaId: "GHSA-2v37-7h3g-55p8", severity: "high" },
+      braces: { ghsaId: SUPPRESSED_ADVISORY_GHSA, severity: "high" },
+    });
+
+    expect(highOrCriticalAdvisoryIds(report, new Set(["braces"]))).toEqual(
+      new Set(["GHSA-2v37-7h3g-55p8"]),
+    );
+  });
+
+  it("is empty for a report with no vulnerabilities object", () => {
+    expect(highOrCriticalAdvisoryIds(auditJson())).toEqual(new Set());
   });
 });
 
