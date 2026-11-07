@@ -158,8 +158,10 @@ jobs:
     # devDependencies — the code that runs in CI and on maintainer machines)
     # rather than skip it because the diff classifier found nothing
     # app-relevant to build. .github/workflows/dependency-audit.yml runs the
-    # same `npm run audit` weekly on a schedule, to catch advisories
-    # published while no pull request is open to run this job at all.
+    # same `npm run audit`, with no baseline, weekly on a schedule, to catch
+    # a pre-existing advisory while no pull request is open to run this job
+    # at all — see the baseline note on the audit step below for why this
+    # job itself no longer fails on one of those.
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -176,6 +178,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # A pull_request/merge_group run resolves to the exact base commit the
+      # event itself names (mirroring the `changes` job above), rather than
+      # a branch name that may not resolve locally with this job's default
+      # fetch-depth: 1 checkout. push/workflow_dispatch runs have no PR base
+      # to diff against, so `sha` stays empty and the audit step below falls
+      # back to the tree-wide, no-baseline check.
+      - name: Resolve the audit baseline commit
+        id: baseline
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            sha="${{ github.event.pull_request.base.sha }}"
+          elif [ "${{ github.event_name }}" = "merge_group" ]; then
+            sha="${{ github.event.merge_group.base_sha }}"
+          else
+            sha=""
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the audit baseline commit
+        if: steps.baseline.outputs.sha != ''
+        run: git fetch --depth=1 origin "${{ steps.baseline.outputs.sha }}"
+
       # Deliberately not wrapped in a retry loop. This gate's observed
       # failure mode is a false *green*, not a false red: on commit
       # a6647036 a run that correctly reported two live advisories was
@@ -187,8 +212,20 @@ jobs:
       # the advisory endpoint may not have actually answered. See
       # TD-PPpfid-26080911, and CONTRIBUTING.md for how to respond to a red
       # audit step.
+      #
+      # On a pull_request/merge_group run, `--baseline-ref` makes this gate
+      # fail only for an advisory not already present on the PR's base
+      # commit (#542) — a high/critical advisory already on `main` no
+      # longer gridlocks every open pull request at once; one introduced by
+      # this branch still fails.
       - name: Audit dependencies
-        run: npm run audit
+        run: |
+          set -euo pipefail
+          if [ -n "${{ steps.baseline.outputs.sha }}" ]; then
+            npm run audit -- "--baseline-ref=${{ steps.baseline.outputs.sha }}"
+          else
+            npm run audit
+          fi
 
   changelog-rename:
     name: Check CHANGELOG.md rename
