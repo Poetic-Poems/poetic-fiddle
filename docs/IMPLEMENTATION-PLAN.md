@@ -12,8 +12,10 @@
 > scaffolding).
 
 **Status:** Drafted 2026-07-13. Requirements are feature-complete; nothing here
-adds scope. **M0 (the poetic-side renderer-extraction spike) is delivered** —
-merged upstream in poetic PR #31 (squash commit `b204140`); see poetic's
+adds scope. No live Supabase project currently backs production, degrading
+auth/save/share gracefully — see §6.3. **M0 (the poetic-side
+renderer-extraction spike) is delivered** — merged upstream in poetic PR #31
+(squash commit `b204140`); see poetic's
 `docs/RENDERER-BROWSER.md` and `src/browser/render.js`. **M1 (the Fiddle app
 scaffold) is delivered** — Next.js (App Router) + TypeScript under `src/`,
 ESLint/Prettier, Vitest, CI (`build.yml`, CodeQL `javascript-typescript`), and

@@ -7,6 +7,10 @@ of [`OBSERVABILITY-PLAN.md`](OBSERVABILITY-PLAN.md) and satisfies AC121/AC122
 production fault, see
 [`PRIVACY-EXPORT-DELETE-RUNBOOK.md`](PRIVACY-EXPORT-DELETE-RUNBOOK.md).
 
+No live Supabase project currently backs production, so sign-in, save, share
+and remix are all non-functional for real users right now, degrading
+gracefully (issue #422) — see `IMPLEMENTATION-PLAN.md` §6.3 for the detail.
+
 ## Where the evidence lives
 
 Server-side failures are recorded in **Sentry** (the D42 observability layer):
