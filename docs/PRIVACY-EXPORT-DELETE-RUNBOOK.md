@@ -8,6 +8,10 @@ this doc is exposed to poets. This is the O3-style counterpart to
 faults: the New Zealand Privacy Act 2020 is the reason this exists, in the
 same way AC121/AC122 are the reason `TRIAGE.md` does.
 
+No live Supabase project currently backs production (issue #422), so there is
+also no backup or PITR coverage of any kind right now — see
+[Backup / PITR coverage](#backup--pitr-coverage) below for the detail.
+
 ## What a poet can already do without the maintainer
 
 - **Delete one poem** — the "My poems" dashboard's delete action, any time,
@@ -138,7 +142,10 @@ giving a worst case of up to ~24 hours of data loss on restore (as last
 confirmed from the Supabase dashboard on 2026-08-03; see
 [issue #199](https://github.com/Poetic-Poems/poetic-fiddle/issues/199#issuecomment-5165206422)
 for the confirmation details). If a project is restored in the future, refer
-to the issue for when the backup schedule was last checked.
+to the issue for when the backup schedule was last checked, and choose the
+backup/PITR tier deliberately at that time — the maintainer's own decision,
+never silently inherited from the settings a prior project happened to run
+under.
 
 ## Security
 
