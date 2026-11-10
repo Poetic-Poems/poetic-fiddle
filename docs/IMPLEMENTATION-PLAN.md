@@ -45,7 +45,11 @@ DOMPurify sanitisation as the untrusted-content boundary, and a Next Data
 Cache reader invalidated on the owner's next save. **M7 (remix) is
 delivered** (PR #42) — the remix flow (AC20, AC21, AC113) and the per-poet
 and per-poem permission controls (AC114) on top of M5's
-`remix_default`/`allow_remix` schema and RLS.
+`remix_default`/`allow_remix` schema and RLS. **M8/M9 are delivered** — all
+W-series items (W5–W16) are complete, including mobile responsive design,
+legal copy updates, data deletion and export, account deletion, poem deletion,
+GDPR breach notification, min-age confirmation, takedown process, branding assets,
+and keep-alive monitoring; see §4 for detailed delivery notes on each item.
 
 ---
 

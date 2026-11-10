@@ -22,9 +22,7 @@ web application that talks to the poetic framework's output/format.
 ## Status and plan
 
 `docs/IMPLEMENTATION-PLAN.md` is the living build plan and carries the
-delivery status: M0–M7 (the MVP) are delivered, and its §4 ("M8/M9 —
-remaining work") lists the W-series items that remain, with priorities and
-the milestone dependency map. `docs/REQUIREMENTS.md` is the authoritative,
+delivery status: M0–M9 are delivered. `docs/REQUIREMENTS.md` is the authoritative,
 living registry of decisions, rationale and open questions; the build
 decisions it parked are resolved in `docs/IMPLEMENTATION-PLAN.md` §6.
 
