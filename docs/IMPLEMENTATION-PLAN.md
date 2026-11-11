@@ -48,7 +48,7 @@ and per-poem permission controls (AC114) on top of M5's
 `remix_default`/`allow_remix` schema and RLS. **M8/M9 are delivered** — all
 W-series items (W5–W16) are complete, including mobile responsive design,
 legal copy updates, data deletion and export, account deletion, poem deletion,
-GDPR breach notification, min-age confirmation, takedown process, branding assets,
+privacy breach notification, min-age confirmation, takedown process, branding assets,
 and keep-alive monitoring; see §4 for detailed delivery notes on each item.
 
 ---
