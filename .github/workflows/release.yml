@@ -66,5 +66,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${{ steps.version.outputs.tag }}" \
-            --title "Poetic ${{ steps.version.outputs.tag }}" \
+            --title "Poetic Fiddle ${{ steps.version.outputs.tag }}" \
             --notes-file /tmp/release-notes.md
