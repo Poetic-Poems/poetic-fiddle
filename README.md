@@ -79,7 +79,7 @@ Requires Node.js 22.x. Install dependencies with `npm install`, then:
 | `npm test` | Vitest |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run coverage` | Vitest with coverage reporting |
-| `npm run test:a11y` | Real-browser axe-core accessibility checks against a production build, via Playwright (`npx playwright install chromium` first) |
+| `npm run test:a11y` | Real-browser axe-core accessibility checks against a production build, via Playwright (`npx playwright install chromium` first). Seeds a local Supabase instance first (`scripts/seed-e2e.mjs`; Supabase CLI required on `PATH`) with a confirmed test poet and a shared poem, so the signed-in dashboard and a `/share/<id>` permalink are scanned alongside the signed-out pages — no live/production project needed |
 | `npm run test:db` | pgTAP data-layer tests, via the Supabase CLI (`supabase start` first) |
 
 On WSL, npm/node commands can pick up the Windows binaries ahead of the
