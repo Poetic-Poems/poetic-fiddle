@@ -86,10 +86,15 @@ const PAGES: {
 
       await page.getByRole("link", { name: "My poems" }).click();
       await page.getByText(e2ePoemTitle ?? "").waitFor();
-      await page.getByRole("button", { name: "Delete account" }).click();
+      // `exact` keeps this off the dialog's own "Delete account forever"
+      // submit, the way the jsdom suites' own /^delete account$/i does
+      // (PoemsDashboard.a11y.test.tsx).
       await page
-        .getByRole("heading", { name: "Delete your account?" })
-        .waitFor();
+        .getByRole("button", { name: "Delete account", exact: true })
+        .click();
+      // AccountDangerZone.tsx titles the dialog with a styled <p>, not a
+      // heading element, so there is no heading role to wait on here.
+      await page.getByText("Delete your account?").waitFor();
     },
   },
 ];

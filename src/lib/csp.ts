@@ -10,6 +10,35 @@ import { EMBED_FRAME_SRC } from "@/lib/embed-hosts";
 // config-eval time.
 const SUPABASE_CONNECT_SRC = "https://*.supabase.co";
 
+/**
+ * The configured backend's own origin, when the wildcard above cannot cover
+ * it: a Supabase instance that isn't hosted on `supabase.co` — the local one
+ * `supabase start` serves on `127.0.0.1:54321`, which `scripts/seed-e2e.mjs`
+ * seeds for `e2e/a11y.spec.ts`, or a self-hosted deployment. `'self'` doesn't
+ * cover it either, since such an instance differs from the app's own origin by
+ * port at minimum, and CSP counts that as a different origin — so without this
+ * the browser client cannot reach the backend the app was built against at
+ * all, and every sign-in, save and health probe is refused before it reaches
+ * the network.
+ *
+ * A hosted `https://<ref>.supabase.co` project returns `null` here, so the
+ * policy served in production is unchanged — this widens nothing that the
+ * wildcard did not already allow.
+ */
+function nonWildcardSupabaseOrigin(supabaseUrl: string | undefined): string[] {
+  if (!supabaseUrl) return [];
+  try {
+    const { origin, hostname, protocol } = new URL(supabaseUrl);
+    if (protocol === "https:" && hostname.endsWith(".supabase.co")) return [];
+    return [origin];
+  } catch {
+    // An unparseable value is a misconfiguration the app surfaces elsewhere
+    // (src/lib/supabase-client.ts throws on it); it must not take the rest of
+    // the policy down with it.
+    return [];
+  }
+}
+
 // EMBED_FRAME_SRC (src/lib/embed-hosts.ts) restates the same host allow-list
 // render-share.ts's sanitiser enforces, as the frame-src origins. A srcdoc
 // iframe (SharedPoemView.tsx) inherits this top-level policy in addition to
@@ -58,7 +87,15 @@ const SUPABASE_CONNECT_SRC = "https://*.supabase.co";
  * dropped there, exactly as they are everywhere without this directive —
  * rather than the relaxation applying where it wasn't understood.
  */
-export function buildContentSecurityPolicy(nonce: string): string {
+export function buildContentSecurityPolicy(
+  nonce: string,
+  supabaseUrl: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL,
+): string {
+  const connectSrc = [
+    "'self'",
+    SUPABASE_CONNECT_SRC,
+    ...nonWildcardSupabaseOrigin(supabaseUrl),
+  ].join(" ");
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'`,
@@ -66,7 +103,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self' data:",
-    `connect-src 'self' ${SUPABASE_CONNECT_SRC}`,
+    `connect-src ${connectSrc}`,
     `frame-src ${EMBED_FRAME_SRC}`,
     "object-src 'none'",
     "base-uri 'self'",
