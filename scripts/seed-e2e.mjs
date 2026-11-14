@@ -5,12 +5,18 @@
 // confirmed test user and a shared poem to sign in as and scan — neither of
 // which can depend on a live/production Supabase project. This brings up the
 // same local instance `npm run test:db` already uses (`supabase start`),
-// then seeds that one fixture through `@supabase/supabase-js`'s admin API
-// rather than raw SQL: `auth.admin.createUser({ email_confirm: true })`
-// sidesteps the inbox-confirmation round trip local auth would otherwise
-// require (supabase/config.toml's `[auth.email] enable_confirmations = true`),
-// and inserting through the service-role client mints a real `share_id` via
-// the same `poems_before_write` trigger a save through the app would.
+// then seeds that one fixture through `@supabase/supabase-js` rather than raw
+// SQL: `auth.admin.createUser({ email_confirm: true })` sidesteps the
+// inbox-confirmation round trip local auth would otherwise require
+// (supabase/config.toml's `[auth.email] enable_confirmations = true`).
+//
+// The poem itself is inserted by the fixture poet's own signed-in client, not
+// the service-role one: supabase/migrations/20260716104021_poems_and_profiles.sql
+// states public.poems' privileges explicitly and grants them to `authenticated`
+// alone, so a service-role write through PostgREST is refused outright
+// (`42501: permission denied for table poems`) — the poet's own session is the
+// write path the app itself uses, and it mints a real `share_id` via the same
+// `poems_before_write` trigger a save through the app would.
 //
 // Writes e2e/.env.e2e (git-ignored by the repo-wide `.env.*` rule) with the
 // local instance's own connection details and the fixture's identifiers.
@@ -79,29 +85,36 @@ export function ensureLocalSupabase({ run = runSupabase } = {}) {
   return vars;
 }
 
-/** Creates the fixture poet if needed, confirmed (no inbox round trip), and returns their id. */
-async function ensureTestUser(admin, anon) {
-  const { data: signedIn } = await anon.auth.signInWithPassword({
-    email: TEST_USER_EMAIL,
-    password: TEST_USER_PASSWORD,
-  });
-  if (signedIn?.user) {
-    await anon.auth.signOut();
-    return signedIn.user.id;
-  }
+/**
+ * Creates the fixture poet if needed, confirmed (no inbox round trip), and
+ * leaves `anon` holding their session — every poems write below goes through
+ * it, since `authenticated` is the only role public.poems grants anything to.
+ */
+async function ensureSignedInTestUser(admin, anon) {
+  const signIn = () =>
+    anon.auth.signInWithPassword({
+      email: TEST_USER_EMAIL,
+      password: TEST_USER_PASSWORD,
+    });
 
-  const { data, error } = await admin.auth.admin.createUser({
+  const { data: signedIn } = await signIn();
+  if (signedIn?.user) return signedIn.user.id;
+
+  const { error } = await admin.auth.admin.createUser({
     email: TEST_USER_EMAIL,
     password: TEST_USER_PASSWORD,
     email_confirm: true,
   });
   if (error) throw error;
+
+  const { data, error: signInError } = await signIn();
+  if (signInError) throw signInError;
   return data.user.id;
 }
 
 /** Creates the fixture's shared poem if needed, and returns its title/share_id. */
-async function ensureTestPoem(admin, ownerId) {
-  const { data: existing, error: selectError } = await admin
+async function ensureTestPoem(poet, ownerId) {
+  const { data: existing, error: selectError } = await poet
     .from("poems")
     .select("title, share_id")
     .eq("owner_id", ownerId)
@@ -112,7 +125,7 @@ async function ensureTestPoem(admin, ownerId) {
     return { title: existing.title, shareId: existing.share_id };
   }
 
-  const { data: inserted, error: insertError } = await admin
+  const { data: inserted, error: insertError } = await poet
     .from("poems")
     .insert({
       owner_id: ownerId,
@@ -139,8 +152,8 @@ export async function seedE2eFixtures({
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const userId = await ensureTestUser(admin, anon);
-  const poem = await ensureTestPoem(admin, userId);
+  const userId = await ensureSignedInTestUser(admin, anon);
+  const poem = await ensureTestPoem(anon, userId);
 
   const lines = [
     `NEXT_PUBLIC_SUPABASE_URL=${status.API_URL}`,
