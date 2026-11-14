@@ -4,19 +4,36 @@ import AxeBuilder from "@axe-core/playwright";
 // Real-browser counterpart to src/components/Editor.a11y.test.tsx and
 // PoemsDashboard.a11y.test.tsx: same pages, same jest-axe default rule set,
 // but run against a real Chromium paint so axe-core's color-contrast rule
-// actually executes (TD-PPpfid-26080109). Only the signed-out states are
-// reachable without a live Supabase project; the signed-in structural checks
-// (labels, roles, aria attributes) stay covered by the jsdom suites.
+// actually executes (TD-PPpfid-26080109). The "signed out" entries below
+// need no backend at all; the "signed in" ones need the fixture poet and
+// poem scripts/seed-e2e.mjs seeds into a local Supabase instance (issue
+// #551) — `npm run test:a11y` runs that first, so `E2E_*` is set by the
+// time this file loads (see playwright.config.ts). Run via plain
+// `playwright test` without seeding first, those entries skip themselves
+// rather than fail.
+const e2eUserEmail = process.env.E2E_USER_EMAIL;
+const e2eUserPassword = process.env.E2E_USER_PASSWORD;
+const e2ePoemTitle = process.env.E2E_POEM_TITLE;
+const e2eShareId = process.env.E2E_SHARE_ID;
+const e2eFixturesReady = Boolean(
+  e2eUserEmail && e2eUserPassword && e2ePoemTitle && e2eShareId,
+);
+const E2E_FIXTURES_SKIP_REASON =
+  "e2e/.env.e2e not found — run `npm run test:a11y` (which seeds it via scripts/seed-e2e.mjs) rather than `playwright test` directly.";
+
 const PAGES: {
   name: string;
   path: string;
+  state: "signed out" | "signed in";
   waitForReady: (page: Page) => Promise<unknown>;
   axeOptions?: Record<string, unknown>;
   legacyMode?: boolean;
+  requiresFixtures?: boolean;
 }[] = [
   {
     name: "editor",
     path: "/",
+    state: "signed out",
     waitForReady: (page) =>
       page.getByRole("textbox", { name: "Your poem" }).waitFor(),
     // Matches Editor.a11y.test.tsx: the preview pane's iframe is
@@ -36,22 +53,77 @@ const PAGES: {
   {
     name: "poems dashboard",
     path: "/poems",
+    state: "signed out",
     waitForReady: (page) =>
       page.getByText("Sign in to see your saved poems.").waitFor(),
   },
+  {
+    name: "shared poem",
+    path: `/share/${e2eShareId ?? ""}`,
+    state: "signed out",
+    requiresFixtures: true,
+    waitForReady: (page) =>
+      page.getByRole("heading", { name: e2ePoemTitle ?? "" }).waitFor(),
+  },
+  {
+    name: "poems dashboard",
+    path: "/",
+    state: "signed in",
+    requiresFixtures: true,
+    // Signs in through the real email/password form (SignInPrompt.tsx) as
+    // the fixture poet scripts/seed-e2e.mjs seeded, then navigates to the
+    // dashboard and opens the "Danger zone" delete-account confirmation
+    // (AccountDangerZone.tsx) — never submitted, just scanned open —
+    // alongside the fixture poem's own row.
+    waitForReady: async (page) => {
+      await page.getByRole("textbox", { name: "Your poem" }).waitFor();
+      await page.getByRole("button", { name: "Save" }).click();
+      await page.getByText("Use a password instead").click();
+      await page.getByLabel("Email").fill(e2eUserEmail ?? "");
+      await page.getByLabel("Password").fill(e2eUserPassword ?? "");
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await page.getByText(e2eUserEmail ?? "").waitFor();
+
+      await page.getByRole("link", { name: "My poems" }).click();
+      await page.getByText(e2ePoemTitle ?? "").waitFor();
+      // `exact` keeps this off the dialog's own "Delete account forever"
+      // submit, the way the jsdom suites' own /^delete account$/i does
+      // (PoemsDashboard.a11y.test.tsx).
+      await page
+        .getByRole("button", { name: "Delete account", exact: true })
+        .click();
+      // AccountDangerZone.tsx titles the dialog with a styled <p>, not a
+      // heading element, so there is no heading role to wait on here.
+      await page.getByText("Delete your account?").waitFor();
+    },
+  },
 ];
 
-for (const { name, path, waitForReady, axeOptions, legacyMode } of PAGES) {
-  test(`${name} (signed out) has no automatically detectable accessibility violations`, async ({
+for (const {
+  name,
+  path,
+  state,
+  waitForReady,
+  axeOptions,
+  legacyMode,
+  requiresFixtures,
+} of PAGES) {
+  test(`${name} (${state}) has no automatically detectable accessibility violations`, async ({
     page,
   }) => {
+    test.skip(
+      Boolean(requiresFixtures) && !e2eFixturesReady,
+      E2E_FIXTURES_SKIP_REASON,
+    );
+
     // The webServer's placeholder Supabase URL (playwright.config.ts) isn't a
     // real project, so issue #422's health probe would otherwise resolve
     // "unavailable" and replace these pages' signed-out state with the
     // backend-unavailable banner — a state the jsdom suites
     // (Editor.backend-unavailable.test.tsx, PoemsDashboard.test.tsx) already
     // cover. Answer it healthy so this suite keeps scanning the same
-    // signed-out pages it always has.
+    // signed-out pages it always has; harmless once a real, healthy local
+    // instance is seeded (scripts/seed-e2e.mjs), which answers the same way.
     await page.route("**/auth/v1/health", (route) =>
       route.fulfill({
         status: 200,
