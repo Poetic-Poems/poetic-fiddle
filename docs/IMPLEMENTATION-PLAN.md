@@ -663,9 +663,12 @@ the agreed shape, not a transcript of the final files.
 **Migrations mechanism [my call].** Supabase CLI migrations committed under
 `supabase/migrations/*.sql` and applied with `supabase db push` — schema changes
 are then reviewable in the PR that needs them, matching the PR-only workflow.
-`.github/workflows/database.yml`'s `deploy` job runs that push against the
-live project automatically once a migration-touching PR merges to `main`.
-Hand-run dashboard SQL is the fallback only, never the record.
+`.github/workflows/ci.yml`'s `deploy` job is intended to push that migration
+against the live project automatically once a migration-touching PR merges to
+`main`, but is currently disabled (`if: false`) because no live Supabase
+project exists (issue #418). Until the job is re-enabled, a maintainer must
+run `supabase db push` by hand. Hand-run dashboard SQL is the fallback only,
+never the record.
 
 #### Tables (M5)
 
